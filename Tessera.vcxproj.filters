@@ -81,6 +81,12 @@
     <ClCompile Include="src\utils\Random.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\AppDataPath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\SafeFileWrite.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\game\TetrominoBag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -180,6 +186,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\Random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\AppDataPath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\SafeFileWrite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\game\TetrominoBag.h">

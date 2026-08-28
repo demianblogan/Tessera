@@ -7,6 +7,7 @@
 #include <SFML/Window/Event.hpp>
 
 #include <states/MainMenuState.h>
+#include <utils/AppDataPath.h>
 
 bool Application::IsWindowOpen() const
 {
@@ -132,7 +133,7 @@ Application::Application()
 	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, audioPlayer(soundBuffers)
-	, settings(Data::Paths::Settings)
+	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, context(
 		stateMachine,
 		window,
@@ -144,7 +145,7 @@ Application::Application()
 		audioPlayer,
 		settings,
 		highScores)
-	, highScores(Data::Paths::Scores)
+	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 {
 	window.setMouseCursorVisible(false);
 	window.setView(gameView);

@@ -14,6 +14,10 @@ inline constexpr unsigned int MaxFrameRateLimit = 1000;
 
 struct GameSettings
 {
+    // Bumped whenever the on-disk settings layout changes. A file written by a
+    // different version is preserved as .corrupt and replaced with defaults.
+    static constexpr int FormatVersion = 1;
+
     // --- Graphics:
 
     bool verticalSyncEnabled = true;
