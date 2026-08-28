@@ -157,6 +157,7 @@ Game::Game()
 	highScores.Load();
 
 	stateMachine.PushState(std::make_unique<MainMenuState>(context));
+	stateMachine.ApplyPendingChanges();
 }
 
 void Game::Run()

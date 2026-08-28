@@ -5,39 +5,64 @@
 
 void StateMachine::PushState(std::unique_ptr<State> state)
 {
-	states.push_back(std::move(state));
+	pendingTransitions.push_back({ .type = TransitionType::Push, .state = std::move(state) });
 }
 
 void StateMachine::PopState()
 {
-	if (!states.empty())
-	{
-		states.pop_back();
-	}
-}
-
-void StateMachine::ChangeState(std::unique_ptr<State> state)
-{
-	pendingState = std::move(state);
-	stateChangeRequested = true;
-}
-
-void StateMachine::ApplyPendingChanges()
-{
-	if (!stateChangeRequested)
-	{
-		return;
-	}
-
-	PopState();
-	PushState(std::move(pendingState));
-
-	stateChangeRequested = false;
+	pendingTransitions.push_back({ .type = TransitionType::Pop, .state = nullptr });
 }
 
 void StateMachine::ClearStates()
 {
-	states.clear();
+	pendingTransitions.push_back({ .type = TransitionType::Clear, .state = nullptr });
+}
+
+void StateMachine::ChangeState(std::unique_ptr<State> state)
+{
+	PopState();
+	PushState(std::move(state));
+}
+
+bool StateMachine::HasPendingChanges() const noexcept
+{
+	return !pendingTransitions.empty();
+}
+
+void StateMachine::ApplyPendingChanges()
+{
+	for (PendingTransition& transition : pendingTransitions)
+	{
+		switch (transition.type)
+		{
+		case TransitionType::Push:
+			states.push_back(std::move(transition.state));
+			break;
+
+		case TransitionType::Pop:
+			if (!states.empty())
+			{
+				states.pop_back();
+			}
+			break;
+
+		case TransitionType::Clear:
+			states.clear();
+			break;
+		}
+	}
+
+	pendingTransitions.clear();
+}
+
+State* StateMachine::GetCurrentState()
+{
+	if (states.empty())
+	{
+		return nullptr;
+	}
+
+	return states.back().get();
 }
 
 void StateMachine::RenderStates(sf::RenderTarget& target)
@@ -81,14 +106,4 @@ void StateMachine::RenderTopState(sf::RenderTarget& target)
 	}
 
 	states.back()->Render(target);
-}
-
-State* StateMachine::GetCurrentState()
-{
-	if (states.empty())
-	{
-		return nullptr;
-	}
-
-	return states.back().get();
 }
