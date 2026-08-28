@@ -139,10 +139,13 @@ GameState::GameState(Context& context)
 		{ 620.f, 300.f }
 	);
 
+	// Centre of the "Next Tetromino" panel's preview area: the panel sits at
+	// (board right edge + 100) and is 450 wide, so its centre is +325; the
+	// preview goes below the panel's title.
 	nextTetrominoPreviewPosition =
 	{
-		BOARD_POSITION.x + Board::WIDTH * BLOCK_SIZE + 240.f,
-		BOARD_POSITION.y + 120.f
+		BOARD_POSITION.x + Board::WIDTH * BLOCK_SIZE + 325.f,
+		BOARD_POSITION.y + 185.f
 	};
 
 	context.music.Get(Assets::MusicID::MainMenu).stop();
@@ -200,10 +203,19 @@ void GameState::ProcessEvents(sf::RenderWindow& window)
 void GameState::Update(float deltaTime)
 {
 	// =====================================================
+	// Landing effect (keeps fading regardless of phase)
+	// =====================================================
+
+	if (landingEffectTimer > 0.f)
+	{
+		landingEffectTimer -= deltaTime;
+	}
+
+	// =====================================================
 	// Clear row effect
 	// =====================================================
 
-	if (IsPlayingClearRowEffect())
+	if (phase == Phase::ClearingRows)
 	{
 		for (ClearRowEffect& effect : clearRowEffects)
 		{
@@ -223,8 +235,14 @@ void GameState::Update(float deltaTime)
 
 		if (finished)
 		{
-			const int clearedRows = static_cast<int>(clearRowEffects.size());
-			board.ClearFullRows();
+			std::vector<int> clearedRowIndices;
+			for (const ClearRowEffect& effect : clearRowEffects)
+			{
+				clearedRowIndices.push_back(effect.row);
+			}
+
+			const int clearedRows = static_cast<int>(clearedRowIndices.size());
+			board.ClearRows(clearedRowIndices);
 			score += clearedRows * 10;
 
 			const int previousLevel = level;
@@ -240,6 +258,7 @@ void GameState::Update(float deltaTime)
 			levelLabel->SetString("Level: " + std::to_string(level));
 
 			clearRowEffects.clear();
+			phase = Phase::Falling;
 
 			if (!SpawnTetromino())
 			{
@@ -248,15 +267,6 @@ void GameState::Update(float deltaTime)
 		}
 
 		return;
-	}
-
-	// =====================================================
-	// Landing effect
-	// =====================================================
-
-	if (landingEffectTimer > 0.f)
-	{
-		landingEffectTimer -= deltaTime;
 	}
 
 	// =====================================================
@@ -517,33 +527,37 @@ void GameState::Render(sf::RenderTarget& target)
 	}
 
 	// =====================================================
-	// Render ghost tetromino
+	// Render ghost tetromino  (skipped while rows are clearing -- the piece it
+	// mirrors is already locked into the board and would draw on top of it)
 	// =====================================================
 
-	const Tetromino ghostTetromino = GetGhostTetromino();
-	const auto ghostBlockPositions = ghostTetromino.GetBlockPositions();
-	const int ghostTextureX = static_cast<int>(ghostTetromino.GetType()) * SPRITE_SIZE;
-
-	blockSprite.setTextureRect(
-		{
-			{ ghostTextureX, 0 },
-			{ SPRITE_SIZE, SPRITE_SIZE }
-		}
-	);
-
-	for (const sf::Vector2i& blockPosition : ghostBlockPositions)
+	if (phase == Phase::Falling)
 	{
-		blockSprite.setPosition(
+		const Tetromino ghostTetromino = GetGhostTetromino();
+		const auto ghostBlockPositions = ghostTetromino.GetBlockPositions();
+		const int ghostTextureX = static_cast<int>(ghostTetromino.GetType()) * SPRITE_SIZE;
+
+		blockSprite.setTextureRect(
 			{
-				BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE,
-				BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE
+				{ ghostTextureX, 0 },
+				{ SPRITE_SIZE, SPRITE_SIZE }
 			}
 		);
 
 		sf::Shader& ghostShader = context.shaders.Get(Assets::ShaderID::GhostTetromino);
 		ghostShader.setUniform("time", context.totalTime);
 
-		target.draw(blockSprite, &ghostShader);
+		for (const sf::Vector2i& blockPosition : ghostBlockPositions)
+		{
+			blockSprite.setPosition(
+				{
+					BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE,
+					BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE
+				}
+			);
+
+			target.draw(blockSprite, &ghostShader);
+		}
 	}
 
 	// Adding landing effect:
@@ -570,76 +584,76 @@ void GameState::Render(sf::RenderTarget& target)
 	}
 
 	// =====================================================
-	// Render current tetromino
+	// Render current tetromino  (skipped while rows are clearing -- it is
+	// already locked into the board)
 	// =====================================================
 
-	const auto blockPositions = currentTetromino.GetBlockPositions();
-	const int textureX = static_cast<int>(currentTetromino.GetType()) * SPRITE_SIZE;
-
-	blockSprite.setTextureRect(
-		{
-			{ textureX, 0 },
-			{ SPRITE_SIZE, SPRITE_SIZE }
-		}
-	);
-
-	// =====================================================
-	// Glow pass
-	// =====================================================
-
-	const float glowScale = 1.18f;
-
-	blockSprite.setScale(
-		{
-			(BLOCK_SIZE / 16.f) * glowScale,
-			(BLOCK_SIZE / 16.f) * glowScale
-		}
-	);
-
-	blockSprite.setColor(sf::Color(255, 255, 255, 50));
-
-	const float glowOffset = (BLOCK_SIZE * glowScale - BLOCK_SIZE) / 2.f;
-	sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
-
-	sf::RenderStates glowStates;
-	glowStates.blendMode = sf::BlendAdd;
-	glowStates.shader = &glowShader;
-
-	for (const sf::Vector2i& blockPosition : blockPositions)
+	if (phase == Phase::Falling)
 	{
-		blockSprite.setPosition(
+		const auto blockPositions = currentTetromino.GetBlockPositions();
+		const int textureX = static_cast<int>(currentTetromino.GetType()) * SPRITE_SIZE;
+
+		blockSprite.setTextureRect(
 			{
-				BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE - glowOffset,
-				BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE - glowOffset
+				{ textureX, 0 },
+				{ SPRITE_SIZE, SPRITE_SIZE }
 			}
 		);
 
-		target.draw(blockSprite, glowStates);
-	}
+		// -------- Glow pass --------
 
-	// =====================================================
-	// Normal pass
-	// =====================================================
+		const float glowScale = 1.18f;
 
-	blockSprite.setScale(
-		{
-			BLOCK_SIZE / 16.f,
-			BLOCK_SIZE / 16.f
-		}
-	);
-
-	blockSprite.setColor(sf::Color::White);
-
-	for (const sf::Vector2i& blockPosition : blockPositions)
-	{
-		blockSprite.setPosition(
+		blockSprite.setScale(
 			{
-				BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE,
-				BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE
+				(BLOCK_SIZE / 16.f) * glowScale,
+				(BLOCK_SIZE / 16.f) * glowScale
 			}
 		);
 
-		target.draw(blockSprite);
+		blockSprite.setColor(sf::Color(255, 255, 255, 50));
+
+		const float glowOffset = (BLOCK_SIZE * glowScale - BLOCK_SIZE) / 2.f;
+		sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
+
+		sf::RenderStates glowStates;
+		glowStates.blendMode = sf::BlendAdd;
+		glowStates.shader = &glowShader;
+
+		for (const sf::Vector2i& blockPosition : blockPositions)
+		{
+			blockSprite.setPosition(
+				{
+					BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE - glowOffset,
+					BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE - glowOffset
+				}
+			);
+
+			target.draw(blockSprite, glowStates);
+		}
+
+		// -------- Normal pass --------
+
+		blockSprite.setScale(
+			{
+				BLOCK_SIZE / 16.f,
+				BLOCK_SIZE / 16.f
+			}
+		);
+
+		blockSprite.setColor(sf::Color::White);
+
+		for (const sf::Vector2i& blockPosition : blockPositions)
+		{
+			blockSprite.setPosition(
+				{
+					BOARD_POSITION.x + blockPosition.x * BLOCK_SIZE,
+					BOARD_POSITION.y + blockPosition.y * BLOCK_SIZE
+				}
+			);
+
+			target.draw(blockSprite);
+		}
 	}
 
 	// =====================================================
@@ -672,12 +686,34 @@ void GameState::Render(sf::RenderTarget& target)
 		}
 	);
 
+	// Different pieces occupy different cells of the 4x4 shape matrix, so centre
+	// the piece's own bounding box on nextTetrominoPreviewPosition instead of
+	// pinning its top-left corner there.
+	int minBlockX = TetrominoShapes::MATRIX_SIZE;
+	int maxBlockX = -1;
+	int minBlockY = TetrominoShapes::MATRIX_SIZE;
+	int maxBlockY = -1;
+
+	for (const sf::Vector2i& blockPosition : previewBlockPositions)
+	{
+		minBlockX = std::min(minBlockX, blockPosition.x);
+		maxBlockX = std::max(maxBlockX, blockPosition.x);
+		minBlockY = std::min(minBlockY, blockPosition.y);
+		maxBlockY = std::max(maxBlockY, blockPosition.y);
+	}
+
+	const sf::Vector2f previewOrigin =
+	{
+		nextTetrominoPreviewPosition.x - (minBlockX + maxBlockX + 1) * 0.5f * PREVIEW_BLOCK_SIZE,
+		nextTetrominoPreviewPosition.y - (minBlockY + maxBlockY + 1) * 0.5f * PREVIEW_BLOCK_SIZE
+	};
+
 	for (const sf::Vector2i& blockPosition : previewBlockPositions)
 	{
 		blockSprite.setPosition(
 			{
-				nextTetrominoPreviewPosition.x + blockPosition.x * PREVIEW_BLOCK_SIZE,
-				nextTetrominoPreviewPosition.y + blockPosition.y * PREVIEW_BLOCK_SIZE
+				previewOrigin.x + blockPosition.x * PREVIEW_BLOCK_SIZE,
+				previewOrigin.y + blockPosition.y * PREVIEW_BLOCK_SIZE
 			}
 		);
 
@@ -690,11 +726,6 @@ void GameState::StartScreenShake(float duration, float intensity)
 	shakeDuration = duration;
 	shakeTimer = duration;
 	shakeIntensity = intensity;
-}
-
-bool GameState::IsPlayingClearRowEffect() const
-{
-	return !clearRowEffects.empty();
 }
 
 bool GameState::SpawnTetromino()
@@ -772,7 +803,7 @@ void GameState::HandleTetrominoLanding()
 
 	board.LockTetromino(currentTetromino);
 
-	const std::vector<int> fullRows = board.GetFullRows();
+	const std::vector<int> fullRows = board.FindFullRows();
 
 	// =====================================================
 	// Clear row effect
@@ -787,6 +818,7 @@ void GameState::HandleTetrominoLanding()
 			clearRowEffects.push_back({ .row = row, .timer = 0.f });
 		}
 
+		phase = Phase::ClearingRows;
 		return;
 	}
 
