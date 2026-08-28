@@ -18,25 +18,29 @@ binaries produced by another Visual C++ toolset.
    2026, or use Visual Studio's bundled `cmake.exe` to generate a
    `Visual Studio 18 2026` x64 build.
 3. Build both `Debug` and `Release` as shared libraries.
-4. Copy the installed `include` and `lib` directories into this repository:
+4. Copy the installed `include`, `lib` and `bin` directories into this
+   repository:
 
 ```text
 libs/
 └── SFML/
     ├── include/
-    └── lib/
+    ├── lib/
+    └── bin/          <- the eight runtime DLLs (see below)
 ```
 
-The project already references these directories. No changes to the Visual
-Studio project settings are required.
+`bin/` must contain all eight DLLs, both configurations:
 
-## Runtime DLLs
+```text
+sfml-system-3.dll     sfml-system-d-3.dll
+sfml-window-3.dll     sfml-window-d-3.dll
+sfml-graphics-3.dll   sfml-graphics-d-3.dll
+sfml-audio-3.dll      sfml-audio-d-3.dll
+```
 
-Copy the matching SFML DLLs next to the executable:
-
-- Debug: `sfml-system-d-3.dll`, `sfml-window-d-3.dll`,
-  `sfml-graphics-d-3.dll`, and `sfml-audio-d-3.dll`.
-- Release: `sfml-system-3.dll`, `sfml-window-3.dll`,
-  `sfml-graphics-3.dll`, and `sfml-audio-3.dll`.
+The project already references `include` and `lib`, and a post-build step
+copies the configuration's DLLs from `bin/` next to the executable, so the
+game runs straight from `bin/Debug` or `bin/Release` with no manual copying.
+`libs/SFML/` is git-ignored, so each clone populates it once.
 
 The Network module is not used by the game.

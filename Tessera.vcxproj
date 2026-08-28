@@ -68,6 +68,14 @@
       <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Message>Copying SFML debug DLLs next to the executable</Message>
+      <Command>if not exist "$(ProjectDir)libs\SFML\bin\" (echo POST-BUILD: "libs\SFML\bin" not found -- SFML runtime DLLs were not copied. See libs\SFML\README.md &amp; exit /b 0)
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-system-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-window-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-graphics-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-d-3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -90,6 +98,14 @@
       <AdditionalDependencies>sfml-system.lib;sfml-window.lib;sfml-graphics.lib;sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Message>Copying SFML release DLLs next to the executable</Message>
+      <Command>if not exist "$(ProjectDir)libs\SFML\bin\" (echo POST-BUILD: "libs\SFML\bin" not found -- SFML runtime DLLs were not copied. See libs\SFML\README.md &amp; exit /b 0)
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-system-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-window-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-graphics-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\game\TetrominoBag.cpp" />
@@ -97,7 +113,9 @@
     <ClCompile Include="src\states\GameOverState.cpp" />
     <ClCompile Include="src\states\PauseState.cpp" />
     <ClCompile Include="src\ui\Panel.cpp" />
+    <ClCompile Include="src\utils\AppDataPath.cpp" />
     <ClCompile Include="src\utils\Random.cpp" />
+    <ClCompile Include="src\utils\SafeFileWrite.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
     <ClCompile Include="src\game\Board.cpp" />
     <ClCompile Include="src\game\Tetromino.cpp" />
@@ -126,7 +144,9 @@
     <ClInclude Include="src\states\GameOverState.h" />
     <ClInclude Include="src\states\PauseState.h" />
     <ClInclude Include="src\ui\Panel.h" />
+    <ClInclude Include="src\utils\AppDataPath.h" />
     <ClInclude Include="src\utils\Random.h" />
+    <ClInclude Include="src\utils\SafeFileWrite.h" />
     <ClInclude Include="src\game\Cell.h" />
     <ClInclude Include="src\game\Board.h" />
     <ClInclude Include="src\game\Tetromino.h" />

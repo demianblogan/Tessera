@@ -14,6 +14,10 @@ private:
 public:
 	static constexpr std::size_t MAX_RECORDS = 5;
 
+	// Bumped whenever the on-disk layout changes; a file with a different
+	// version is preserved as .corrupt and the board starts empty.
+	static constexpr int FormatVersion = 1;
+
 	HighScoreManager(const std::filesystem::path& filepath);
 
 	void Load();

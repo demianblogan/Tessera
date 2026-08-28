@@ -1,2 +1,0 @@
-# Keeps the runtime data directory in the repository.
-# Actual save files (settings, scores) are generated at runtime and git-ignored.

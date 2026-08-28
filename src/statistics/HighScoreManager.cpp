@@ -2,6 +2,10 @@
 
 #include <algorithm>
 #include <fstream>
+#include <string>
+#include <system_error>
+
+#include "../utils/SafeFileWrite.h"
 
 HighScoreManager::HighScoreManager(const std::filesystem::path& filepath)
 	: filepath(filepath)
@@ -18,6 +22,19 @@ void HighScoreManager::Load()
 	{
 		return;
 	}
+
+	int formatVersion = 0;
+	file >> formatVersion;
+
+	if (!file || formatVersion != FormatVersion)
+	{
+		// Not a file this build can read -- keep it for inspection, start empty.
+		file.close();
+		static_cast<void>(SafeFileWrite::PreserveCorruptFile(filepath));
+		return;
+	}
+
+	file.ignore();
 
 	while (true)
 	{
@@ -41,13 +58,29 @@ void HighScoreManager::Load()
 
 void HighScoreManager::Save() const
 {
-	std::ofstream file(filepath);
+	std::error_code error;
+	std::filesystem::create_directories(filepath.parent_path(), error);
 
-	for (const HighScoreEntry& entry : records)
+	std::filesystem::path temporaryPath(filepath);
+	temporaryPath += ".tmp";
+
 	{
-		file << entry.score << '\n';
-		file << entry.playerName.toUtf8().c_str() << '\n';
+		std::ofstream file(temporaryPath, std::ios::trunc);
+		if (!file.is_open())
+		{
+			return;
+		}
+
+		file << FormatVersion << '\n';
+
+		for (const HighScoreEntry& entry : records)
+		{
+			file << entry.score << '\n';
+			file << entry.playerName.toUtf8().c_str() << '\n';
+		}
 	}
+
+	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));
 }
 
 void HighScoreManager::AddRecord(const HighScoreEntry& entry)

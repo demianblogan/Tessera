@@ -94,11 +94,10 @@ namespace Assets
 	}
 }
 
-namespace Data
+// Bare file names for the per-player save files. AppDataPath::Resolve() turns
+// each into a full path under %LOCALAPPDATA%.
+namespace SaveFile
 {
-	namespace Paths
-	{
-		inline constexpr const char* Scores = "data/scores.txt";
-		inline constexpr const char* Settings = "data/settings.txt";
-	}
+	inline constexpr const char* Settings = "settings.txt";
+	inline constexpr const char* Scores = "scores.txt";
 }
