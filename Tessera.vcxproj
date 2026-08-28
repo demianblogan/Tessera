@@ -68,6 +68,14 @@
       <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Message>Copying SFML debug DLLs next to the executable</Message>
+      <Command>if not exist "$(ProjectDir)libs\SFML\bin\" (echo POST-BUILD: "libs\SFML\bin" not found -- SFML runtime DLLs were not copied. See libs\SFML\README.md &amp; exit /b 0)
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-system-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-window-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-graphics-d-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-d-3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -90,6 +98,14 @@
       <AdditionalDependencies>sfml-system.lib;sfml-window.lib;sfml-graphics.lib;sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Message>Copying SFML release DLLs next to the executable</Message>
+      <Command>if not exist "$(ProjectDir)libs\SFML\bin\" (echo POST-BUILD: "libs\SFML\bin" not found -- SFML runtime DLLs were not copied. See libs\SFML\README.md &amp; exit /b 0)
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-system-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-window-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-graphics-3.dll" "$(OutDir)"
+xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\game\TetrominoBag.cpp" />
