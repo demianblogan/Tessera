@@ -1,52 +1,42 @@
 # SFML Setup
 
-This project uses **SFML 3.1.0 (64-bit)**.
+This project uses **SFML 3.1.0 (64-bit)** and the Visual Studio `v145`
+toolset. The game itself remains a regular Visual Studio project; it does not
+use CMake or vcpkg.
 
-## 1. Download SFML
+## Why SFML is built locally
 
-Download SFML 3.1.0 (64-bit) from the official website:  
-https://www.sfml-dev.org/download.php
+SFML's Windows binaries must match the compiler used by the game. Build SFML
+3.1.0 from source with Visual Studio 2026 instead of mixing the project with
+binaries produced by another Visual C++ toolset.
 
-> ⚠️ Make sure you choose the **64-bit version**, since the project is configured for it.
+## Build SFML 3.1.0
 
-## 2. Extract required files
+1. Download the official SFML 3.1.0 source archive from
+   https://www.sfml-dev.org/download/sfml/3.1.0/ and extract it.
+2. Open the source folder with the CMake integration included in Visual Studio
+   2026, or use Visual Studio's bundled `cmake.exe` to generate a
+   `Visual Studio 18 2026` x64 build.
+3. Build both `Debug` and `Release` as shared libraries.
+4. Copy the installed `include` and `lib` directories into this repository:
 
-After downloading the archive, extract it.
-
-Inside the archive, you will find multiple folders.  
-You only need:
-
-- `include`
-- `lib`
-
-All other folders can be ignored.
-
-## 3. Project structure
-
-In this repository, there is already a `libs` folder and `SFML` folder.
-
-Create the following structure:
-
-```
+```text
 libs/
 └── SFML/
     ├── include/
     └── lib/
 ```
 
-Move the extracted `include` and `lib` folders into `libs/SFML/`.
+The project already references these directories. No changes to the Visual
+Studio project settings are required.
 
-## 4. Important
+## Runtime DLLs
 
-The project is already configured to use this exact folder structure.
+Copy the matching SFML DLLs next to the executable:
 
-If you follow the steps correctly:
-- No additional setup is required
-- You do NOT need to modify Visual Studio settings
+- Debug: `sfml-system-d-3.dll`, `sfml-window-d-3.dll`,
+  `sfml-graphics-d-3.dll`, and `sfml-audio-d-3.dll`.
+- Release: `sfml-system-3.dll`, `sfml-window-3.dll`,
+  `sfml-graphics-3.dll`, and `sfml-audio-3.dll`.
 
-
-## Notes
-
-- This project was developed and tested with **SFML 3.1.0 (64-bit)**
-- Using a different version may cause build or runtime issues
-
+The Network module is not used by the game.
