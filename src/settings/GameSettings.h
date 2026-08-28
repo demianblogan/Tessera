@@ -6,6 +6,12 @@ enum class BlockRenderStyle
     WithoutOutline
 };
 
+// Highest step the sound / music sliders go to (0..MaxVolumeStep).
+inline constexpr unsigned int MaxVolumeStep = 10;
+
+// Upper bound accepted for a saved frame-rate limit. 0 means "unlimited".
+inline constexpr unsigned int MaxFrameRateLimit = 1000;
+
 struct GameSettings
 {
     // --- Graphics:
@@ -16,6 +22,6 @@ struct GameSettings
 
 	// --- Audio:
 
-    unsigned int soundVolume = 10;
-    unsigned int musicVolume = 10;
+    unsigned int soundVolume = MaxVolumeStep;
+    unsigned int musicVolume = MaxVolumeStep;
 };

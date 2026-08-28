@@ -1,9 +1,10 @@
 #pragma once
 
 #include <array>
+#include <vector>
+
 #include "Cell.h"
 #include "Tetromino.h"
-#include <vector>
 
 class Board
 {
@@ -19,11 +20,16 @@ private:
 
 public:
 	void LockTetromino(const Tetromino& tetromino);
-	int ClearFullRows();
+
+	// FindFullRows() only inspects; ClearRows() only removes the rows it is
+	// given and lets everything above fall. Splitting them lets the caller find
+	// the rows once (to drive a clear animation) and remove exactly those rows
+	// when the animation ends, with no second scan that could disagree.
+	[[nodiscard]] std::vector<int> FindFullRows() const;
+	void ClearRows(const std::vector<int>& rows);
 
 	[[nodiscard]] bool Contains(const Tetromino& tetromino) const;
 	[[nodiscard]] bool IntersectsLockedCells(const Tetromino& tetromino) const;
 	[[nodiscard]] bool CanPlace(const Tetromino& tetromino) const;
-	[[nodiscard]] std::vector<int> GetFullRows() const;
 	[[nodiscard]] const Grid& GetGrid() const;
 };

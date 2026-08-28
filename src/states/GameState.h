@@ -20,6 +20,12 @@ private:
 		float timer = 0.f;
 	};
 
+	enum class Phase
+	{
+		Falling,       // a piece is in play and responds to input
+		ClearingRows   // full rows found; the clear animation is running, input is ignored
+	};
+
 	static constexpr float BLOCK_SIZE = 48.f;
 	static constexpr int WALL_TEXTURE_INDEX = 10;
 	static constexpr sf::Vector2f BOARD_POSITION{ 720.f, 60.f };
@@ -35,6 +41,8 @@ private:
 
 	Tetromino nextTetromino;
 	sf::Vector2f nextTetrominoPreviewPosition;
+
+	Phase phase = Phase::Falling;
 
 	float fallTimer = 0.f;
 	float fallDelay = 0.5f;
@@ -63,7 +71,6 @@ private:
 	std::vector<ClearRowEffect> clearRowEffects;
 
 	void StartScreenShake(float duration, float intensity);
-	[[nodiscard]] bool IsPlayingClearRowEffect() const;
 
 	bool SpawnTetromino();
 	void TryMoveTetromino(int offsetX, int offsetY);

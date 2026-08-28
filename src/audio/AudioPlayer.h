@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 #include <SFML/Audio/Sound.hpp>
@@ -21,6 +22,12 @@ struct ActiveSound
 class AudioPlayer
 {
 private:
+	// SFML has a hard ceiling on simultaneous sf::Sound voices, and rapid
+	// events (holding a movement key, a burst of hits) can pile up a lot of
+	// short overlapping sounds. Cap the pool well below SFML's limit and drop
+	// the oldest voice when full.
+	static constexpr std::size_t MaxActiveSounds = 32;
+
 	SoundBufferManager& soundBuffers;
 	std::vector<ActiveSound> activeSounds;
 	float globalVolume = 100.f;

@@ -21,15 +21,33 @@ void SettingsManager::Load()
         return;
     }
 
-    int blockRenderStyle = 0;
+    // Parse into a scratch copy. Only adopt it if every field read and every
+    // value is in range; a truncated or hand-edited file falls back to the
+    // defaults already in `settings` and is rewritten clean.
+    GameSettings parsed;
+    int blockRenderStyleValue = 0;
 
-    file >> settings.verticalSyncEnabled;
-    file >> settings.frameRateLimit;
-    file >> blockRenderStyle;
-    file >> settings.soundVolume;
-    file >> settings.musicVolume;
+    file >> parsed.verticalSyncEnabled
+        >> parsed.frameRateLimit
+        >> blockRenderStyleValue
+        >> parsed.soundVolume
+        >> parsed.musicVolume;
 
-    settings.blockRenderStyle = static_cast<BlockRenderStyle>(blockRenderStyle);
+    const bool valuesAreValid =
+        static_cast<bool>(file) &&
+        (blockRenderStyleValue == 0 || blockRenderStyleValue == 1) &&
+        parsed.frameRateLimit <= MaxFrameRateLimit &&
+        parsed.soundVolume <= MaxVolumeStep &&
+        parsed.musicVolume <= MaxVolumeStep;
+
+    if (!valuesAreValid)
+    {
+        Save();
+        return;
+    }
+
+    parsed.blockRenderStyle = static_cast<BlockRenderStyle>(blockRenderStyleValue);
+    settings = parsed;
 }
 
 void SettingsManager::Save() const
@@ -47,8 +65,10 @@ void SettingsManager::Apply(Context& context) const
 {
 	// --- Graphics settings ---
 
+	// SFML warns against combining vsync with a manual frame-rate limit, so the
+	// limit is only applied when vsync is off.
     context.window.setVerticalSyncEnabled(settings.verticalSyncEnabled);
-    context.window.setFramerateLimit(settings.frameRateLimit);
+    context.window.setFramerateLimit(settings.verticalSyncEnabled ? 0u : settings.frameRateLimit);
 
 	// --- Audio settings ---
 

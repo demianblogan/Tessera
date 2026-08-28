@@ -10,6 +10,16 @@ AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
 
 void AudioPlayer::Play(Assets::SoundID soundID)
 {
+	if (activeSounds.size() >= MaxActiveSounds)
+	{
+		RemoveStoppedSounds();
+	}
+
+	if (activeSounds.size() >= MaxActiveSounds)
+	{
+		activeSounds.erase(activeSounds.begin());
+	}
+
 	activeSounds.emplace_back(soundID, soundBuffers.Get(soundID));
 
 	ActiveSound& activeSound = activeSounds.back();
