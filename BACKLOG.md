@@ -45,22 +45,28 @@ Cross-cutting decisions:
 
 ## In progress
 
-### v1.0.2 — Board scan, row-clear phase & settings fixes
+### v1.0.3 — Application rename, centralised events & MenuList
 
-- Bounds-safety pass across `Board`; guard `LockTetromino` before indexing.
-- Split the one `ClearFullRows` (found *and* removed) into `FindFullRows()` +
-  `ClearRows(rows)` so the caller finds the rows once and removes exactly those
-  when the clear animation ends -- no second scan that could disagree.
-- Make the row-clear an **explicit phase** (`Phase::Falling` /
-  `Phase::ClearingRows`). During the clear animation the just-locked piece and
-  its ghost are no longer drawn on top of the board; the landing flash keeps
-  fading regardless of phase.
-- Centre the next-piece preview on the piece's own bounding box.
-- Cap `AudioPlayer` concurrent voices (drop the oldest when full).
-- Validate `settings.txt` on load: parse into a scratch copy, keep the defaults
-  and rewrite a clean file if any field is missing or out of range.
-- FPS-limit slider reaches **"Unlimited"** at 0 and steps by 10; the manual
-  frame-rate limit is no longer applied on top of vsync.
+- **Renamed `Game` → `Application`** and moved it to `src/app/`, matching the
+  Until Last Asteroid layout.
+- **Centralised window events.** `Application::HandleInput()` polls once, routes
+  `Closed` / `Resized` through `ApplyWindowLifecycleEvent()` and everything else
+  to the active state. `State::ProcessEvents(sf::RenderWindow&)` becomes
+  `State::HandleEvent(const sf::Event&)`; states no longer poll or each handle
+  the close request.
+- **`State` gained `RequestPush/Pop/Clear/Change`** (protected) so a state asks
+  for a transition without reaching through `Context`.
+- **`UI::Button::SetEnabled(bool)`** with a `disabledStyle`; a disabled button
+  can't be selected. Removes GameOverState's hack of driving the Save button
+  through `SetSelected(IsPlayerNameValid())`.
+- **`UI::MenuList`** — a keyboard selection controller (wrap-around, skips
+  disabled, "moved" / "activate" callbacks). MainMenu / Pause / GameOver drop
+  their copy-pasted `selectedIndex` / `SelectPrevious` / `SelectNext` /
+  `UpdateSelection` / `ActivateSelectedButton`. The move sound now plays only on
+  an actual selection change. `SelectAt()` is stubbed for future mouse support.
+
+Mouse support was cut from this version (it is a new feature; nothing before
+v1.1.0) and will land with the gamepad work.
 
 ---
 
@@ -90,25 +96,34 @@ Cross-cutting decisions:
   every push / pop / clear / change and applies them only in
   `ApplyPendingChanges()`.
 
+### v1.0.2 — Board scan, row-clear phase & settings fixes
+
+- Bounds-safety pass across `Board`; guard `LockTetromino` before indexing.
+- Split `ClearFullRows` into `FindFullRows()` + `ClearRows(rows)` so a clear
+  runs one scan, not two that could disagree.
+- Row-clear is an explicit `Phase` (`Falling` / `ClearingRows`); the just-locked
+  piece and its ghost stop drawing over the board during the clear animation.
+- Next-piece preview centred on the piece's own bounding box.
+- `AudioPlayer` caps concurrent voices at 32.
+- `settings.txt` parsed into a scratch copy; defaults kept + file rewritten if
+  any field is missing or out of range.
+- FPS-limit slider reaches "Unlimited" at 0, steps by 10; not applied over vsync.
+
 ---
 
 ## Planned
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.3 — State & menu de-duplication.** Base `State` with
-  `RequestPush/Pop/Clear`; centralise window `Closed` / `Resized` in `Game`
-  (`State::HandleEvent(const sf::Event&)`); a `MenuList` selection controller +
-  **mouse support**; delete the copy-pasted menu navigation from four states;
-  proper `Enabled` state on `Button`.
 - **v1.0.4 — Persistence.** `AppDataPath`; `SafeFileWrite` atomic writes;
   settings format version + validation; move authored data to `assets/data/`;
   delete the top-level `data/`.
 - **v1.0.5 — Input & GameState split.** `InputBinding` / `ActionMap` /
   `InputHandler` (Scancode + a gamepad-button variant); `DirectionalRepeater`
   for DAS/ARR; `GamepadManager` (ported whole, extended with discrete
-  button→action mapping); rebinding UI. Split `GameState` into `TesseraGame`
-  (rules) + `GameplayState` + `BoardRenderer` + `EffectsController`.
+  button→action mapping); mouse support wired into `MenuList::SelectAt`;
+  rebinding UI. Split `GameState` into `TesseraGame` (rules) + `GameplayState` +
+  `BoardRenderer` + `EffectsController`.
 - **v1.0.6 — Visual pass.** `NeonGlow` real bloom; `NineSliceFrame` in
   `Button` / `Panel`; `TextLayout`; `ScreenFade`; `GlowingCursor`; per-effect
   toggles + screen-shake / reduce-motion; `/W4` → 0 + warnings-as-errors; first

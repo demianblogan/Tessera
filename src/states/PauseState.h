@@ -5,8 +5,10 @@
 #include "../core/Context.h"
 #include "../core/State.h"
 #include "../ui/Button.h"
-#include "../ui/Layout.h"
 #include "../ui/Label.h"
+#include "../ui/Layout.h"
+#include "../ui/MenuList.h"
+#include "../ui/Spacer.h"
 
 class PauseState final : public State
 {
@@ -18,35 +20,23 @@ private:
 		MainMenu
 	};
 
-	struct MenuButton
-	{
-		UI::Button* button = nullptr;
-		MenuAction action;
-	};
-
-private:
 	Context& context;
+
 	UI::Layout rootLayout;
 	UI::Layout* menuLayout = nullptr;
-	std::vector<MenuButton> buttons;
-	int selectedIndex = 0;
+	UI::MenuList menuList;
+	std::vector<MenuAction> actions;
 
-private:
 	void CreateMenuButton(const sf::String& text, MenuAction action);
-
-	void SelectPreviousMenuItem();
-	void SelectNextMenuItem();
-
-	void UpdateSelection();
+	void PerformAction(MenuAction action);
 	void UpdateLayout();
-	void ActivateSelectedButton();
 
 public:
 	explicit PauseState(Context& context);
 
 	[[nodiscard]] StateId GetId() const override { return StateId::Pause; }
 
-	void ProcessEvents(sf::RenderWindow& window) override;
+	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 

@@ -1,9 +1,9 @@
 #include "StatisticsState.h"
 
-#include <optional>
-
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 #include "../core/StateMachine.h"
 #include "../resources/Assets.h"
@@ -22,7 +22,8 @@ namespace
 }
 
 StatisticsState::StatisticsState(Context& context)
-	: context(context)
+	: State(context.stateMachine)
+	, context(context)
 	, rootLayout(UI::Layout::Orientation::Vertical)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 {
@@ -157,51 +158,28 @@ void StatisticsState::UpdateLayout()
 	rootLayout.Arrange({ 0.f, 0.f }, viewSize);
 }
 
-void StatisticsState::ProcessEvents(sf::RenderWindow& window)
+void StatisticsState::HandleEvent(const sf::Event& event)
 {
-	while (const std::optional event = window.pollEvent())
+	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+	if (keyPressed == nullptr)
 	{
-		if (event->is<sf::Event::Closed>())
-		{
-			window.close();
-		}
-		else if (const auto* resized = event->getIf<sf::Event::Resized>())
-		{
-			sf::View view = window.getView();
+		return;
+	}
 
-			view.setSize(
-				{
-					static_cast<float>(resized->size.x),
-					static_cast<float>(resized->size.y)
-				}
-			);
+	switch (keyPressed->scancode)
+	{
+	case sf::Keyboard::Scancode::Escape:
+		RequestChange(std::make_unique<MainMenuState>(context));
+		break;
 
-			view.setCenter(
-				{
-					static_cast<float>(resized->size.x) / 2.f,
-					static_cast<float>(resized->size.y) / 2.f
-				}
-			);
+	case sf::Keyboard::Scancode::Delete:
+		context.highScores.Clear();
+		context.highScores.Save();
+		UpdateScoreLabels();
+		break;
 
-			window.setView(view);
-
-			UpdateLayout();
-		}
-		else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-		{
-			switch (keyPressed->scancode)
-			{
-			case sf::Keyboard::Scancode::Escape:
-				context.stateMachine.ChangeState(std::make_unique<MainMenuState>(context));
-				return;
-
-			case sf::Keyboard::Scancode::Delete:
-				context.highScores.Clear();
-				context.highScores.Save();
-				UpdateScoreLabels();
-				break;
-			}
-		}
+	default:
+		break;
 	}
 }
 

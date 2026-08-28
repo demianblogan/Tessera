@@ -1,8 +1,8 @@
 #include "MainMenuState.h"
 
-#include <optional>
-
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
@@ -23,7 +23,8 @@ namespace
 }
 
 MainMenuState::MainMenuState(Context& context)
-	: context(context)
+	: State(context.stateMachine)
+	, context(context)
 	, rootLayout(UI::Layout::Orientation::Vertical)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 	, titleBackgroundSprite(context.textures.Get(Assets::TextureID::TitleBackground))
@@ -37,15 +38,7 @@ MainMenuState::MainMenuState(Context& context)
 	rootLayout.SetVerticalAlignment(UI::Layout::Alignment::Start);
 	rootLayout.SetGap(0.f);
 
-	// =====================================================
-	// Top spacer
-	// =====================================================
-
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TopSpacing }));
-
-	// =====================================================
-	// Title
-	// =====================================================
 
 	{
 		auto title = std::make_unique<UI::Label>(
@@ -59,15 +52,7 @@ MainMenuState::MainMenuState(Context& context)
 		rootLayout.Add(std::move(title));
 	}
 
-	// =====================================================
-	// Spacer between title and menu
-	// =====================================================
-
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TitleMenuSpacing }));
-
-	// =====================================================
-	// Menu layout
-	// =====================================================
 
 	{
 		auto layout = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
@@ -79,16 +64,22 @@ MainMenuState::MainMenuState(Context& context)
 		rootLayout.Add(std::move(layout));
 	}
 
-	// =====================================================
-	// Buttons
-	// =====================================================
+	menuList.onSelectionChanged = [this]
+		{
+			this->context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		};
+
+	menuList.onActivate = [this](std::size_t index)
+		{
+			this->context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+			PerformAction(actions[index]);
+		};
 
 	CreateMenuButton("Start Game", MenuAction::StartGame);
 	CreateMenuButton("Options", MenuAction::Options);
 	CreateMenuButton("Statistics", MenuAction::Statistics);
 	CreateMenuButton("Exit", MenuAction::Exit);
 
-	UpdateSelection();
 	UpdateLayout();
 
 	context.music.Get(Assets::MusicID::Gameplay).stop();
@@ -116,67 +107,41 @@ void MainMenuState::CreateMenuButton(const sf::String& text, MenuAction action)
 	button->SetWidthPixels(ButtonWidth);
 	button->SetHeightPixels(ButtonHeight);
 	button->SetNormalStyle({ .backgroundColor = sf::Color(140, 140, 140), .textColor = sf::Color::White });
-	button->SetSelectedStyle({ .backgroundColor = sf::Color(200, 200, 200),	.textColor = sf::Color::Yellow });
+	button->SetSelectedStyle({ .backgroundColor = sf::Color(200, 200, 200), .textColor = sf::Color::Yellow });
 
-	UI::Button* buttonPointer = button.get();
+	menuList.AddButton(*button);
 	menuLayout->Add(std::move(button));
-	buttons.push_back({ .button = buttonPointer, .action = action });
+	actions.push_back(action);
 }
 
-void MainMenuState::ProcessEvents(sf::RenderWindow& window)
+void MainMenuState::HandleEvent(const sf::Event& event)
 {
-	while (const std::optional event = window.pollEvent())
+	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+	if (keyPressed == nullptr)
 	{
-		if (event->is<sf::Event::Closed>())
-		{
-			window.close();
-		}
-		else if (const auto* resized = event->getIf<sf::Event::Resized>())
-		{
-			sf::View view = window.getView();
+		return;
+	}
 
-			view.setSize(
-				{
-					static_cast<float>(resized->size.x),
-					static_cast<float>(resized->size.y)
-				}
-			);
+	switch (keyPressed->scancode)
+	{
+	case sf::Keyboard::Scancode::Escape:
+		context.window.close();
+		break;
 
-			view.setCenter(
-				{
-					static_cast<float>(resized->size.x) / 2.f,
-					static_cast<float>(resized->size.y) / 2.f
-				}
-			);
+	case sf::Keyboard::Scancode::Up:
+		menuList.SelectPrevious();
+		break;
 
-			window.setView(view);
+	case sf::Keyboard::Scancode::Down:
+		menuList.SelectNext();
+		break;
 
-			UpdateLayout();
-		}
-		else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-		{
-			switch (keyPressed->scancode)
-			{
-			case sf::Keyboard::Scancode::Escape:
-				window.close();
-				break;
+	case sf::Keyboard::Scancode::Enter:
+		menuList.Activate();
+		break;
 
-			case sf::Keyboard::Scancode::Up:
-				SelectPreviousMenuItem();
-				context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-				break;
-
-			case sf::Keyboard::Scancode::Down:
-				SelectNextMenuItem();
-				context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-				break;
-
-			case sf::Keyboard::Scancode::Enter:
-				context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-				ActivateSelectedButton();
-				break;
-			}
-		}
+	default:
+		break;
 	}
 }
 
@@ -200,52 +165,20 @@ void MainMenuState::UpdateLayout()
 	rootLayout.Arrange({ 0.f, 0.f }, viewSize);
 }
 
-void MainMenuState::SelectPreviousMenuItem()
+void MainMenuState::PerformAction(MenuAction action)
 {
-	selectedIndex--;
-
-	if (selectedIndex < 0)
-	{
-		selectedIndex = static_cast<int>(buttons.size()) - 1;
-	}
-
-	UpdateSelection();
-}
-
-void MainMenuState::SelectNextMenuItem()
-{
-	selectedIndex++;
-
-	if (selectedIndex >= static_cast<int>(buttons.size()))
-	{
-		selectedIndex = 0;
-	}
-
-	UpdateSelection();
-}
-
-void MainMenuState::UpdateSelection()
-{
-	for (std::size_t i = 0; i < buttons.size(); i++)
-	{
-		buttons[i].button->SetSelected(i == static_cast<std::size_t>(selectedIndex));
-	}
-}
-
-void MainMenuState::ActivateSelectedButton()
-{
-	switch (buttons[selectedIndex].action)
+	switch (action)
 	{
 	case MenuAction::StartGame:
-		context.stateMachine.ChangeState(std::make_unique<GameState>(context));
+		RequestChange(std::make_unique<GameState>(context));
 		break;
 
 	case MenuAction::Options:
-		context.stateMachine.ChangeState(std::make_unique<SettingsState>(context));
+		RequestChange(std::make_unique<SettingsState>(context));
 		break;
 
 	case MenuAction::Statistics:
-		context.stateMachine.ChangeState(std::make_unique<StatisticsState>(context));
+		RequestChange(std::make_unique<StatisticsState>(context));
 		break;
 
 	case MenuAction::Exit:

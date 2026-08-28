@@ -73,7 +73,7 @@ public:
 
 	[[nodiscard]] StateId GetId() const override { return StateId::Settings; }
 
-	void ProcessEvents(sf::RenderWindow& window) override;
+	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 };

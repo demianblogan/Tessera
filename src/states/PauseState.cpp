@@ -1,9 +1,9 @@
 #include "PauseState.h"
 
-#include <optional>
-
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
@@ -23,31 +23,22 @@ namespace
 }
 
 PauseState::PauseState(Context& context)
-	: context(context)
+	: State(context.stateMachine)
+	, context(context)
 	, rootLayout(UI::Layout::Orientation::Vertical)
 {
 	rootLayout.SetHorizontalAlignment(UI::Layout::Alignment::Center);
 	rootLayout.SetVerticalAlignment(UI::Layout::Alignment::Start);
 	rootLayout.SetGap(80.f);
 
-	// =====================================================
-	// Top spacer
-	// =====================================================
-
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, 120.f }));
 
-	// =====================================================
-	// Title
-	// =====================================================
 	{
 		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Pause", TitleSize);
 		title->SetFillColor(sf::Color::White);
 		rootLayout.Add(std::move(title));
 	}
 
-	// =====================================================
-	// Menu layout
-	// =====================================================
 	{
 		auto layout = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
 		layout->SetGap(MenuGap);
@@ -56,50 +47,52 @@ PauseState::PauseState(Context& context)
 		rootLayout.Add(std::move(layout));
 	}
 
-	// =====================================================
-	// Buttons
-	// =====================================================
+	menuList.onSelectionChanged = [this]
+		{
+			this->context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		};
+
+	menuList.onActivate = [this](std::size_t index)
+		{
+			this->context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+			PerformAction(actions[index]);
+		};
 
 	CreateMenuButton("Resume Game", MenuAction::ResumeGame);
 	CreateMenuButton("Restart Game", MenuAction::RestartGame);
 	CreateMenuButton("Main Menu", MenuAction::MainMenu);
 
-	UpdateSelection();
 	UpdateLayout();
 }
 
-void PauseState::ProcessEvents(sf::RenderWindow& window)
+void PauseState::HandleEvent(const sf::Event& event)
 {
-	while (const std::optional event = window.pollEvent())
+	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+	if (keyPressed == nullptr)
 	{
-		if (event->is<sf::Event::Closed>())
-		{
-			window.close();
-		}
-		else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-		{
-			switch (keyPressed->scancode)
-			{
-			case sf::Keyboard::Scancode::Escape:
-				context.stateMachine.PopState();
-				break;
+		return;
+	}
 
-			case sf::Keyboard::Scancode::Up:
-				SelectPreviousMenuItem();
-				context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-				break;
+	switch (keyPressed->scancode)
+	{
+	case sf::Keyboard::Scancode::Escape:
+		RequestPop();
+		break;
 
-			case sf::Keyboard::Scancode::Down:
-				SelectNextMenuItem();
-				context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-				break;
+	case sf::Keyboard::Scancode::Up:
+		menuList.SelectPrevious();
+		break;
 
-			case sf::Keyboard::Scancode::Enter:
-				context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-				ActivateSelectedButton();
-				break;
-			}
-		}
+	case sf::Keyboard::Scancode::Down:
+		menuList.SelectNext();
+		break;
+
+	case sf::Keyboard::Scancode::Enter:
+		menuList.Activate();
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -110,20 +103,12 @@ void PauseState::Update(float deltaTime)
 
 void PauseState::Render(sf::RenderTarget& target)
 {
-	// =====================================================
-	// Dark overlay
-	// =====================================================
-
 	sf::RectangleShape overlay;
 	overlay.setPosition({ 0.f, 0.f });
 	overlay.setSize(target.getView().getSize());
 	overlay.setFillColor(sf::Color(0, 0, 0, 180));
 
 	target.draw(overlay);
-
-	// =====================================================
-	// UI
-	// =====================================================
 
 	sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
 	rootLayout.Render(target, &glowShader, context.totalTime);
@@ -143,62 +128,29 @@ void PauseState::CreateMenuButton(const sf::String& text, MenuAction action)
 	button->SetWidthPixels(ButtonWidth);
 	button->SetHeightPixels(ButtonHeight);
 	button->SetNormalStyle({ .backgroundColor = sf::Color(140, 140, 140), .textColor = sf::Color::White });
-	button->SetSelectedStyle({ .backgroundColor = sf::Color(200, 200, 200),	.textColor = sf::Color::Yellow });
+	button->SetSelectedStyle({ .backgroundColor = sf::Color(200, 200, 200), .textColor = sf::Color::Yellow });
 
-	UI::Button* buttonPointer = button.get();
+	menuList.AddButton(*button);
 	menuLayout->Add(std::move(button));
-
-	buttons.push_back({ .button = buttonPointer,.action = action });
+	actions.push_back(action);
 }
 
-void PauseState::SelectPreviousMenuItem()
+void PauseState::PerformAction(MenuAction action)
 {
-	selectedIndex--;
-
-	if (selectedIndex < 0)
-	{
-		selectedIndex = static_cast<int>(buttons.size()) - 1;
-	}
-
-	UpdateSelection();
-}
-
-void PauseState::SelectNextMenuItem()
-{
-	selectedIndex++;
-
-	if (selectedIndex >= static_cast<int>(buttons.size()))
-	{
-		selectedIndex = 0;
-	}
-
-	UpdateSelection();
-}
-
-void PauseState::UpdateSelection()
-{
-	for (std::size_t i = 0; i < buttons.size(); i++)
-	{
-		buttons[i].button->SetSelected(i == static_cast<std::size_t>(selectedIndex));
-	}
-}
-
-void PauseState::ActivateSelectedButton()
-{
-	switch (buttons[selectedIndex].action)
+	switch (action)
 	{
 	case MenuAction::ResumeGame:
-		context.stateMachine.PopState();
+		RequestPop();
 		break;
 
 	case MenuAction::RestartGame:
-		context.stateMachine.ClearStates();
-		context.stateMachine.PushState(std::make_unique<GameState>(context));
+		RequestClear();
+		RequestPush(std::make_unique<GameState>(context));
 		break;
 
 	case MenuAction::MainMenu:
-		context.stateMachine.ClearStates();
-		context.stateMachine.PushState(std::make_unique<MainMenuState>(context));
+		RequestClear();
+		RequestPush(std::make_unique<MainMenuState>(context));
 		break;
 	}
 }

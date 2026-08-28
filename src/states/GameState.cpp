@@ -19,7 +19,8 @@
 #include "GameOverState.h"
 
 GameState::GameState(Context& context)
-	: context(context)
+	: State(context.stateMachine)
+	, context(context)
 	, currentTetromino(tetrominoBag.Next(), { Board::WIDTH / 2 - 2, 0 })
 	, nextTetromino(tetrominoBag.Next(), { 0, 0 })
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
@@ -159,44 +160,51 @@ GameState::GameState(Context& context)
 	}
 }
 
-void GameState::ProcessEvents(sf::RenderWindow& window)
+void GameState::HandleEvent(const sf::Event& event)
 {
-	while (const std::optional event = window.pollEvent())
+	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+	if (keyPressed == nullptr)
 	{
-		if (event->is<sf::Event::Closed>())
-		{
-			window.close();
-		}
+		return;
+	}
 
-		if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-		{
-			switch (keyPressed->scancode)
-			{
-			case sf::Keyboard::Scancode::Left:
-				TryMoveTetromino(-1, 0);
-				break;
+	if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
+	{
+		RequestPush(std::make_unique<PauseState>(context));
+		return;
+	}
 
-			case sf::Keyboard::Scancode::Right:
-				TryMoveTetromino(1, 0);
-				break;
+	// Gameplay keys are ignored while rows are clearing -- the piece they would
+	// act on is already locked and about to be replaced.
+	if (phase != Phase::Falling)
+	{
+		return;
+	}
 
-			case sf::Keyboard::Scancode::Down:
-				TryMoveTetromino(0, 1);
-				break;
+	switch (keyPressed->scancode)
+	{
+	case sf::Keyboard::Scancode::Left:
+		TryMoveTetromino(-1, 0);
+		break;
 
-			case sf::Keyboard::Scancode::Up:
-				TryRotateTetromino();
-				break;
+	case sf::Keyboard::Scancode::Right:
+		TryMoveTetromino(1, 0);
+		break;
 
-			case sf::Keyboard::Scancode::Space:
-				TryDropTetromino();
-				break;
+	case sf::Keyboard::Scancode::Down:
+		TryMoveTetromino(0, 1);
+		break;
 
-			case sf::Keyboard::Scancode::Escape:
-				context.stateMachine.PushState(std::make_unique<PauseState>(context));
-				break;
-			}
-		}
+	case sf::Keyboard::Scancode::Up:
+		TryRotateTetromino();
+		break;
+
+	case sf::Keyboard::Scancode::Space:
+		TryDropTetromino();
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -262,7 +270,7 @@ void GameState::Update(float deltaTime)
 
 			if (!SpawnTetromino())
 			{
-				context.stateMachine.ChangeState(std::make_unique<GameOverState>(context, score));
+				RequestChange(std::make_unique<GameOverState>(context, score));
 			}
 		}
 
@@ -828,7 +836,7 @@ void GameState::HandleTetrominoLanding()
 
 	if (!SpawnTetromino())
 	{
-		context.stateMachine.ChangeState(std::make_unique<GameOverState>(context, score));
+		RequestChange(std::make_unique<GameOverState>(context, score));
 	}
 }
 

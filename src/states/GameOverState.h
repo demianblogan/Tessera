@@ -1,12 +1,16 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
+
+#include <SFML/System/String.hpp>
 
 #include "../core/Context.h"
 #include "../core/State.h"
 #include "../ui/Button.h"
-#include "../ui/Layout.h"
 #include "../ui/Label.h"
+#include "../ui/Layout.h"
+#include "../ui/MenuList.h"
 #include "../ui/Spacer.h"
 
 class GameOverState final : public State
@@ -19,41 +23,27 @@ private:
 		MainMenu
 	};
 
-	struct MenuButton
-	{
-		UI::Button* button = nullptr;
-		MenuAction action;
-	};
-
-	static constexpr std::size_t MAX_NAME_LENGTH = 20;
+	static constexpr std::size_t MaxNameLength = 20;
 
 	Context& context;
 
 	UI::Layout rootLayout;
 	UI::Layout* menuLayout = nullptr;
+	UI::MenuList menuList;
+	std::vector<MenuAction> actions;
+
 	UI::Button* saveButton = nullptr;
-
-	std::vector<MenuButton> buttons;
-
-	UI::Label* scoreLabel = nullptr;
-	UI::Label* highScoreLabel = nullptr;
 	UI::Label* playerNameLabel = nullptr;
 
-	int selectedIndex = 0;
 	int finalScore = 0;
 	bool isHighScore = false;
 	sf::String playerName;
 
 	void CreateMenuButton(const sf::String& text, MenuAction action);
-
-	void SelectPreviousMenuItem();
-	void SelectNextMenuItem();
-
-	void UpdateSelection();
+	void PerformAction(MenuAction action);
+	void HandleTextInput(char32_t character);
+	void RefreshSaveButton();
 	void UpdateLayout();
-	void ActivateSelectedButton();
-
-	void UpdateSaveButtonState();
 
 	[[nodiscard]] sf::String TrimPlayerName(const sf::String& string) const;
 	[[nodiscard]] bool IsPlayerNameValid() const;
@@ -63,7 +53,7 @@ public:
 
 	[[nodiscard]] StateId GetId() const override { return StateId::GameOver; }
 
-	void ProcessEvents(sf::RenderWindow& window) override;
+	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 };
