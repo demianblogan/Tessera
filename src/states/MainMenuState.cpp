@@ -50,7 +50,7 @@ MainMenuState::MainMenuState(Context& context)
 	{
 		auto title = std::make_unique<UI::Label>(
 			context.fonts.Get(Assets::FontID::Main),
-			"Tetris",
+			"Tessera",
 			TitleSize
 		);
 

@@ -55,6 +55,7 @@ private:
 	float shakeTimer = 0.f;
 	float shakeDuration = 0.f;
 	float shakeIntensity = 0.f;
+	sf::Vector2f shakeOffset{ 0.f, 0.f };
 
 	std::array<sf::Vector2i, 4> landingEffectBlocks;
 	float landingEffectTimer = 0.f;
@@ -75,6 +76,8 @@ private:
 
 public:
 	explicit GameState(Context& context);
+
+	[[nodiscard]] StateId GetId() const override { return StateId::Game; }
 
 	void ProcessEvents(sf::RenderWindow& window) override;
 	void Update(float deltaTime) override;

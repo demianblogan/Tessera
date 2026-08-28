@@ -1,5 +1,7 @@
 ﻿#include "GameState.h"
 
+#include <algorithm>
+
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Graphics/Sprite.hpp>
@@ -259,11 +261,30 @@ void GameState::Update(float deltaTime)
 
 	// =====================================================
 	// Screen shake
+	//
+	// The random shake offset is computed here, in Update, and only *applied*
+	// in Render. Rendering must stay a pure function of state: pulling random
+	// numbers from the shared engine inside Render made frame output depend on
+	// how many times Render happened to run and perturbed every other consumer
+	// of Random.
 	// =====================================================
 
 	if (shakeTimer > 0.f)
 	{
 		shakeTimer -= deltaTime;
+
+		const float progress = shakeDuration > 0.f ? std::max(0.f, shakeTimer / shakeDuration) : 0.f;
+		const float currentIntensity = shakeIntensity * progress;
+
+		shakeOffset =
+		{
+			Random::Float(-currentIntensity, currentIntensity),
+			Random::Float(-currentIntensity, currentIntensity)
+		};
+	}
+	else
+	{
+		shakeOffset = { 0.f, 0.f };
 	}
 
 	// =====================================================
@@ -294,17 +315,7 @@ void GameState::Update(float deltaTime)
 void GameState::Render(sf::RenderTarget& target)
 {
 	sf::View shakenView = target.getView();
-
-	if (shakeTimer > 0.f)
-	{
-		const float currentIntensity = shakeIntensity * (shakeTimer / shakeDuration);
-
-		const float offsetX = Random::Float(-currentIntensity, currentIntensity);
-		const float offsetY = Random::Float(-currentIntensity, currentIntensity);
-
-		shakenView.move({ offsetX, offsetY });
-	}
-
+	shakenView.move(shakeOffset);
 	target.setView(shakenView);
 
 	// =====================================================
@@ -747,7 +758,8 @@ void GameState::TryDropTetromino()
 	context.audioPlayer.Play(Assets::SoundID::DropPiece);
 	StartScreenShake(0.12f, 12.f);
 
-	board.LockTetromino(currentTetromino);
+	// HandleTetrominoLanding() locks the piece into the board itself; locking
+	// here as well double-wrote the same cells.
 	HandleTetrominoLanding();
 
 	fallTimer = 0.f;

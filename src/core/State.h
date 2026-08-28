@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StateId.h"
+
 namespace sf
 {
     class RenderTarget;
@@ -10,6 +12,8 @@ class State
 {
 public:
     virtual ~State() = default;
+
+    [[nodiscard]] virtual StateId GetId() const = 0;
 
     virtual void ProcessEvents(sf::RenderWindow& window) = 0;
     virtual void Update(float deltaTime) = 0;

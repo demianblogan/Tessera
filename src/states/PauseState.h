@@ -44,6 +44,8 @@ private:
 public:
 	explicit PauseState(Context& context);
 
+	[[nodiscard]] StateId GetId() const override { return StateId::Pause; }
+
 	void ProcessEvents(sf::RenderWindow& window) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;

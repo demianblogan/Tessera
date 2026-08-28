@@ -197,8 +197,8 @@ void PauseState::ActivateSelectedButton()
 		break;
 
 	case MenuAction::MainMenu:
-		context.stateMachine.PopState();
-		context.stateMachine.ChangeState(std::make_unique<MainMenuState>(context));
+		context.stateMachine.ClearStates();
+		context.stateMachine.PushState(std::make_unique<MainMenuState>(context));
 		break;
 	}
 }

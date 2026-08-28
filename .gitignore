@@ -365,3 +365,7 @@ FodyWeavers.xsd
 # SFML library
 libs/SFML/*
 !libs/SFML/README.md
+
+# Local player data (generated at runtime, must not be committed)
+data/*
+!data/.gitkeep

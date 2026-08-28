@@ -1,7 +1,9 @@
 #include "Game.h"
 
+#include <algorithm>
+#include <stdexcept>
+
 #include <states/MainMenuState.h>
-#include <states/PauseState.h>
 
 bool Game::IsWindowOpen() const
 {
@@ -33,7 +35,7 @@ void Game::Render()
 
 	State* currentState = stateMachine.GetCurrentState();
 
-	const bool isPause = dynamic_cast<PauseState*>(currentState) != nullptr;
+	const bool isPause = currentState != nullptr && currentState->GetId() == StateId::Pause;
 
 	// =====================================================
 	// Normal Render
@@ -88,7 +90,7 @@ void Game::Render()
 }
 
 Game::Game()
-	: window(sf::VideoMode::getDesktopMode(), "Tetris", sf::Style::None, sf::State::Windowed)
+	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, audioPlayer(soundBuffers)
 	, settings(Data::Paths::Settings)
@@ -108,26 +110,18 @@ Game::Game()
 	window.setMouseCursorVisible(false);
 	window.setView(gameView);
 
-	renderTexture.resize(
-		{
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.x),
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.y)
-		}
-	);
+	const sf::Vector2u renderTextureSize
+	{
+		static_cast<unsigned int>(VIRTUAL_RESOLUTION.x),
+		static_cast<unsigned int>(VIRTUAL_RESOLUTION.y)
+	};
 
-	gameplayTexture.resize(
-		{
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.x),
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.y)
-		}
-	);
-
-	finalTexture.resize(
-		{
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.x),
-			static_cast<unsigned int>(VIRTUAL_RESOLUTION.y)
-		}
-	);
+	if (!renderTexture.resize(renderTextureSize) ||
+		!gameplayTexture.resize(renderTextureSize) ||
+		!finalTexture.resize(renderTextureSize))
+	{
+		throw std::runtime_error("Failed to allocate render textures.");
+	}
 
 	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
@@ -163,6 +157,7 @@ Game::Game()
 	highScores.Load();
 
 	stateMachine.PushState(std::make_unique<MainMenuState>(context));
+	stateMachine.ApplyPendingChanges();
 }
 
 void Game::Run()
@@ -171,7 +166,7 @@ void Game::Run()
 
 	while (IsWindowOpen())
 	{
-		float deltaTime = deltaTimeClock.restart().asSeconds();
+		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MaxFrameTime);
 
 		ProcessEvents();
 		stateMachine.ApplyPendingChanges();

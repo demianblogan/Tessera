@@ -1,6 +1,6 @@
-# 🧩 Tetris (C++ / SFML)
+# 🧩 Tessera (C++ / SFML)
 
-A styled Tetris clone built with **C++23** and **SFML 3.1.0**.
+A styled falling-block puzzle game built with **C++23** and **SFML 3.1.0**.
 
 Featuring a custom UI system, leaderboard support, configurable settings, shader-based post-processing effects, and polished gameplay feedback with progressive difficulty.
 
@@ -23,7 +23,7 @@ Quick start:
 
 1. Download `.zip` from Releases
 2. Extract it
-3. Run `Tetris.exe`
+3. Run `Tessera.exe`
 
 ---
 
@@ -42,7 +42,7 @@ Quick start:
 
 ## ✨ Features
 
-- Classic Tetris gameplay
+- Classic falling-block gameplay
 - Progressive difficulty system
 - Score and level system
 - Next tetromino preview
@@ -119,7 +119,7 @@ Includes:
 
 ## ▶️ Run
 
-1. Open `Tetris.sln`
+1. Open `Tessera.slnx`
 2. Build the project (Debug or Release)
 3. Make sure SFML DLLs are available next to the executable
    > DLLs can be found in the SFML `bin` folder
