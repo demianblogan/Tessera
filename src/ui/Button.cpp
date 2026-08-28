@@ -61,6 +61,11 @@ namespace UI
 
 	void Button::SetSelected(bool selected)
 	{
+		if (!enabled)
+		{
+			return;
+		}
+
 		this->selected = selected;
 		UpdateVisualState();
 	}
@@ -70,16 +75,38 @@ namespace UI
 		return selected;
 	}
 
+	void Button::SetEnabled(bool enabled)
+	{
+		this->enabled = enabled;
+
+		if (!enabled)
+		{
+			selected = false;
+		}
+
+		UpdateVisualState();
+	}
+
+	bool Button::IsEnabled() const
+	{
+		return enabled;
+	}
+
 	void Button::SetNormalStyle(Style style)
 	{
 		normalStyle = std::move(style);
 		UpdateVisualState();
 	}
 
-
 	void Button::SetSelectedStyle(Style style)
 	{
 		selectedStyle = std::move(style);
+		UpdateVisualState();
+	}
+
+	void Button::SetDisabledStyle(Style style)
+	{
+		disabledStyle = std::move(style);
 		UpdateVisualState();
 	}
 
@@ -256,6 +283,12 @@ namespace UI
 	void Button::UpdateVisualState()
 	{
 		ApplyStyle(normalStyle);
+
+		if (!enabled)
+		{
+			ApplyStyle(disabledStyle);
+			return;
+		}
 
 		if (selected)
 		{

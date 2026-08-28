@@ -43,9 +43,11 @@ namespace UI
 		Padding padding;
 		TextAlignment textAlignment = TextAlignment::Center;
 		bool selected = false;
+		bool enabled = true;
 
 		Style normalStyle;
 		Style selectedStyle;
+		Style disabledStyle;
 
 		sf::Color backgroundColor = sf::Color::White;
 		sf::Color outlineColor = sf::Color::Transparent;
@@ -71,11 +73,17 @@ namespace UI
 
 		void SetTextAlignment(TextAlignment alignment);
 		void SetPadding(Padding padding);
+
 		void SetSelected(bool selected);
 		[[nodiscard]] bool IsSelected() const;
 
+		// A disabled button can't be selected and draws with disabledStyle.
+		void SetEnabled(bool enabled);
+		[[nodiscard]] bool IsEnabled() const;
+
 		void SetNormalStyle(Style style);
 		void SetSelectedStyle(Style style);
+		void SetDisabledStyle(Style style);
 
 		void SetPreferredSize(sf::Vector2f size);
 
