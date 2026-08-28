@@ -90,7 +90,7 @@ void Game::Render()
 }
 
 Game::Game()
-	: window(sf::VideoMode::getDesktopMode(), "Tetris", sf::Style::None, sf::State::Windowed)
+	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, audioPlayer(soundBuffers)
 	, settings(Data::Paths::Settings)

@@ -9,7 +9,7 @@ static_assert(
 	SFML_VERSION_MAJOR == 3 &&
 	SFML_VERSION_MINOR == 1 &&
 	SFML_VERSION_PATCH == 0,
-	"Tetris requires SFML 3.1.0.");
+	"Tessera requires SFML 3.1.0.");
 
 int main()
 {

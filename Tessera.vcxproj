@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{bcb0a07d-cb07-43d0-a284-9176cd7e348c}</ProjectGuid>
+    <RootNamespace>Tessera</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)bin\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)bin\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)libs\SFML\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(ProjectDir)libs\SFML\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-system.lib;sfml-window.lib;sfml-graphics.lib;sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\game\TetrominoBag.cpp" />
+    <ClCompile Include="src\resources\ShaderManager.cpp" />
+    <ClCompile Include="src\states\GameOverState.cpp" />
+    <ClCompile Include="src\states\PauseState.cpp" />
+    <ClCompile Include="src\ui\Panel.cpp" />
+    <ClCompile Include="src\utils\Random.cpp" />
+    <ClCompile Include="src\audio\AudioPlayer.cpp" />
+    <ClCompile Include="src\game\Board.cpp" />
+    <ClCompile Include="src\game\Tetromino.cpp" />
+    <ClCompile Include="src\states\GameState.cpp" />
+    <ClCompile Include="src\states\SettingsState.cpp" />
+    <ClCompile Include="src\core\Context.cpp" />
+    <ClCompile Include="src\core\Game.cpp" />
+    <ClCompile Include="src\statistics\HighScoreManager.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\states\MainMenuState.cpp" />
+    <ClCompile Include="src\settings\SettingsManager.cpp" />
+    <ClCompile Include="src\core\StateMachine.cpp" />
+    <ClCompile Include="src\states\StatisticsState.cpp" />
+    <ClCompile Include="src\ui\Button.cpp" />
+    <ClCompile Include="src\ui\Element.cpp" />
+    <ClCompile Include="src\ui\Label.cpp" />
+    <ClCompile Include="src\ui\Layout.cpp" />
+    <ClCompile Include="src\ui\Slider.cpp" />
+    <ClCompile Include="src\ui\Spacer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\game\TetrominoBag.h" />
+    <ClInclude Include="src\resources\ShaderManager.h" />
+    <ClInclude Include="src\states\GameOverState.h" />
+    <ClInclude Include="src\states\PauseState.h" />
+    <ClInclude Include="src\ui\Panel.h" />
+    <ClInclude Include="src\utils\Random.h" />
+    <ClInclude Include="src\game\Cell.h" />
+    <ClInclude Include="src\game\Board.h" />
+    <ClInclude Include="src\game\Tetromino.h" />
+    <ClInclude Include="src\game\TetrominoShapes.h" />
+    <ClInclude Include="src\resources\Assets.h" />
+    <ClInclude Include="src\audio\AudioPlayer.h" />
+    <ClInclude Include="src\states\GameState.h" />
+    <ClInclude Include="src\states\SettingsState.h" />
+    <ClInclude Include="src\core\Context.h" />
+    <ClInclude Include="src\core\Game.h" />
+    <ClInclude Include="src\core\StateId.h" />
+    <ClInclude Include="src\settings\GameSettings.h" />
+    <ClInclude Include="src\statistics\HighScoreEntry.h" />
+    <ClInclude Include="src\statistics\HighScoreManager.h" />
+    <ClInclude Include="src\ui\Button.h" />
+    <ClInclude Include="src\ui\Element.h" />
+    <ClInclude Include="src\states\MainMenuState.h" />
+    <ClInclude Include="src\resources\ResourceManager.h" />
+    <ClInclude Include="src\settings\SettingsManager.h" />
+    <ClInclude Include="src\core\State.h" />
+    <ClInclude Include="src\core\StateMachine.h" />
+    <ClInclude Include="src\states\StatisticsState.h" />
+    <ClInclude Include="src\ui\Label.h" />
+    <ClInclude Include="src\ui\Layout.h" />
+    <ClInclude Include="src\ui\Slider.h" />
+    <ClInclude Include="src\ui\Spacer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\blur.frag" />
+    <None Include="assets\shaders\crt.frag" />
+    <None Include="assets\shaders\ghost_tetromino.frag" />
+    <None Include="assets\shaders\glow.frag" />
+    <None Include="libs\SFML\README.md" />
+    <None Include="README.md" />
+    <None Include="BACKLOG.md" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
