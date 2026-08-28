@@ -45,44 +45,54 @@ Cross-cutting decisions:
 
 ## In progress
 
+### v1.0.2 — Board scan, row-clear phase & settings fixes
+
+- Bounds-safety pass across `Board`; guard `LockTetromino` before indexing.
+- Split the one `ClearFullRows` (found *and* removed) into `FindFullRows()` +
+  `ClearRows(rows)` so the caller finds the rows once and removes exactly those
+  when the clear animation ends -- no second scan that could disagree.
+- Make the row-clear an **explicit phase** (`Phase::Falling` /
+  `Phase::ClearingRows`). During the clear animation the just-locked piece and
+  its ghost are no longer drawn on top of the board; the landing flash keeps
+  fading regardless of phase.
+- Centre the next-piece preview on the piece's own bounding box.
+- Cap `AudioPlayer` concurrent voices (drop the oldest when full).
+- Validate `settings.txt` on load: parse into a scratch copy, keep the defaults
+  and rewrite a clean file if any field is missing or out of range.
+- FPS-limit slider reaches **"Unlimited"** at 0 and steps by 10; the manual
+  frame-rate limit is no longer applied on top of vsync.
+
+---
+
+## Released
+
 ### v1.0.1 — Rename to Tessera, build hygiene & pause-menu crash fix
 
-- Attach the local snapshot to the GitHub repo and adopt the branch / PR / tag /
-  release workflow; add `BACKLOG.md`, `.editorconfig`, `docs/`.
-- **Rename `Tetris` → `Tessera`**: GitHub repo, `.slnx` / `.vcxproj`, window
-  title, main-menu title, README, `RootNamespace`.
-- Drop the broken Win32/x86 configurations; single x64 target on C++23.
-- Raise the warning level to `/W4`; fix the discarded `[[nodiscard]]`
-  render-texture results in `Game`. (~40 pre-existing `/W4` warnings remain,
-  cleared in v1.0.6.)
+- Adopted the branch / PR / tag / release workflow; added `BACKLOG.md`,
+  `.editorconfig`, `docs/`.
+- Renamed `Tetris` → `Tessera` (GitHub repo, `.slnx` / `.vcxproj`, window title,
+  main-menu title, README, `RootNamespace`).
+- Dropped the broken Win32/x86 configurations; single x64 target on C++23.
+- Warning level raised to `/W4`; fixed the discarded `[[nodiscard]]`
+  render-texture results. (~40 pre-existing `/W4` warnings remain, cleared in
+  v1.0.6.)
 - `static_assert` the vendored SFML is exactly 3.1.0.
-- Stop tracking runtime player data; keep the directory via `data/.gitkeep`.
+- Stopped tracking runtime player data; `data/.gitkeep` keeps the directory.
 - Clamp the per-frame delta time (`Game::MaxFrameTime`).
-- Replace the `dynamic_cast<PauseState*>` render check with a `StateId` enum and
-  `State::GetId()`.
+- Replaced the `dynamic_cast<PauseState*>` render check with a `StateId` enum.
 - Stop locking the tetromino twice on a hard drop.
-- Compute the screen-shake offset in `Update` and only apply it in `Render`;
-  guard against a zero-length shake dividing by zero.
-- Bounds-check `Board::IntersectsLockedCells`.
+- Screen-shake offset computed in `Update`, applied in `Render`; no
+  divide-by-zero.
+- Bounds-checked `Board::IntersectsLockedCells`.
 - `StatisticsState` shares the context `HighScoreManager`.
-- **Fix the pause-menu crash (present since v1.0):** Pause > "Restart" /
-  "Main Menu" threw an access violation because the transition destroyed the
-  `PauseState` mid-method. `StateMachine` now queues every push / pop / clear /
-  change and applies them only in `ApplyPendingChanges()`. Also fixes the
-  "Main Menu" transition leaving two menu states on the stack.
+- **Fixed the pause-menu crash (present since v1.0):** Pause > "Restart" /
+  "Main Menu" destroyed the `PauseState` mid-method. `StateMachine` now queues
+  every push / pop / clear / change and applies them only in
+  `ApplyPendingChanges()`.
 
 ---
 
 ## Planned
-
-### Phase 1a — bugs (no architecture rewrite)
-
-- **v1.0.2 — Board & piece model.** Bounds-safety pass across `Board`;
-  de-duplicate `GetFullRows` / `ClearFullRows`; make the row-clear an explicit
-  phase so the locked piece and its ghost stop drawing over the board during the
-  clear animation; buffer rows above the field + guideline top-out; FPS slider
-  "Unlimited"; settings validation + safe defaults; centre the next-piece
-  preview; cap concurrent sound voices.
 
 ### Phase 1b — port systems from ULA
 
@@ -117,7 +127,8 @@ Cross-cutting decisions:
 
 ### Phase 2 — features
 
-- **v1.1.0 — Modern rules.** SRS rotation + wall kicks + T-spin detection; lock
+- **v1.1.0 — Modern rules.** Buffer rows above the visible field + guideline
+  block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
   delay + move reset; hold piece; 5-deep next queue; guideline scoring
   (back-to-back, combo, soft/hard-drop points, perfect clear); on-board
   callouts.
