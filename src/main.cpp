@@ -1,6 +1,6 @@
 #include <SFML/Config.hpp>
 
-#include "core/Game.h"
+#include "app/Application.h"
 
 // The project vendors a specific SFML build (libs/SFML) compiled with the same
 // toolset as the game. Guarding the version here turns "linked against the
@@ -13,8 +13,8 @@ static_assert(
 
 int main()
 {
-	Game game;
-	game.Run();
+	Application application;
+	application.Run();
 
 	return 0;
 }

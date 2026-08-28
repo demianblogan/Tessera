@@ -6,14 +6,19 @@
 #include <SFML/Graphics/Sprite.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../core/Context.h"
+#include "../core/StateMachine.h"
 #include "../resources/ResourceManager.h"
+#include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
 #include "../statistics/HighScoreManager.h"
-#include "../resources/ShaderManager.h"
-#include "Context.h"
-#include "StateMachine.h"
 
-class Game
+namespace sf
+{
+	class Event;
+}
+
+class Application
 {
 private:
 	static constexpr sf::Vector2f VIRTUAL_RESOLUTION{ 1920.f, 1080.f };
@@ -46,12 +51,19 @@ private:
 
 	Context context;
 
-	bool IsWindowOpen() const;
-	void ProcessEvents();
+	[[nodiscard]] bool IsWindowOpen() const;
+
+	// The two event kinds that act on the window itself rather than on any
+	// particular state: a close request, and a resize (the borderless
+	// full-screen window can't actually be resized today, but a windowed mode
+	// is planned). Every other event is forwarded to the active state.
+	void ApplyWindowLifecycleEvent(const sf::Event& event);
+
+	void HandleInput();
 	void Update(float deltaTime);
 	void Render();
 
 public:
-	Game();
+	Application();
 	void Run();
 };

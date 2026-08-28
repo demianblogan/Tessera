@@ -1,24 +1,63 @@
-#include "Game.h"
+#include "Application.h"
 
 #include <algorithm>
+#include <optional>
 #include <stdexcept>
+
+#include <SFML/Window/Event.hpp>
 
 #include <states/MainMenuState.h>
 
-bool Game::IsWindowOpen() const
+bool Application::IsWindowOpen() const
 {
 	return window.isOpen();
 }
 
-void Game::ProcessEvents()
+void Application::ApplyWindowLifecycleEvent(const sf::Event& event)
 {
-	if (State* currentState = stateMachine.GetCurrentState())
+	if (event.is<sf::Event::Closed>())
 	{
-		currentState->ProcessEvents(window);
+		window.close();
+	}
+	else if (event.is<sf::Event::Resized>())
+	{
+		// Keep rendering in the fixed 1920x1080 virtual space; SFML stretches
+		// it to whatever size the window now is. Proper letterboxing arrives
+		// with the DisplayManager port.
+		window.setView(gameView);
 	}
 }
 
-void Game::Update(float deltaTime)
+void Application::HandleInput()
+{
+	while (const std::optional<sf::Event> event = window.pollEvent())
+	{
+		ApplyWindowLifecycleEvent(*event);
+		if (!window.isOpen())
+		{
+			return;
+		}
+
+		if (State* currentState = stateMachine.GetCurrentState())
+		{
+			currentState->HandleEvent(*event);
+		}
+
+		if (!window.isOpen())
+		{
+			return;
+		}
+
+		// A state just asked for a transition -- stop feeding this frame's
+		// remaining events to a state that is about to be replaced.
+		if (stateMachine.HasPendingChanges())
+		{
+			return;
+		}
+	}
+}
+
+void Application::Update(float deltaTime)
 {
 	context.totalTime += deltaTime;
 
@@ -28,7 +67,7 @@ void Game::Update(float deltaTime)
 	}
 }
 
-void Game::Render()
+void Application::Render()
 {
 	sf::Shader& crtShader = context.shaders.Get(Assets::ShaderID::CRT);
 	sf::Shader& blurShader = context.shaders.Get(Assets::ShaderID::Blur);
@@ -89,7 +128,7 @@ void Game::Render()
 	window.display();
 }
 
-Game::Game()
+Application::Application()
 	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, audioPlayer(soundBuffers)
@@ -160,7 +199,7 @@ Game::Game()
 	stateMachine.ApplyPendingChanges();
 }
 
-void Game::Run()
+void Application::Run()
 {
 	sf::Clock deltaTimeClock;
 
@@ -168,7 +207,7 @@ void Game::Run()
 	{
 		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MaxFrameTime);
 
-		ProcessEvents();
+		HandleInput();
 		stateMachine.ApplyPendingChanges();
 
 		Update(deltaTime);
