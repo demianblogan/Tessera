@@ -44,7 +44,7 @@ summary, a git tag, and a GitHub Release build.
 - Add a compile-time `static_assert` that the vendored SFML is exactly 3.1.0.
 - Stop committing runtime player data (`data/scores.txt`, `data/settings.txt`);
   keep the directory with a `.gitkeep`.
-- Clamp the per-frame delta time (`Game::MAX_FRAME_TIME`) so a stall can no
+- Clamp the per-frame delta time (`Game::MaxFrameTime`) so a stall can no
   longer teleport the falling piece or expire a timer instantly.
 - Replace the `dynamic_cast<PauseState*>` render-pipeline check with an explicit
   `StateId` enum and `State::GetId()`.

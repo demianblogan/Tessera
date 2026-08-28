@@ -22,7 +22,7 @@ private:
 	// (window drag, minimize, debugger breakpoint, OS hiccup) would otherwise
 	// deliver one huge delta and make the piece "teleport" several rows or a
 	// timer expire instantly. Capping turns that frame into a brief hitch.
-	static constexpr float MAX_FRAME_TIME = 0.1f;
+	static constexpr float MaxFrameTime = 0.1f;
 
 	sf::RenderWindow window;
 

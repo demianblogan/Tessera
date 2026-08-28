@@ -165,7 +165,7 @@ void Game::Run()
 
 	while (IsWindowOpen())
 	{
-		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MAX_FRAME_TIME);
+		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MaxFrameTime);
 
 		ProcessEvents();
 		stateMachine.ApplyPendingChanges();
