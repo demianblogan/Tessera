@@ -45,28 +45,23 @@ Cross-cutting decisions:
 
 ## In progress
 
-### v1.0.3 — Application rename, centralised events & MenuList
+### v1.0.4 — SFML DLL post-build copy & persistence
 
-- **Renamed `Game` → `Application`** and moved it to `src/app/`, matching the
-  Until Last Asteroid layout.
-- **Centralised window events.** `Application::HandleInput()` polls once, routes
-  `Closed` / `Resized` through `ApplyWindowLifecycleEvent()` and everything else
-  to the active state. `State::ProcessEvents(sf::RenderWindow&)` becomes
-  `State::HandleEvent(const sf::Event&)`; states no longer poll or each handle
-  the close request.
-- **`State` gained `RequestPush/Pop/Clear/Change`** (protected) so a state asks
-  for a transition without reaching through `Context`.
-- **`UI::Button::SetEnabled(bool)`** with a `disabledStyle`; a disabled button
-  can't be selected. Removes GameOverState's hack of driving the Save button
-  through `SetSelected(IsPlayerNameValid())`.
-- **`UI::MenuList`** — a keyboard selection controller (wrap-around, skips
-  disabled, "moved" / "activate" callbacks). MainMenu / Pause / GameOver drop
-  their copy-pasted `selectedIndex` / `SelectPrevious` / `SelectNext` /
-  `UpdateSelection` / `ActivateSelectedButton`. The move sound now plays only on
-  an actual selection change. `SelectAt()` is stubbed for future mouse support.
-
-Mouse support was cut from this version (it is a new feature; nothing before
-v1.1.0) and will land with the gamepad work.
+- **Post-build step** copies the configuration's four `sfml-*-3.dll` from
+  `libs/SFML/bin/` next to the exe, so `bin/Release/Tessera.exe` runs straight
+  from the build output. `libs/SFML/` stays git-ignored; the SFML README lists
+  the eight DLLs to drop into `libs/SFML/bin/` once per clone.
+- **`utils/AppDataPath`** (ported from ULA): saves go to
+  `%LOCALAPPDATA%\Alone Bull Company\Tessera\`, not a `data/` folder in the repo.
+- **`utils/SafeFileWrite`** (ported): write to `.tmp`, swap into place via a
+  `.bak`, so a crash mid-write can't destroy the previous save;
+  `PreserveCorruptFile` keeps an unreadable file as `.corrupt`.
+- `SettingsManager` / `HighScoreManager` write through `SafeFileWrite`, create
+  the directory first, and start each file with a **format-version** line. A
+  wrong-version or unparseable file is preserved as `.corrupt` and replaced with
+  defaults.
+- The top-level `data/` folder is gone; `Assets.h`'s `Data::Paths` becomes
+  `SaveFile::` (bare file names).
 
 ---
 
@@ -96,6 +91,21 @@ v1.1.0) and will land with the gamepad work.
   every push / pop / clear / change and applies them only in
   `ApplyPendingChanges()`.
 
+### v1.0.3 — Application rename, centralised events & MenuList
+
+- `Game` → `Application`, moved to `src/app/`.
+- Centralised window events: `Application::HandleInput()` /
+  `ApplyWindowLifecycleEvent()`; `State::ProcessEvents(window)` →
+  `State::HandleEvent(const sf::Event&)`.
+- `State` base holds a `StateMachine&` + protected `RequestPush/Pop/Clear/
+  Change`; copy/move deleted.
+- `UI::Button::SetEnabled(bool)` + `disabledStyle` — removes GameOverState's
+  Save-button hack.
+- `UI::MenuList` — keyboard selection controller (wrap, skip disabled,
+  `onSelectionChanged` / `onActivate`, `SelectAt()` stubbed). MainMenu / Pause /
+  GameOver de-duplicated; move sound only fires on a real selection change.
+- Mouse support cut (new feature) → v1.0.5 with the gamepad work.
+
 ### v1.0.2 — Board scan, row-clear phase & settings fixes
 
 - Bounds-safety pass across `Board`; guard `LockTetromino` before indexing.
@@ -115,9 +125,6 @@ v1.1.0) and will land with the gamepad work.
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.4 — Persistence.** `AppDataPath`; `SafeFileWrite` atomic writes;
-  settings format version + validation; move authored data to `assets/data/`;
-  delete the top-level `data/`.
 - **v1.0.5 — Input & GameState split.** `InputBinding` / `ActionMap` /
   `InputHandler` (Scancode + a gamepad-button variant); `DirectionalRepeater`
   for DAS/ARR; `GamepadManager` (ported whole, extended with discrete
