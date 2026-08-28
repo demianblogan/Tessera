@@ -1,27 +1,19 @@
 #include "Board.h"
 
+namespace
+{
+	bool IsInsideGrid(const sf::Vector2i& cell)
+	{
+		return cell.x >= 0 && cell.x < Board::WIDTH &&
+			cell.y >= 0 && cell.y < Board::HEIGHT;
+	}
+}
+
 bool Board::Contains(const Tetromino& tetromino) const
 {
-	const auto blockPositions = tetromino.GetBlockPositions();
-
-	for (const sf::Vector2i& blockPosition : blockPositions)
+	for (const sf::Vector2i& blockPosition : tetromino.GetBlockPositions())
 	{
-		if (blockPosition.x < 0)
-		{
-			return false;
-		}
-
-		if (blockPosition.x >= WIDTH)
-		{
-			return false;
-		}
-
-		if (blockPosition.y < 0)
-		{
-			return false;
-		}
-
-		if (blockPosition.y >= HEIGHT)
+		if (!IsInsideGrid(blockPosition))
 		{
 			return false;
 		}
@@ -32,15 +24,12 @@ bool Board::Contains(const Tetromino& tetromino) const
 
 bool Board::IntersectsLockedCells(const Tetromino& tetromino) const
 {
-	const auto blockPositions = tetromino.GetBlockPositions();
-
-	for (const sf::Vector2i& blockPosition : blockPositions)
+	for (const sf::Vector2i& blockPosition : tetromino.GetBlockPositions())
 	{
 		// Out-of-bounds blocks are a wall/floor collision, which is Contains()'s
 		// responsibility -- not a locked-cell overlap. Indexing grid[][] with
 		// them here would read past the fixed-size arrays.
-		if (blockPosition.x < 0 || blockPosition.x >= WIDTH ||
-			blockPosition.y < 0 || blockPosition.y >= HEIGHT)
+		if (!IsInsideGrid(blockPosition))
 		{
 			continue;
 		}
@@ -61,22 +50,24 @@ bool Board::CanPlace(const Tetromino& tetromino) const
 
 void Board::LockTetromino(const Tetromino& tetromino)
 {
-	const auto blockPositions =	tetromino.GetBlockPositions();
-
-	for (const sf::Vector2i& blockPosition : blockPositions)
+	for (const sf::Vector2i& blockPosition : tetromino.GetBlockPositions())
 	{
-		Cell& cell = grid[blockPosition.y][blockPosition.x];
+		if (!IsInsideGrid(blockPosition))
+		{
+			continue;
+		}
 
+		Cell& cell = grid[blockPosition.y][blockPosition.x];
 		cell.occupied = true;
 		cell.tetrominoType = tetromino.GetType();
 	}
 }
 
-int Board::ClearFullRows()
+std::vector<int> Board::FindFullRows() const
 {
-	int clearedRowsCount = 0;
+	std::vector<int> fullRows;
 
-	for (int y = HEIGHT - 1; y >= 0; y--)
+	for (int y = 0; y < HEIGHT; y++)
 	{
 		bool rowIsFull = true;
 
@@ -89,54 +80,52 @@ int Board::ClearFullRows()
 			}
 		}
 
-		if (!rowIsFull)
+		if (rowIsFull)
+		{
+			fullRows.push_back(y);
+		}
+	}
+
+	return fullRows;
+}
+
+void Board::ClearRows(const std::vector<int>& rows)
+{
+	if (rows.empty())
+	{
+		return;
+	}
+
+	std::array<bool, HEIGHT> isCleared = {};
+
+	for (int row : rows)
+	{
+		if (row >= 0 && row < HEIGHT)
+		{
+			isCleared[row] = true;
+		}
+	}
+
+	// Compact the surviving rows toward the bottom, then blank the rows left
+	// over at the top.
+	int writeRow = HEIGHT - 1;
+
+	for (int readRow = HEIGHT - 1; readRow >= 0; readRow--)
+	{
+		if (isCleared[readRow])
 		{
 			continue;
 		}
 
-		clearedRowsCount++;
-
-		// Move all rows above downward.
-		for (int row = y; row > 0; row--)
-		{
-			grid[row] = grid[row - 1];
-		}
-
-		// Clear top row.
-		grid[0] = {};
-
-		// Recheck same row after shifting.
-		++y;
+		grid[writeRow] = grid[readRow];
+		writeRow--;
 	}
 
-	
-	return clearedRowsCount;
-}
-
-std::vector<int> Board::GetFullRows() const
-{
-	std::vector<int> rows;
-
-	for (int y = 0; y < HEIGHT; y++)
+	while (writeRow >= 0)
 	{
-		bool full = true;
-
-		for (int x = 0; x < WIDTH; x++)
-		{
-			if (!grid[y][x].occupied)
-			{
-				full = false;
-				break;
-			}
-		}
-
-		if (full)
-		{
-			rows.push_back(y);
-		}
+		grid[writeRow] = {};
+		writeRow--;
 	}
-
-	return rows;
 }
 
 const Board::Grid& Board::GetGrid() const
