@@ -23,13 +23,10 @@ namespace
 
 StatisticsState::StatisticsState(Context& context)
 	: context(context)
-	, highScoreManager(Data::Paths::Scores)
 	, rootLayout(UI::Layout::Orientation::Vertical)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 {
 	backgroundSprite.setColor(sf::Color(255, 255, 255, 180));
-
-	highScoreManager.Load();
 
 	rootLayout.SetHorizontalAlignment(UI::Layout::Alignment::Center);
 	rootLayout.SetVerticalAlignment(UI::Layout::Alignment::Start);
@@ -137,7 +134,7 @@ StatisticsState::StatisticsState(Context& context)
 
 void StatisticsState::UpdateScoreLabels()
 {
-	const std::vector<HighScoreEntry>& records = highScoreManager.GetRecords();
+	const std::vector<HighScoreEntry>& records = context.highScores.GetRecords();
 
 	for (std::size_t i = 0; i < HighScoreManager::MAX_RECORDS; i++)
 	{
@@ -199,8 +196,8 @@ void StatisticsState::ProcessEvents(sf::RenderWindow& window)
 				return;
 
 			case sf::Keyboard::Scancode::Delete:
-				highScoreManager.Clear();
-				highScoreManager.Save();
+				context.highScores.Clear();
+				context.highScores.Save();
 				UpdateScoreLabels();
 				break;
 			}

@@ -48,6 +48,8 @@ private:
 public:
 	explicit MainMenuState(Context& context);
 
+	[[nodiscard]] StateId GetId() const override { return StateId::MainMenu; }
+
 	void ProcessEvents(sf::RenderWindow& window) override;
 	void Update(float deltaTime) override;
 

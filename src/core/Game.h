@@ -18,6 +18,12 @@ class Game
 private:
 	static constexpr sf::Vector2f VIRTUAL_RESOLUTION{ 1920.f, 1080.f };
 
+	// Upper bound on the delta time handed to a single Update(). A stall
+	// (window drag, minimize, debugger breakpoint, OS hiccup) would otherwise
+	// deliver one huge delta and make the piece "teleport" several rows or a
+	// timer expire instantly. Capping turns that frame into a brief hitch.
+	static constexpr float MAX_FRAME_TIME = 0.1f;
+
 	sf::RenderWindow window;
 
 	sf::RenderTexture renderTexture;

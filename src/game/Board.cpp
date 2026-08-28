@@ -36,8 +36,16 @@ bool Board::IntersectsLockedCells(const Tetromino& tetromino) const
 
 	for (const sf::Vector2i& blockPosition : blockPositions)
 	{
-		const Cell& cell = grid[blockPosition.y][blockPosition.x];
-		if (cell.occupied)
+		// Out-of-bounds blocks are a wall/floor collision, which is Contains()'s
+		// responsibility -- not a locked-cell overlap. Indexing grid[][] with
+		// them here would read past the fixed-size arrays.
+		if (blockPosition.x < 0 || blockPosition.x >= WIDTH ||
+			blockPosition.y < 0 || blockPosition.y >= HEIGHT)
+		{
+			continue;
+		}
+
+		if (grid[blockPosition.y][blockPosition.x].occupied)
 		{
 			return true;
 		}

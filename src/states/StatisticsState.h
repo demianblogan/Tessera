@@ -16,7 +16,6 @@ class StatisticsState final : public State
 private:
 	Context& context;
 
-	HighScoreManager highScoreManager;
 	UI::Layout rootLayout;
 	std::array<UI::Label*, HighScoreManager::MAX_RECORDS> scoreLabels{};
 
@@ -27,6 +26,8 @@ private:
 
 public:
 	explicit StatisticsState(Context& context);
+
+	[[nodiscard]] StateId GetId() const override { return StateId::Statistics; }
 
 	void ProcessEvents(sf::RenderWindow& window) override;
 	void Update(float deltaTime) override;
