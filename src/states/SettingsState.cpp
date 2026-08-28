@@ -1,6 +1,7 @@
 #include "SettingsState.h"
 
 #include <optional>
+#include <string>
 
 #include <SFML/Graphics/RenderWindow.hpp>
 
@@ -31,6 +32,14 @@ namespace
 	constexpr unsigned int RowTextSize = 40;
 	constexpr unsigned int FooterTextSize = 50;
 	constexpr float SectionWidth = 900.f;
+
+	constexpr float FrameRateSliderStep = 10.f;
+	constexpr float VolumeSliderStep = 1.f;
+
+	std::string FormatFrameRate(int value)
+	{
+		return value <= 0 ? std::string("Unlimited") : std::to_string(value);
+	}
 }
 
 SettingsState::SettingsState(Context& context)
@@ -166,9 +175,10 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 	CreateSliderRow(
 		*section,
 		"FPS limit:",
-		1.f,
+		0.f,
 		240.f,
-		static_cast<float>(context.settings.GetSettings().frameRateLimit == 0 ? 240 : context.settings.GetSettings().frameRateLimit),
+		static_cast<float>(context.settings.GetSettings().frameRateLimit),
+		FrameRateSliderStep,
 		frameRateSetting
 	);
 
@@ -241,8 +251,9 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 		*section,
 		"Sounds:",
 		0.f,
-		10.f,
+		static_cast<float>(MaxVolumeStep),
 		static_cast<float>(context.settings.GetSettings().soundVolume),
+		VolumeSliderStep,
 		soundSetting
 	);
 
@@ -250,8 +261,9 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 		*section,
 		"Music:",
 		0.f,
-		10.f,
+		static_cast<float>(MaxVolumeStep),
 		static_cast<float>(context.settings.GetSettings().musicVolume),
+		VolumeSliderStep,
 		musicSetting
 	);
 
@@ -268,6 +280,7 @@ void SettingsState::CreateSliderRow(
 	float minimum,
 	float maximum,
 	float value,
+	float step,
 	SliderSetting& setting)
 {
 	const auto& font = context.fonts.Get(Assets::FontID::Main);
@@ -314,7 +327,7 @@ void SettingsState::CreateSliderRow(
 			minimum,
 			maximum,
 			value,
-			1.f,
+			step,
 			UI::Slider::RectangleVisual
 			{
 				.fillColor = sf::Color(50, 50, 50)
@@ -398,7 +411,7 @@ void SettingsState::UpdateSelection()
 void SettingsState::UpdateSliderLabels()
 {
 	frameRateSetting.valueLabel->SetString(
-		std::to_string(static_cast<int>(frameRateSetting.slider->GetValue()))
+		FormatFrameRate(static_cast<int>(frameRateSetting.slider->GetValue()))
 	);
 
 	soundSetting.valueLabel->SetString(

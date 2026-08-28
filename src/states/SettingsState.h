@@ -52,7 +52,7 @@ private:
 
 	void CreateGraphicsSection(UI::Layout& parent);
 	void CreateAudioSection(UI::Layout& parent);
-	void CreateSliderRow(UI::Layout& parent, const sf::String& text, float minimum, float maximum, float value, SliderSetting& setting);
+	void CreateSliderRow(UI::Layout& parent, const sf::String& text, float minimum, float maximum, float value, float step, SliderSetting& setting);
 
 	void UpdateSelection();
 	void UpdateSliderLabels();
