@@ -138,6 +138,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\localization\LocalizationManager.cpp" />
     <ClCompile Include="src\states\GameplayState.cpp" />
     <ClCompile Include="src\states\SettingsState.cpp" />
+    <ClCompile Include="src\states\SettingsRowList.cpp" />
     <ClCompile Include="src\app\Application.cpp" />
     <ClCompile Include="src\core\Context.cpp" />
     <ClCompile Include="src\core\State.cpp" />
@@ -186,6 +187,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\audio\AudioPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
     <ClInclude Include="src\states\SettingsState.h" />
+    <ClInclude Include="src\states\SettingsRowList.h" />
     <ClInclude Include="src\app\Application.h" />
     <ClInclude Include="src\core\Context.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
