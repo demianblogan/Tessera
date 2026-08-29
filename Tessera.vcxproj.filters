@@ -81,6 +81,9 @@
     <ClCompile Include="src\rendering\EffectsController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\NeonGlow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -206,6 +209,9 @@
     <ClInclude Include="src\rendering\EffectsController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\NeonGlow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\input\InputBinding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -263,6 +269,7 @@
     <None Include="assets\shaders\crt.frag" />
     <None Include="assets\shaders\blur.frag" />
     <None Include="assets\shaders\glow.frag" />
+    <None Include="assets\shaders\neon_blur.frag" />
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />
     <None Include="BACKLOG.md" />

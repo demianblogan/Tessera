@@ -43,7 +43,8 @@ namespace Assets
 		CRT,
 		Blur,
 		Glow,
-		GhostTetromino
+		GhostTetromino,
+		NeonBlur
 	};
 
 	namespace Paths
@@ -90,6 +91,7 @@ namespace Assets
 			inline constexpr const char* Blur = "assets/shaders/blur.frag";
 			inline constexpr const char* Glow = "assets/shaders/glow.frag";
 			inline constexpr const char* GhostTetromino = "assets/shaders/ghost_tetromino.frag";
+			inline constexpr const char* NeonBlur = "assets/shaders/neon_blur.frag";
 		}
 	}
 }

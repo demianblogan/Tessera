@@ -12,6 +12,7 @@
 #include "../input/InputHandler.h"
 #include "../rendering/BoardRenderer.h"
 #include "../rendering/EffectsController.h"
+#include "../rendering/NeonGlow.h"
 #include "../ui/Label.h"
 #include "../ui/Layout.h"
 #include "../ui/Panel.h"
@@ -37,6 +38,7 @@ private:
 
 	GameplaySession session;
 	BoardRenderer boardRenderer;
+	NeonGlow neonGlow;
 	EffectsController effects;
 
 	ActionMap<GameplayAction> gameplayActions;

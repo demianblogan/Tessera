@@ -12,6 +12,7 @@ namespace sf
 struct Context;
 class GameplaySession;
 class EffectsController;
+class NeonGlow;
 
 // Draws the play area for GameplayState: board gradient, walls, locked cells,
 // the ghost, the active piece (glow + normal passes), the next-piece preview,
@@ -25,13 +26,13 @@ public:
 
 	explicit BoardRenderer(Context& context);
 
-	void Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects) const;
+	void Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
+		NeonGlow& glow) const;
 	void RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::Vector2f centre) const;
 
 private:
 	static constexpr int SpriteSize = 16;
 	static constexpr int WallTextureIndex = 10;
-	static constexpr float GlowScale = 1.18f;
 	static constexpr float PreviewBlockSize = 36.f;
 
 	[[nodiscard]] Assets::TextureID ResolveBlockTexture() const;

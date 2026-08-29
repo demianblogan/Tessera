@@ -29,6 +29,7 @@ GameplayState::GameplayState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
 	, boardRenderer(context)
+	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, gameplayInput(gameplayActions)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
 {
@@ -217,6 +218,7 @@ void GameplayState::Update(float deltaTime)
 
 	session.Update(deltaTime);
 	effects.Update(deltaTime);
+	neonGlow.Update(deltaTime);
 
 	ReactToEvents(session.ConsumeEvents());
 }
@@ -403,7 +405,7 @@ void GameplayState::Render(sf::RenderTarget& target)
 
 	target.draw(backgroundSprite);
 
-	boardRenderer.Render(target, session, effects);
+	boardRenderer.Render(target, session, effects, neonGlow);
 
 	rightHudLayout->Render(target);
 	controlsPanel->Render(target);

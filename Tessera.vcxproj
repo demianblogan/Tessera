@@ -120,6 +120,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\gameplay\GameplaySession.cpp" />
     <ClCompile Include="src\rendering\BoardRenderer.cpp" />
     <ClCompile Include="src\rendering\EffectsController.cpp" />
+    <ClCompile Include="src\rendering\NeonGlow.cpp" />
     <ClCompile Include="src\resources\ShaderManager.cpp" />
     <ClCompile Include="src\states\GameOverState.cpp" />
     <ClCompile Include="src\states\PauseState.cpp" />
@@ -158,6 +159,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\gameplay\GameplaySession.h" />
     <ClInclude Include="src\rendering\BoardRenderer.h" />
     <ClInclude Include="src\rendering\EffectsController.h" />
+    <ClInclude Include="src\rendering\NeonGlow.h" />
     <ClInclude Include="src\resources\ShaderManager.h" />
     <ClInclude Include="src\states\GameOverState.h" />
     <ClInclude Include="src\states\PauseState.h" />
@@ -204,6 +206,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="assets\shaders\crt.frag" />
     <None Include="assets\shaders\ghost_tetromino.frag" />
     <None Include="assets\shaders\glow.frag" />
+    <None Include="assets\shaders\neon_blur.frag" />
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
