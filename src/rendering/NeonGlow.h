@@ -41,13 +41,13 @@ public:
 		sf::Color tint, bool pulsing = true);
 
 private:
-	static constexpr float Padding = 40.f;
+	static constexpr float Padding = 32.f;
 	static constexpr float BloomScale = 0.5f;
-	static constexpr float OutlineRadius = 16.f;   // full-resolution pixels the silhouette grows by
+	static constexpr float OutlineRadius = 8.f;   // full-resolution pixels the silhouette grows by
 	static constexpr float InnerBlurRadius = 1.0f;
-	static constexpr float OuterBlurRadius = 2.2f;
+	static constexpr float OuterBlurRadius = 1.7f;
 	static constexpr unsigned int InnerIterations = 2u;
-	static constexpr unsigned int OuterIterations = 4u;
+	static constexpr unsigned int OuterIterations = 3u;
 	static constexpr float PulseSpeed = 4.0f;
 
 	[[nodiscard]] bool Resize(sf::Vector2f contentSize);

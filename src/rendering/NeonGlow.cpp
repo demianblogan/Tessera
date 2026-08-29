@@ -161,13 +161,12 @@ void NeonGlow::Draw(sf::RenderTarget& target, sf::FloatRect area, const DrawSour
 	sf::Sprite outer(outerBlur.getTexture());
 	outer.setPosition(position);
 	outer.setScale({ 1.f / BloomScale, 1.f / BloomScale });
-	outer.setColor(Modulate(tint, 0.85f * pulse));
-	target.draw(outer, additive);
+	outer.setColor(Modulate(tint, 0.7f * pulse));
 	target.draw(outer, additive);
 
 	sf::Sprite inner(innerBlur.getTexture());
 	inner.setPosition(position);
 	inner.setScale({ 1.f / BloomScale, 1.f / BloomScale });
-	inner.setColor(Modulate(tint, 0.95f * (0.72f + pulse * 0.28f)));
+	inner.setColor(Modulate(tint, 0.9f * (0.72f + pulse * 0.28f)));
 	target.draw(inner, additive);
 }
