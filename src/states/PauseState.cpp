@@ -10,7 +10,7 @@
 #include "../input/MenuInput.h"
 #include "../resources/Assets.h"
 #include "MainMenuState.h"
-#include "GameState.h"
+#include "GameplayState.h"
 
 namespace
 {
@@ -139,7 +139,7 @@ void PauseState::PerformAction(MenuAction action)
 
 	case MenuAction::RestartGame:
 		RequestClear();
-		RequestPush(std::make_unique<GameState>(context));
+		RequestPush(std::make_unique<GameplayState>(context));
 		break;
 
 	case MenuAction::MainMenu:

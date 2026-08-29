@@ -69,7 +69,16 @@
     <ClCompile Include="src\ui\Spacer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\Tetromino.cpp">
+    <ClCompile Include="src\gameplay\Tetromino.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gameplay\GameplaySession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\BoardRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\EffectsController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp">
@@ -84,10 +93,10 @@
     <ClCompile Include="src\input\MenuInput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\Board.cpp">
+    <ClCompile Include="src\gameplay\Board.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\GameState.cpp">
+    <ClCompile Include="src\states\GameplayState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\Random.cpp">
@@ -99,7 +108,7 @@
     <ClCompile Include="src\utils\SafeFileWrite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\TetrominoBag.cpp">
+    <ClCompile Include="src\gameplay\TetrominoBag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\PauseState.cpp">
@@ -182,10 +191,19 @@
     <ClInclude Include="src\ui\Spacer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\Tetromino.h">
+    <ClInclude Include="src\gameplay\Tetromino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\TetrominoShapes.h">
+    <ClInclude Include="src\gameplay\TetrominoShapes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gameplay\GameplaySession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\BoardRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\EffectsController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\input\InputBinding.h">
@@ -206,13 +224,13 @@
     <ClInclude Include="src\input\MenuInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\Cell.h">
+    <ClInclude Include="src\gameplay\Cell.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\Board.h">
+    <ClInclude Include="src\gameplay\Board.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\GameState.h">
+    <ClInclude Include="src\states\GameplayState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\Random.h">
@@ -224,7 +242,7 @@
     <ClInclude Include="src\utils\SafeFileWrite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\TetrominoBag.h">
+    <ClInclude Include="src\gameplay\TetrominoBag.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\PauseState.h">
