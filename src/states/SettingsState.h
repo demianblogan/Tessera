@@ -75,8 +75,6 @@ private:
 public:
 	explicit SettingsState(Context& context);
 
-	[[nodiscard]] StateId GetId() const override { return StateId::Settings; }
-
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;

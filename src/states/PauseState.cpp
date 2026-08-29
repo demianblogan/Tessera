@@ -110,9 +110,9 @@ void PauseState::Render(sf::RenderTarget& target)
 	rootLayout.Render(target, &neonGlow);
 }
 
-bool PauseState::IsTransparent() const
+State::Backdrop PauseState::GetBackdrop() const
 {
-	return true;
+	return Backdrop::BlurredPrevious;
 }
 
 void PauseState::CreateMenuButton(const sf::String& text, MenuAction action)

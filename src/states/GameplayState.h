@@ -76,8 +76,6 @@ private:
 public:
 	explicit GameplayState(Context& context);
 
-	[[nodiscard]] StateId GetId() const override { return StateId::Game; }
-
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;

@@ -149,9 +149,6 @@
     <ClInclude Include="src\core\State.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\StateId.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\states\MainMenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>

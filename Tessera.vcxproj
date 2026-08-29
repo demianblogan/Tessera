@@ -187,7 +187,6 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\SettingsState.h" />
     <ClInclude Include="src\app\Application.h" />
     <ClInclude Include="src\core\Context.h" />
-    <ClInclude Include="src\core\StateId.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
     <ClInclude Include="src\statistics\HighScoreEntry.h" />
     <ClInclude Include="src\statistics\HighScoreManager.h" />

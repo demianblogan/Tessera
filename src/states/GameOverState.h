@@ -54,8 +54,6 @@ private:
 public:
 	GameOverState(Context& context, int finalScore);
 
-	[[nodiscard]] StateId GetId() const override { return StateId::GameOver; }
-
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;

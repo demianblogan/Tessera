@@ -78,13 +78,14 @@ void Application::Render()
 
 	State* currentState = stateMachine.GetCurrentState();
 
-	const bool isPause = currentState != nullptr && currentState->GetId() == StateId::Pause;
+	const bool blurBackdrop = currentState != nullptr
+		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
 
 	// =====================================================
-	// Normal Render
+	// Opaque state: render the stack straight to the screen
 	// =====================================================
 
-	if (!isPause)
+	if (!blurBackdrop)
 	{
 		renderTexture.clear();
 		renderTexture.setView(gameView);
@@ -102,7 +103,7 @@ void Application::Render()
 	}
 
 	// =====================================================
-	// Render gameplay only
+	// Blurred backdrop: the states below, blurred, then the top state on top
 	// =====================================================
 
 	gameplayTexture.clear();
