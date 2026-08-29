@@ -45,27 +45,47 @@ Cross-cutting decisions:
 
 ## In progress
 
-### v1.0.4 — SFML DLL post-build copy & persistence
+### v1.0.5 — Input abstraction, gamepad & DAS/ARR
 
-- **Post-build step** copies the configuration's four `sfml-*-3.dll` from
-  `libs/SFML/bin/` next to the exe, so `bin/Release/Tessera.exe` runs straight
-  from the build output. `libs/SFML/` stays git-ignored; the SFML README lists
-  the eight DLLs to drop into `libs/SFML/bin/` once per clone.
-- **`utils/AppDataPath`** (ported from ULA): saves go to
-  `%LOCALAPPDATA%\Alone Bull Company\Tessera\`, not a `data/` folder in the repo.
-- **`utils/SafeFileWrite`** (ported): write to `.tmp`, swap into place via a
-  `.bak`, so a crash mid-write can't destroy the previous save;
-  `PreserveCorruptFile` keeps an unreadable file as `.corrupt`.
-- `SettingsManager` / `HighScoreManager` write through `SafeFileWrite`, create
-  the directory first, and start each file with a **format-version** line. A
-  wrong-version or unparseable file is preserved as `.corrupt` and replaced with
-  defaults.
-- The top-level `data/` folder is gone; `Assets.h`'s `Data::Paths` becomes
-  `SaveFile::` (bare file names).
+- **`input/InputBinding` + `ActionMap<Action>` + `InputHandler<Action>`**
+  (ported from ULA): a physical input (`sf::Keyboard::Scancode` or mouse button)
+  + a trigger (`OnPress` / `OnRelease` / `WhileHeld`), a per-action bindings
+  table, and a callback dispatcher. Gamepad is **not** in the binding variant
+  (a d-pad is a POV axis, button indices are vendor-specific) — same reason ULA
+  keeps `GamepadManager` separate.
+- **`input/GamepadManager`** (ported, slimmed): Xbox / PlayStation by USB
+  vendor id, stick dead zones, menu `NavigationAction`, pause, and polled
+  gameplay queries. The twin-stick aim code is dropped.
+- **`input/DirectionalRepeater`** (new): DAS/ARR for left/right — one step on
+  press, a pause, then auto-repeat. The main "feel" fix; ULA has no equivalent.
+- **`input/MenuInput::Resolve`**: one keyboard-or-gamepad event → one
+  `MenuInput::Action`. MainMenu / Pause / GameOver / Settings / Statistics now
+  handle that enum instead of raw scancodes, so the gamepad drives every menu
+  for free.
+- **Mouse in menus**: `MenuList::PointerPressed`; the states translate the
+  cursor to view space and forward hover / left click. GameOver gains a Back to
+  leave without saving. Cursor visible again.
+- `GameState` drives all gameplay input through the abstraction; `GameSettings`
+  gets a `ControlSettings` (default keyboard bindings, not persisted — the
+  rebinding UI + save/load land with the Options screen in v1.4.0).
+
+Roadmap shifted one after splitting the old combined v1.0.5: GameState split →
+v1.0.6, visual pass → v1.0.7, rumble → v1.0.8, localization pipe → v1.0.9.
 
 ---
 
 ## Released
+
+### v1.0.4 — SFML DLL post-build copy & persistence
+
+- Post-build step copies the config's four `sfml-*-3.dll` from `libs/SFML/bin/`
+  next to the exe; `libs/SFML/` stays git-ignored.
+- `utils/AppDataPath` (ported): saves → `%LOCALAPPDATA%\Alone Bull Company\
+  Tessera\`. `utils/SafeFileWrite` (ported): atomic `.tmp` → `.bak` swap;
+  `PreserveCorruptFile` keeps an unreadable file as `.corrupt`.
+- `SettingsManager` / `HighScoreManager` write through `SafeFileWrite` and
+  version each file; a wrong-version or unparseable file → `.corrupt` + defaults.
+- Top-level `data/` gone; `Assets.h` `Data::Paths` → `SaveFile::`.
 
 ### v1.0.1 — Rename to Tessera, build hygiene & pause-menu crash fix
 
@@ -125,20 +145,17 @@ Cross-cutting decisions:
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.5 — Input & GameState split.** `InputBinding` / `ActionMap` /
-  `InputHandler` (Scancode + a gamepad-button variant); `DirectionalRepeater`
-  for DAS/ARR; `GamepadManager` (ported whole, extended with discrete
-  button→action mapping); mouse support wired into `MenuList::SelectAt`;
-  rebinding UI. Split `GameState` into `TesseraGame` (rules) + `GameplayState` +
-  `BoardRenderer` + `EffectsController`.
-- **v1.0.6 — Visual pass.** `NeonGlow` real bloom; `NineSliceFrame` in
+- **v1.0.6 — GameState split.** `TesseraGame` (board + pieces + rules +
+  scoring, no SFML) + `GameplayState` + `BoardRenderer` + `EffectsController`.
+  Prerequisite for the game modes in v1.2.0.
+- **v1.0.7 — Visual pass.** `NeonGlow` real bloom; `NineSliceFrame` in
   `Button` / `Panel`; `TextLayout`; `ScreenFade`; `GlowingCursor`; per-effect
   toggles + screen-shake / reduce-motion; `/W4` → 0 + warnings-as-errors; first
   unit tests (`Board`, `Tetromino`, `TetrominoBag`, scoring).
-- **v1.0.7 — Rumble & presentation.** `GamepadRumble` (XInput) + Vibration
+- **v1.0.8 — Rumble & presentation.** `GamepadRumble` (XInput) + Vibration
   settings; `MenuBackground` parallax + `MenuIntroAnimation`; company splash +
   `GameVersion.h`.
-- **v1.0.8 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
+- **v1.0.9 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
   (all strings extracted, English wired) + `LocalizationRevision` + font system;
   threaded loading screen; data-driven content skeleton (piece defs, scoring,
   gravity as JSON).
