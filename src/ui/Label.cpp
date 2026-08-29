@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
+#include "TextLayout.h"
+
 namespace UI
 {
 	Label::Label(const sf::Font& font, const sf::String& string, unsigned int characterSize)
@@ -10,14 +12,31 @@ namespace UI
 		// No code
 	}
 
+	void Label::ApplyFit()
+	{
+		text.setScale({ 1.f, 1.f });
+
+		if (maxWidth > 0.f)
+		{
+			TextLayout::FitWidth(text, maxWidth);
+		}
+	}
+
 	void Label::SetString(const sf::String& string)
 	{
 		text.setString(string);
+		ApplyFit();
 	}
 
 	void Label::SetFillColor(sf::Color color)
 	{
 		text.setFillColor(color);
+	}
+
+	void Label::SetMaxWidth(float maxWidth)
+	{
+		this->maxWidth = maxWidth;
+		ApplyFit();
 	}
 
 	sf::String Label::GetString() const
@@ -27,14 +46,15 @@ namespace UI
 
 	float Label::GetVisualHeight() const
 	{
-		return static_cast<float>(text.getCharacterSize());
+		return static_cast<float>(text.getCharacterSize()) * text.getScale().y;
 	}
 
 	sf::Vector2f Label::Measure() const
 	{
 		const sf::FloatRect bounds = text.getLocalBounds();
+		const sf::Vector2f scale = text.getScale();
 
-		return { bounds.size.x, bounds.size.y };
+		return { bounds.size.x * scale.x, bounds.size.y * scale.y };
 	}
 
 	void Label::Arrange(sf::Vector2f position, sf::Vector2f size)
@@ -42,7 +62,7 @@ namespace UI
 		Element::Arrange(position, size);
 
 		const sf::FloatRect bounds = text.getLocalBounds();
-		text.setPosition({ position.x, position.y - bounds.position.y });
+		text.setPosition({ position.x, position.y - bounds.position.y * text.getScale().y });
 	}
 
 	void Label::Render(sf::RenderTarget& target) const

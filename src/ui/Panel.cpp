@@ -1,6 +1,7 @@
 #include "Panel.h"
 
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 namespace UI
 {
@@ -29,6 +30,8 @@ namespace UI
 	{
 		Element::Arrange(position, size);
 
+		frame = NineSliceFrame::ForWidget(backgroundSprite.getTexture(), { position, size });
+
 		if (child == nullptr)
 		{
 			return;
@@ -48,18 +51,20 @@ namespace UI
 
 	void Panel::Render(sf::RenderTarget& target) const
 	{
-		sf::Sprite sprite = backgroundSprite;
-		const sf::FloatRect bounds = sprite.getLocalBounds();
+		if (frame)
+		{
+			frame->Draw(target);
+		}
+		else
+		{
+			sf::Sprite sprite = backgroundSprite;
+			const sf::FloatRect bounds = sprite.getLocalBounds();
 
-		sprite.setPosition(position);
-		sprite.setScale(
-			{
-				size.x / bounds.size.x,
-				size.y / bounds.size.y
-			}
-		);
+			sprite.setPosition(position);
+			sprite.setScale({ size.x / bounds.size.x, size.y / bounds.size.y });
 
-		target.draw(sprite);
+			target.draw(sprite);
+		}
 
 		if (child)
 		{

@@ -2,6 +2,9 @@
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Texture.hpp>
+
+#include "../rendering/NeonGlow.h"
 
 namespace UI
 {
@@ -140,6 +143,11 @@ namespace UI
 	{
 		Element::Arrange(position, size);
 
+		if (backgroundSprite)
+		{
+			frame = NineSliceFrame::ForWidget(backgroundSprite->getTexture(), { position, size });
+		}
+
 		if (label == nullptr)
 		{
 			return;
@@ -173,48 +181,42 @@ namespace UI
 		return sf::FloatRect(position, size).contains(point);
 	}
 
-	void Button::Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const
+	void Button::Render(sf::RenderTarget& target, NeonGlow* glow) const
 	{
 		// =====================================================
-		// Glow
+		// Neon edge-glow for the selected button
 		// =====================================================
 
-		if (selected && glowShader)
+		if (selected && glow)
 		{
-			const float glowPadding = 2.f;
+			const float slack = 6.f;
 
-			sf::RectangleShape glowRect;
+			const sf::FloatRect area{
+				{ position.x - slack, position.y - slack },
+				{ size.x + slack * 2.f, size.y + slack * 2.f }
+			};
 
-			glowRect.setPosition(
+			glow->Draw(target, area,
+				[this](sf::RenderTarget& buffer, const sf::RenderStates& states)
 				{
-					position.x - glowPadding,
-					position.y - glowPadding
-				}
-			);
-
-			glowRect.setSize(
-				{
-					size.x + glowPadding * 2.f,
-					size.y + glowPadding * 2.f
-				}
-			);
-
-			glowRect.setFillColor(sf::Color(120, 220, 255, 110));
-
-			glowShader->setUniform("time", time);
-
-			sf::RenderStates glowStates;
-			glowStates.shader = glowShader;
-			glowStates.blendMode = sf::BlendAdd;
-
-			target.draw(glowRect, glowStates);
+					sf::RectangleShape shape(size);
+					shape.setPosition(position);
+					shape.setFillColor(sf::Color::White);
+					buffer.draw(shape, states);
+				},
+				sf::Color(120, 210, 255));
 		}
 
 		// =====================================================
 		// Normal button
 		// =====================================================
 
-		if (backgroundSprite)
+		if (frame)
+		{
+			frame->SetColor(backgroundColor);
+			frame->Draw(target);
+		}
+		else if (backgroundSprite)
 		{
 			sf::Sprite sprite = *backgroundSprite;
 
@@ -254,7 +256,7 @@ namespace UI
 
 	void Button::Render(sf::RenderTarget& target) const
 	{
-		Render(target, nullptr, 0.f);
+		Render(target, nullptr);
 	}
 
 	void Button::ApplyStyle(const Style& style)

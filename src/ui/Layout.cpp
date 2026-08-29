@@ -269,7 +269,7 @@ namespace UI
 		}
 	}
 
-	void Layout::Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const
+	void Layout::Render(sf::RenderTarget& target, NeonGlow* glow) const
 	{
 		if (backgroundColor != sf::Color::Transparent)
 		{
@@ -283,12 +283,12 @@ namespace UI
 
 		for (const auto& child : children)
 		{
-			child->Render(target, glowShader, time);
+			child->Render(target, glow);
 		}
 	}
 
 	void Layout::Render(sf::RenderTarget& target) const
 	{
-		Render(target, nullptr, 0.f);
+		Render(target, nullptr);
 	}
 }

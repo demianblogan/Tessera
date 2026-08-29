@@ -16,6 +16,13 @@
 #include "../settings/GameSettings.h"
 #include "../settings/SettingsManager.h"
 #include "EffectsController.h"
+#include "NeonGlow.h"
+
+namespace
+{
+	// The neon halo colour for the active piece; matches the game's cyan accent.
+	const sf::Color NeonTint(120, 210, 255);
+}
 
 BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
@@ -37,7 +44,8 @@ Assets::TextureID BoardRenderer::ResolveBlockTexture() const
 	std::unreachable();
 }
 
-void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects) const
+void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
+	NeonGlow& glow) const
 {
 	sf::Sprite blockSprite(context.textures.Get(ResolveBlockTexture()));
 
@@ -57,9 +65,13 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	for (int y = 0; y < Board::HEIGHT; y++)
 	{
 		const float t = static_cast<float>(y) / (Board::HEIGHT - 1);
-		const int brightness = static_cast<int>(6 + t * 18);
+		const auto brightness = static_cast<std::uint8_t>(6 + t * 18);
 
-		blockSprite.setColor(sf::Color(brightness / 2, brightness, brightness + 20));
+		blockSprite.setColor(sf::Color(
+			static_cast<std::uint8_t>(brightness / 2),
+			brightness,
+			static_cast<std::uint8_t>(brightness + 20)
+		));
 
 		for (int x = 0; x < Board::WIDTH; x++)
 		{
@@ -159,7 +171,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	for (const EffectsController::RowClearEffect& effect : effects.GetRowClearEffects())
 	{
 		const float t = effect.timer / EffectsController::RowClearDuration;
-		const int alpha = static_cast<int>((1.f - t) * 255.f);
+		const auto alpha = static_cast<std::uint8_t>((1.f - t) * 255.f);
 
 		sf::RectangleShape flash;
 		flash.setPosition(
@@ -244,46 +256,56 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
-	// Active piece  (glow pass, then normal pass)
+	// Active piece  (neon bloom pass, then crisp normal pass)
 	// =====================================================
 
 	if (session.IsFalling())
 	{
-		const auto blockPositions = session.GetCurrentTetromino().GetBlockPositions();
+		const Tetromino& piece = session.GetCurrentTetromino();
+		const auto blockPositions = piece.GetBlockPositions();
+		const sf::IntRect pieceTextureRect{ { static_cast<int>(piece.GetType()) * SpriteSize, 0 }, { SpriteSize, SpriteSize } };
 
-		blockSprite.setTextureRect(
-			{
-				{ static_cast<int>(session.GetCurrentTetromino().GetType()) * SpriteSize, 0 },
-				{ SpriteSize, SpriteSize }
-			}
-		);
-
-		blockSprite.setScale(
-			{
-				(BlockSize / 16.f) * GlowScale,
-				(BlockSize / 16.f) * GlowScale
-			}
-		);
-		blockSprite.setColor(sf::Color(255, 255, 255, 50));
-
-		const float glowOffset = (BlockSize * GlowScale - BlockSize) / 2.f;
-
-		sf::RenderStates glowStates;
-		glowStates.blendMode = sf::BlendAdd;
-		glowStates.shader = &context.shaders.Get(Assets::ShaderID::Glow);
+		// Bounding box of the piece in board pixels, for the bloom buffer.
+		int minX = Board::WIDTH;
+		int minY = Board::HEIGHT;
+		int maxX = 0;
+		int maxY = 0;
 
 		for (const sf::Vector2i& blockPosition : blockPositions)
 		{
-			blockSprite.setPosition(
-				{
-					BoardPosition.x + blockPosition.x * BlockSize - glowOffset,
-					BoardPosition.y + blockPosition.y * BlockSize - glowOffset
-				}
-			);
-
-			target.draw(blockSprite, glowStates);
+			minX = std::min(minX, blockPosition.x);
+			minY = std::min(minY, blockPosition.y);
+			maxX = std::max(maxX, blockPosition.x);
+			maxY = std::max(maxY, blockPosition.y);
 		}
 
+		const sf::FloatRect pieceArea{
+			{ BoardPosition.x + minX * BlockSize, BoardPosition.y + minY * BlockSize },
+			{ (maxX - minX + 1) * BlockSize, (maxY - minY + 1) * BlockSize }
+		};
+
+		glow.Draw(target, pieceArea,
+			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			{
+				sf::Sprite pieceSprite(context.textures.Get(ResolveBlockTexture()));
+				pieceSprite.setTextureRect(pieceTextureRect);
+				pieceSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+
+				for (const sf::Vector2i& blockPosition : blockPositions)
+				{
+					pieceSprite.setPosition(
+						{
+							BoardPosition.x + blockPosition.x * BlockSize,
+							BoardPosition.y + blockPosition.y * BlockSize
+						}
+					);
+
+					buffer.draw(pieceSprite, states);
+				}
+			},
+			NeonTint);
+
+		blockSprite.setTextureRect(pieceTextureRect);
 		blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
 		blockSprite.setColor(sf::Color::White);
 

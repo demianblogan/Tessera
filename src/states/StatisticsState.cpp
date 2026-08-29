@@ -178,9 +178,9 @@ void StatisticsState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void StatisticsState::Update(float deltaTime)
+void StatisticsState::Update(float /* deltaTime */)
 {
-	// No code
+	// Static screen; nothing advances per frame.
 }
 
 void StatisticsState::Render(sf::RenderTarget& target)

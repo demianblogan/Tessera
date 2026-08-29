@@ -168,8 +168,9 @@ Application::Application()
 
 	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::Glow, Assets::Paths::Shaders::Glow, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::GhostTetromino, Assets::Paths::Shaders::GhostTetromino, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonDilate, Assets::Paths::Shaders::NeonDilate, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonBlur, Assets::Paths::Shaders::NeonBlur, sf::Shader::Type::Fragment);
 
 	fonts.Load(Assets::FontID::Main, Assets::Paths::Fonts::Main);
 

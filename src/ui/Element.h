@@ -5,8 +5,9 @@
 namespace sf
 {
 	class RenderTarget;
-	class Shader;
 }
+
+class NeonGlow;
 
 namespace UI
 {
@@ -41,7 +42,8 @@ namespace UI
 		[[nodiscard]] virtual sf::Vector2f Measure() const = 0;
 		virtual void Arrange(sf::Vector2f position, sf::Vector2f size);
 
-		virtual void Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const;
+		// Render with an optional neon edge-glow for the selected element.
+		virtual void Render(sf::RenderTarget& target, NeonGlow* glow) const;
 		virtual void Render(sf::RenderTarget& target) const = 0;
 
 		[[nodiscard]] sf::Vector2f GetPosition() const;

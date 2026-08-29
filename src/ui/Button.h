@@ -4,10 +4,10 @@
 #include <optional>
 
 #include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/Shader.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 
 #include "Label.h"
+#include "NineSliceFrame.h"
 
 namespace UI
 {
@@ -55,6 +55,9 @@ namespace UI
 
 		std::optional<sf::Sprite> backgroundSprite;
 
+		// Rebuilt in Arrange; SetColor is applied per-frame in the const Render.
+		mutable std::optional<NineSliceFrame> frame;
+
 		sf::Vector2f preferredSize = { 0.f, 0.f };
 
 		void ApplyStyle(const Style& style);
@@ -92,7 +95,7 @@ namespace UI
 
 		[[nodiscard]] bool Contains(sf::Vector2f point) const;
 
-		void Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const override;
+		void Render(sf::RenderTarget& target, NeonGlow* glow) const override;
 		void Render(sf::RenderTarget& target) const override;
 	};
 }

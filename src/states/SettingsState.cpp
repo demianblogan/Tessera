@@ -618,9 +618,9 @@ void SettingsState::HandlePointer(sf::Vector2f point, bool clicked)
 	}
 }
 
-void SettingsState::Update(float deltaTime)
+void SettingsState::Update(float /* deltaTime */)
 {
-	// No code
+	// Static screen; nothing advances per frame.
 }
 
 void SettingsState::Render(sf::RenderTarget& target)

@@ -41,12 +41,15 @@ void main()
     vec3 finalColor = vec3(redChannel, greenChannel, blueChannel);
 
     // =====================================================
-    // Scanlines
+    // Scanlines  (slowly drifting, like a real CRT's vertical hold)
     // =====================================================
 
-    float scanlineIntensity = sin(curvedTextureCoordinates.y * 1080.0 * 1.5) * 0.04;
+    float scanlineIntensity = sin((curvedTextureCoordinates.y * 1080.0 + time * 24.0) * 1.5) * 0.04;
 
     finalColor -= scanlineIntensity;
+
+    // A faint mains-hum brightness flicker.
+    finalColor *= 1.0 - 0.015 * sin(time * 8.0);
 
     // =====================================================
     // Vignette

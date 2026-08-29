@@ -27,6 +27,9 @@
     <ClCompile Include="src\ui\MenuList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\NineSliceFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\MainMenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -81,6 +84,9 @@
     <ClCompile Include="src\rendering\EffectsController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\NeonGlow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -129,6 +135,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\MenuList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\NineSliceFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\TextLayout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\State.h">
@@ -206,6 +218,9 @@
     <ClInclude Include="src\rendering\EffectsController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\NeonGlow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\input\InputBinding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -262,7 +277,8 @@
     <None Include="assets\shaders\ghost_tetromino.frag" />
     <None Include="assets\shaders\crt.frag" />
     <None Include="assets\shaders\blur.frag" />
-    <None Include="assets\shaders\glow.frag" />
+    <None Include="assets\shaders\neon_dilate.frag" />
+    <None Include="assets\shaders\neon_blur.frag" />
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />
     <None Include="BACKLOG.md" />

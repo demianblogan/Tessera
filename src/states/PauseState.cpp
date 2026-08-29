@@ -26,6 +26,7 @@ namespace
 PauseState::PauseState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
+	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, rootLayout(UI::Layout::Orientation::Vertical)
 {
 	rootLayout.SetHorizontalAlignment(UI::Layout::Alignment::Center);
@@ -92,7 +93,7 @@ void PauseState::HandleEvent(const sf::Event& event)
 
 void PauseState::Update(float deltaTime)
 {
-	// No code
+	neonGlow.Update(deltaTime);
 }
 
 void PauseState::Render(sf::RenderTarget& target)
@@ -104,8 +105,7 @@ void PauseState::Render(sf::RenderTarget& target)
 
 	target.draw(overlay);
 
-	sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
-	rootLayout.Render(target, &glowShader, context.totalTime);
+	rootLayout.Render(target, &neonGlow);
 }
 
 bool PauseState::IsTransparent() const
