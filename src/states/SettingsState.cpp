@@ -9,6 +9,8 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../ui/Slider.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
@@ -39,10 +41,6 @@ namespace
 	constexpr float FrameRateSliderStep = 10.f;
 	constexpr float VolumeSliderStep = 1.f;
 
-	std::string FormatFrameRate(int value)
-	{
-		return value <= 0 ? std::string("Unlimited") : std::to_string(value);
-	}
 }
 
 SettingsState::SettingsState(Context& context)
@@ -67,7 +65,7 @@ SettingsState::SettingsState(Context& context)
 	// Title
 	// =====================================================
 	{
-		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Settings", TitleSize);
+		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Settings::Title), TitleSize);
 		title->SetFillColor(sf::Color::White);
 		rootLayout.Add(std::move(title));
 	}
@@ -112,7 +110,7 @@ SettingsState::SettingsState(Context& context)
 
 		auto label = std::make_unique<UI::Label>(
 			context.fonts.Get(Assets::FontID::Main),
-			"ESC - RETURN TO MAIN MENU",
+			context.localization.GetText(TextKey::Settings::FooterReturn),
 			FooterTextSize
 		);
 
@@ -142,7 +140,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 	section->SetHorizontalAlignment(UI::Layout::Alignment::Start);
 
 	{
-		auto label = std::make_unique<UI::Label>(font, "--- Graphics", SectionTitleSize);
+		auto label = std::make_unique<UI::Label>(font, context.localization.GetText(TextKey::Settings::SectionGraphics), SectionTitleSize);
 		label->SetFillColor(sf::Color::White);
 		section->Add(std::move(label));
 	}
@@ -158,7 +156,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		button->SetTextAlignment(UI::Button::TextAlignment::Left);
 		button->SetLabel(std::make_unique<UI::Label>(
 			font,
-			enabled ? "Vertical synchronization: ON" : "Vertical synchronization: OFF",
+			context.localization.GetText(enabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff),
 			RowTextSize)
 		);
 
@@ -178,7 +176,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 
 	CreateSliderRow(
 		*section,
-		"FPS limit:",
+		context.localization.GetText(TextKey::Settings::FpsLimit),
 		0.f,
 		240.f,
 		static_cast<float>(context.settings.GetSettings().frameRateLimit),
@@ -197,7 +195,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		button->SetTextAlignment(UI::Button::TextAlignment::Left);
 		button->SetLabel(std::make_unique<UI::Label>(
 			font,
-			withOutline ? "Block style: With outline" : "Block style: Without outline",
+			context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline),
 			RowTextSize)
 		);
 
@@ -240,7 +238,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 	section->SetHorizontalAlignment(UI::Layout::Alignment::Center);
 
 	{
-		auto label = std::make_unique<UI::Label>(font, "--- Audio", SectionTitleSize);
+		auto label = std::make_unique<UI::Label>(font, context.localization.GetText(TextKey::Settings::SectionAudio), SectionTitleSize);
 		label->SetFillColor(sf::Color::White);
 		section->Add(std::move(label));
 	}
@@ -253,7 +251,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 
 	CreateSliderRow(
 		*section,
-		"Sounds:",
+		context.localization.GetText(TextKey::Settings::Sounds),
 		0.f,
 		static_cast<float>(MaxVolumeStep),
 		static_cast<float>(context.settings.GetSettings().soundVolume),
@@ -263,7 +261,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 
 	CreateSliderRow(
 		*section,
-		"Music:",
+		context.localization.GetText(TextKey::Settings::Music),
 		0.f,
 		static_cast<float>(MaxVolumeStep),
 		static_cast<float>(context.settings.GetSettings().musicVolume),
@@ -412,11 +410,16 @@ void SettingsState::UpdateSelection()
 	}
 }
 
+sf::String SettingsState::FormatFrameRate(int value) const
+{
+	return value <= 0
+		? context.localization.GetText(TextKey::Settings::FpsUnlimited)
+		: sf::String(std::to_string(value));
+}
+
 void SettingsState::UpdateSliderLabels()
 {
-	frameRateSetting.valueLabel->SetString(
-		FormatFrameRate(static_cast<int>(frameRateSetting.slider->GetValue()))
-	);
+	frameRateSetting.valueLabel->SetString(FormatFrameRate(static_cast<int>(frameRateSetting.slider->GetValue())));
 
 	soundSetting.valueLabel->SetString(
 		std::to_string(static_cast<int>(soundSetting.slider->GetValue()))
@@ -503,7 +506,7 @@ void SettingsState::ActivateCurrentElement()
 		settings.verticalSyncEnabled = !settings.verticalSyncEnabled;
 
 		verticalSyncButton->GetLabel()->SetString(
-			settings.verticalSyncEnabled ? "Vertical synchronization: ON" : "Vertical synchronization: OFF"
+			context.localization.GetText(settings.verticalSyncEnabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff)
 		);
 
 		ApplyAndSaveSettings();
@@ -518,7 +521,7 @@ void SettingsState::ActivateCurrentElement()
 		const bool withOutline = settings.blockRenderStyle == BlockRenderStyle::WithOutline;
 
 		blockStyleButton->GetLabel()->SetString(
-			withOutline ? "Block style: With outline" : "Block style: Without outline"
+			context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline)
 		);
 
 		ApplyAndSaveSettings();

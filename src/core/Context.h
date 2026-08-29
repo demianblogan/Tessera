@@ -10,6 +10,7 @@ class StateMachine;
 class SettingsManager;
 class HighScoreManager;
 class GamepadManager;
+class LocalizationManager;
 
 struct Context
 {
@@ -26,6 +27,7 @@ struct Context
     AudioPlayer& audioPlayer;
     ShaderManager& shaders;
     GamepadManager& gamepad;
+    LocalizationManager& localization;
     float totalTime = 0.f;
 
     Context(
@@ -39,6 +41,7 @@ struct Context
         AudioPlayer& audioPlayer,
         SettingsManager& settings,
         HighScoreManager& highScores,
-        GamepadManager& gamepad
+        GamepadManager& gamepad,
+        LocalizationManager& localization
     );
 };

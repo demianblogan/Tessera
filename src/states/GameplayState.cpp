@@ -15,6 +15,8 @@
 #include "../gameplay/Board.h"
 #include "../input/GamepadManager.h"
 #include "../input/InputBinding.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../settings/SettingsManager.h"
 #include "../settings/GameSettings.h"
 #include "PauseState.h"
@@ -65,7 +67,7 @@ void GameplayState::BuildHud()
 		auto layout = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
 		layout->SetGap(20.f);
 
-		auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Next Tetromino", 60);
+		auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::NextPiece), 60);
 		label->SetFillColor(sf::Color::White);
 		label->SetMaxWidth(330.f);
 		nextTetrominoLabel = label.get();
@@ -89,7 +91,8 @@ void GameplayState::BuildHud()
 		layout->SetGap(30.f);
 
 		{
-			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Score: 0", 60);
+			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main),
+				context.localization.FormatText(TextKey::Hud::Score, "{score}", "0"), 60);
 			label->SetFillColor(sf::Color::White);
 			label->SetMaxWidth(220.f);
 			scoreLabel = label.get();
@@ -97,7 +100,8 @@ void GameplayState::BuildHud()
 		}
 
 		{
-			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Level: 1", 60);
+			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main),
+				context.localization.FormatText(TextKey::Hud::Level, "{level}", "1"), 60);
 			label->SetFillColor(sf::Color::White);
 			label->SetMaxWidth(220.f);
 			levelLabel = label.get();
@@ -129,13 +133,8 @@ void GameplayState::BuildHud()
 		}
 	);
 
-	sf::String controlsText =
-		L"[←] [→] - Move    [↓] - Soft drop\n"
-		L"[↑] - Rotate CW    [Z] - Rotate CCW\n"
-		L"[Space] - Hard drop\n"
-		L"[ESC] - Pause";
-
-	auto controlsLabel = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), controlsText, 45);
+	auto controlsLabel = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main),
+		context.localization.GetText(TextKey::Hud::Controls), 45);
 	controlsLabel->SetFillColor(sf::Color::White);
 	controlsLabel->SetMaxWidth(520.f);
 	controlsLayout->Add(std::move(controlsLabel));
@@ -386,8 +385,8 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 
 	if (events.rowsCleared)
 	{
-		scoreLabel->SetString("Score: " + std::to_string(session.GetScore()));
-		levelLabel->SetString("Level: " + std::to_string(session.GetLevel()));
+		scoreLabel->SetString(context.localization.FormatText(TextKey::Hud::Score, "{score}", std::to_string(session.GetScore())));
+		levelLabel->SetString(context.localization.FormatText(TextKey::Hud::Level, "{level}", std::to_string(session.GetLevel())));
 	}
 
 	if (events.leveledUp)

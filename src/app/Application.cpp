@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <iostream>
 #include <stdexcept>
 
 #include <SFML/Window/Event.hpp>
@@ -147,7 +148,8 @@ Application::Application()
 		audioPlayer,
 		settings,
 		highScores,
-		gamepad)
+		gamepad,
+		localization)
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 {
 	window.setMouseCursorVisible(true);
@@ -194,6 +196,12 @@ Application::Application()
 	soundBuffers.Load(Assets::SoundID::PieceHitWall, Assets::Paths::Sounds::PieceHitWall);
 	soundBuffers.Load(Assets::SoundID::NextLevel, Assets::Paths::Sounds::NextLevel);
 	soundBuffers.Load(Assets::SoundID::RowCleared, Assets::Paths::Sounds::RowCleared);
+
+	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
+	{
+		std::cerr << "WARNING: localization catalog not found at \""
+			<< Assets::Paths::Data::LocalizationDir << "\" -- the UI will show raw text keys.\n";
+	}
 
 	settings.Load();
 	settings.Apply(context);
