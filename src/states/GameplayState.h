@@ -56,7 +56,6 @@ private:
 	std::unique_ptr<UI::Layout> rightHudLayout;
 	std::unique_ptr<UI::Panel> controlsPanel;
 
-	UI::Label* nextTetrominoLabel = nullptr;
 	UI::Label* scoreLabel = nullptr;
 	UI::Label* levelLabel = nullptr;
 

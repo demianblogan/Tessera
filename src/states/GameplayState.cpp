@@ -70,7 +70,6 @@ void GameplayState::BuildHud()
 		auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::NextPiece), 60);
 		label->SetFillColor(sf::Color::White);
 		label->SetMaxWidth(330.f);
-		nextTetrominoLabel = label.get();
 		layout->Add(std::move(label));
 
 		panel->SetChild(std::move(layout));

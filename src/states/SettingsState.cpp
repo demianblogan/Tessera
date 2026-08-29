@@ -31,13 +31,11 @@ namespace
 	constexpr float SliderHandleHeight = 40.f;
 	constexpr float ToggleButtonWidth = 700.f;
 	constexpr float ToggleButtonHeight = 60.f;
-	constexpr float BlockStyleButtonWidth = 260.f;
 	constexpr unsigned int TitleSize = 120;
 	constexpr unsigned int SectionTitleSize = 60;
 	constexpr unsigned int RowTextSize = 40;
 	constexpr unsigned int FooterTextSize = 50;
 	constexpr float SectionWidth = 900.f;
-
 	constexpr float FrameRateSliderStep = 10.f;
 	constexpr float VolumeSliderStep = 1.f;
 
@@ -130,7 +128,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 	const auto& font = context.fonts.Get(Assets::FontID::Main);
 
 	auto section = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-	section->SetWidthPixels(900.f);
+	section->SetWidthPixels(SectionWidth);
 	section->SetGap(RowGap);
 
 	// =====================================================
@@ -228,7 +226,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 	const auto& font = context.fonts.Get(Assets::FontID::Main);
 
 	auto section = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-	section->SetWidthPixels(900.f);
+	section->SetWidthPixels(SectionWidth);
 	section->SetGap(RowGap);
 
 	// =====================================================

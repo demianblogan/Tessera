@@ -23,11 +23,6 @@ public:
 		actions[action].push_back(std::move(binding));
 	}
 
-	void ClearBindings(Action action)
-	{
-		actions.erase(action);
-	}
-
 	[[nodiscard]] const std::unordered_map<Action, std::vector<InputBinding>>& GetBindingsMap() const noexcept
 	{
 		return actions;

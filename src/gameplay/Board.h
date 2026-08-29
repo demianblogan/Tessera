@@ -18,6 +18,11 @@ public:
 private:
 	Grid grid;
 
+	// CanPlace() is the whole test; these two are its halves, split only so the
+	// intent reads clearly (inside the field, and not overlapping a locked cell).
+	[[nodiscard]] bool Contains(const Tetromino& tetromino) const;
+	[[nodiscard]] bool IntersectsLockedCells(const Tetromino& tetromino) const;
+
 public:
 	void LockTetromino(const Tetromino& tetromino);
 
@@ -28,8 +33,6 @@ public:
 	[[nodiscard]] std::vector<int> FindFullRows() const;
 	void ClearRows(const std::vector<int>& rows);
 
-	[[nodiscard]] bool Contains(const Tetromino& tetromino) const;
-	[[nodiscard]] bool IntersectsLockedCells(const Tetromino& tetromino) const;
 	[[nodiscard]] bool CanPlace(const Tetromino& tetromino) const;
 	[[nodiscard]] const Grid& GetGrid() const;
 };

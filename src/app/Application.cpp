@@ -133,10 +133,13 @@ void Application::Render()
 }
 
 Application::Application()
+	// Members are listed in declaration order so the initialisation order is
+	// obvious; `context` is last because it binds references to the rest.
 	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
-	, audioPlayer(soundBuffers)
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
+	, highScores(AppDataPath::Resolve(SaveFile::Scores))
+	, audioPlayer(soundBuffers)
 	, context(
 		stateMachine,
 		window,
@@ -150,7 +153,6 @@ Application::Application()
 		highScores,
 		gamepad,
 		localization)
-	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 {
 	window.setMouseCursorVisible(true);
 	window.setView(gameView);

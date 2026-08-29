@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include <SFML/Graphics/Color.hpp>
-
 #include "Element.h"
 
 namespace sf
@@ -48,8 +46,6 @@ namespace UI
 		Padding padding;
 		float gap = 0.f;
 
-		sf::Color backgroundColor = sf::Color::Transparent;
-
 		[[nodiscard]] float ResolveChildWidth(const Element& child, float availableWidth, float fillWidth) const;
 		[[nodiscard]] float ResolveChildHeight(const Element& child, float availableHeight, float fillHeight) const;
 
@@ -57,13 +53,11 @@ namespace UI
 		explicit Layout(Orientation orientation);
 
 		void Add(std::unique_ptr<Element> child);
-		[[nodiscard]] const std::vector<std::unique_ptr<Element>>& GetChildren() const;
 
 		void SetGap(float gap);
 		void SetPadding(Padding padding);
 		void SetHorizontalAlignment(Alignment alignment);
 		void SetVerticalAlignment(Alignment alignment);
-		void SetBackgroundColor(sf::Color color);
 
 		[[nodiscard]] sf::Vector2f Measure() const override;
 		void Arrange(sf::Vector2f position, sf::Vector2f size) override;

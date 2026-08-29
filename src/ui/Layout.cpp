@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
 namespace UI
@@ -16,11 +15,6 @@ namespace UI
 	void Layout::Add(std::unique_ptr<Element> child)
 	{
 		children.push_back(std::move(child));
-	}
-
-	const std::vector<std::unique_ptr<Element>>& Layout::GetChildren() const
-	{
-		return children;
 	}
 
 	void Layout::SetGap(float gap)
@@ -41,11 +35,6 @@ namespace UI
 	void Layout::SetVerticalAlignment(Alignment alignment)
 	{
 		verticalAlignment = alignment;
-	}
-
-	void Layout::SetBackgroundColor(sf::Color color)
-	{
-		backgroundColor = color;
 	}
 
 	sf::Vector2f Layout::Measure() const
@@ -271,16 +260,6 @@ namespace UI
 
 	void Layout::Render(sf::RenderTarget& target, NeonGlow* glow) const
 	{
-		if (backgroundColor != sf::Color::Transparent)
-		{
-			sf::RectangleShape rect(size);
-
-			rect.setPosition(position);
-			rect.setFillColor(backgroundColor);
-
-			target.draw(rect);
-		}
-
 		for (const auto& child : children)
 		{
 			child->Render(target, glow);
