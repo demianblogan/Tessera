@@ -120,10 +120,29 @@ Includes:
 ## ▶️ Run
 
 1. Open `Tessera.slnx`
-2. Build the project (Debug or Release)
+2. Build the `Tessera` project (Debug or Release)
 3. Make sure SFML DLLs are available next to the executable
    > DLLs can be found in the SFML `bin` folder
 4. Run the game
+
+---
+
+## ✅ Tests
+
+Unit tests live in a separate project, `TesseraTests`, in the same solution.
+It builds a small console runner that links the game's pure-logic code
+(`Board`, `Tetromino`, `TetrominoBag`, `GameplaySession`) against
+[doctest](https://github.com/doctest/doctest) — no window, no SFML runtime.
+
+- In Visual Studio: set `TesseraTests` as the startup project and run it.
+- From the command line:
+
+  ```text
+  MSBuild TesseraTests.vcxproj -p:Configuration=Debug -p:Platform=x64
+  bin\Tests\Debug\TesseraTests.exe
+  ```
+
+  The runner exits non-zero if any test fails.
 
 ---
 
@@ -131,6 +150,7 @@ Includes:
 
 ```text
 src/        → game source code
+tests/      → unit tests (TesseraTests project)
 assets/     → textures, shaders, sounds, fonts
-data/       → settings and save data
 libs/       → external libraries (SFML)
+```

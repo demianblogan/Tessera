@@ -3,4 +3,5 @@
     <Platform Name="x64" />
   </Configurations>
   <Project Path="Tessera.vcxproj" Id="bcb0a07d-cb07-43d0-a284-9176cd7e348c" />
+  <Project Path="TesseraTests.vcxproj" Id="7b2f1c94-6d3a-4e58-9a10-2f7c5b4e9d61" />
 </Solution>
