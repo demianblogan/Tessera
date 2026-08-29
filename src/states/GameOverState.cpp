@@ -1,19 +1,20 @@
 #include "GameOverState.h"
 
+#include <memory>
 #include <string>
 
+#include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
-#include <SFML/Window/Mouse.hpp>
 
-#include "../audio/AudioPlayer.h"
-#include "../core/StateMachine.h"
-#include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../statistics/HighScoreManager.h"
+#include "../ui/Button.h"
+#include "../ui/Label.h"
+#include "../ui/Spacer.h"
 #include "GameplayState.h"
 #include "MainMenuState.h"
 
@@ -21,23 +22,15 @@ namespace
 {
 	constexpr float TopSpacing = 220.f;
 	constexpr float MenuGap = 30.f;
-	constexpr float ButtonWidth = 500.f;
-	constexpr float ButtonHeight = 120.f;
 	constexpr unsigned int TitleSize = 220;
 	constexpr unsigned int ScoreSize = 70;
-	constexpr unsigned int ButtonTextSize = 80;
 }
 
 GameOverState::GameOverState(Context& context, int finalScore)
-	: State(context.stateMachine)
-	, context(context)
-	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-	, rootLayout(UI::Layout::Orientation::Vertical)
+	: MenuScreenState(context)
 	, finalScore(finalScore)
 	, isHighScore(context.highScores.IsHighScore(finalScore))
 {
-	rootLayout.SetHorizontalAlignment(UI::Layout::Alignment::Center);
-	rootLayout.SetVerticalAlignment(UI::Layout::Alignment::Start);
 	rootLayout.SetGap(60.f);
 
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TopSpacing }));
@@ -62,17 +55,6 @@ GameOverState::GameOverState(Context& context, int finalScore)
 	menuLayoutElement->SetGap(MenuGap);
 	menuLayoutElement->SetHorizontalAlignment(UI::Layout::Alignment::Center);
 	menuLayout = menuLayoutElement.get();
-
-	menuList.onSelectionChanged = [this]
-		{
-			this->context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-		};
-
-	menuList.onActivate = [this](std::size_t index)
-		{
-			this->context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-			PerformAction(actions[index]);
-		};
 
 	if (isHighScore)
 	{
@@ -103,11 +85,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 			}
 
 			{
-				auto label = std::make_unique<UI::Label>(
-					context.fonts.Get(Assets::FontID::Main),
-					"_",
-					70
-				);
+				auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "_", 70);
 				label->SetFillColor(sf::Color::White);
 				playerNameLabel = label.get();
 				layout->Add(std::move(label));
@@ -116,18 +94,29 @@ GameOverState::GameOverState(Context& context, int finalScore)
 			rootLayout.Add(std::move(layout));
 		}
 
-		CreateMenuButton(context.localization.GetText(TextKey::GameOver::Save), MenuAction::SaveRecord);
+		UI::Button& save = AddMenuItem(context.localization.GetText(TextKey::GameOver::Save), [this] { SaveRecordAndLeave(); });
+		save.SetDisabledStyle({ .backgroundColor = sf::Color(80, 80, 80), .textColor = sf::Color(110, 110, 110) });
+		save.SetEnabled(false);
+		saveButton = &save;
 	}
 	else
 	{
-		CreateMenuButton(context.localization.GetText(TextKey::GameOver::Restart), MenuAction::RestartGame);
-		CreateMenuButton(context.localization.GetText(TextKey::GameOver::MainMenu), MenuAction::MainMenu);
+		AddMenuItem(context.localization.GetText(TextKey::GameOver::Restart), [this]
+			{
+				RequestClear();
+				RequestPush(std::make_unique<GameplayState>(this->context));
+			});
+		AddMenuItem(context.localization.GetText(TextKey::GameOver::MainMenu), [this]
+			{
+				RequestClear();
+				RequestPush(std::make_unique<MainMenuState>(this->context));
+			});
 	}
 
 	rootLayout.Add(std::move(menuLayoutElement));
 
 	RefreshSaveButton();
-	UpdateLayout();
+	RefreshLayout();
 
 	context.music.Get(Assets::MusicID::Gameplay).stop();
 
@@ -138,116 +127,41 @@ GameOverState::GameOverState(Context& context, int finalScore)
 	}
 }
 
-void GameOverState::HandleEvent(const sf::Event& event)
+void GameOverState::OnBack()
 {
-	switch (MenuInput::Resolve(event, context.gamepad))
-	{
-	case MenuInput::Action::Up:      menuList.SelectPrevious(); return;
-	case MenuInput::Action::Down:    menuList.SelectNext();     return;
-	case MenuInput::Action::Confirm: menuList.Activate();       return;
-	case MenuInput::Action::Back:
-		// Leave without saving.
-		RequestClear();
-		RequestPush(std::make_unique<MainMenuState>(context));
-		return;
-	default:
-		break;
-	}
+	// Leave without saving.
+	RequestClear();
+	RequestPush(std::make_unique<MainMenuState>(this->context));
+}
 
+bool GameOverState::HandleExtraEvent(const sf::Event& event)
+{
 	if (const auto* textEntered = event.getIf<sf::Event::TextEntered>())
 	{
 		if (isHighScore)
 		{
 			HandleTextInput(textEntered->unicode);
 		}
+		return true;
+	}
+
+	return false;
+}
+
+void GameOverState::SaveRecordAndLeave()
+{
+	// AddMenuItem's activation only runs for an enabled button, which tracks
+	// IsPlayerNameValid(); this is a belt-and-braces guard.
+	if (!IsPlayerNameValid())
+	{
 		return;
 	}
 
-	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
-	{
-		menuList.SelectAt(context.window.mapPixelToCoords(moved->position));
-	}
-	else if (const auto* clicked = event.getIf<sf::Event::MouseButtonPressed>())
-	{
-		if (clicked->button == sf::Mouse::Button::Left)
-		{
-			menuList.PointerPressed(context.window.mapPixelToCoords(clicked->position));
-		}
-	}
-}
+	context.highScores.AddRecord({ TrimPlayerName(playerName), finalScore });
+	context.highScores.Save();
 
-void GameOverState::Update(float deltaTime)
-{
-	neonGlow.Update(deltaTime);
-}
-
-void GameOverState::Render(sf::RenderTarget& target)
-{
-	sf::RectangleShape overlay;
-	overlay.setPosition({ 0.f, 0.f });
-	overlay.setSize(target.getView().getSize());
-	overlay.setFillColor(sf::Color(0, 0, 0, 220));
-
-	target.draw(overlay);
-
-	rootLayout.Render(target, &neonGlow);
-}
-
-void GameOverState::CreateMenuButton(const sf::String& text, MenuAction action)
-{
-	sf::Sprite buttonSprite(context.textures.Get(Assets::TextureID::ButtonBackground));
-
-	auto button = std::make_unique<UI::Button>(buttonSprite);
-	button->SetPreferredSize({ ButtonWidth, ButtonHeight });
-	button->SetWidthPixels(ButtonWidth);
-	button->SetHeightPixels(ButtonHeight);
-	button->SetLabel(std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), text, ButtonTextSize));
-	button->SetNormalStyle({ .backgroundColor = sf::Color(140, 140, 140), .textColor = sf::Color::White });
-	button->SetSelectedStyle({ .backgroundColor = sf::Color(200, 200, 200), .textColor = sf::Color::Yellow });
-	button->SetDisabledStyle({ .backgroundColor = sf::Color(80, 80, 80), .textColor = sf::Color(110, 110, 110) });
-
-	if (action == MenuAction::SaveRecord)
-	{
-		saveButton = button.get();
-		button->SetEnabled(false);
-	}
-
-	menuList.AddButton(*button);
-	menuLayout->Add(std::move(button));
-	actions.push_back(action);
-}
-
-void GameOverState::PerformAction(MenuAction action)
-{
-	switch (action)
-	{
-	case MenuAction::RestartGame:
-		RequestClear();
-		RequestPush(std::make_unique<GameplayState>(context));
-		break;
-
-	case MenuAction::MainMenu:
-		RequestClear();
-		RequestPush(std::make_unique<MainMenuState>(context));
-		break;
-
-	case MenuAction::SaveRecord:
-	{
-		// Activate() already checks the button is enabled, which tracks
-		// IsPlayerNameValid(); this is a belt-and-braces guard.
-		if (!IsPlayerNameValid())
-		{
-			break;
-		}
-
-		context.highScores.AddRecord({ TrimPlayerName(playerName), finalScore });
-		context.highScores.Save();
-
-		RequestClear();
-		RequestPush(std::make_unique<MainMenuState>(context));
-		break;
-	}
-	}
+	RequestClear();
+	RequestPush(std::make_unique<MainMenuState>(this->context));
 }
 
 void GameOverState::HandleTextInput(char32_t character)
@@ -324,8 +238,11 @@ bool GameOverState::IsPlayerNameValid() const
 	return false;
 }
 
-void GameOverState::UpdateLayout()
+void GameOverState::Render(sf::RenderTarget& target)
 {
-	const sf::Vector2f viewSize = context.window.getView().getSize();
-	rootLayout.Arrange({ 0.f, 0.f }, viewSize);
+	sf::RectangleShape overlay(target.getView().getSize());
+	overlay.setFillColor(sf::Color(0, 0, 0, 220));
+	target.draw(overlay);
+
+	RenderMenu(target);
 }

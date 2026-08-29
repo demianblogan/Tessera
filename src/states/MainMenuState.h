@@ -1,47 +1,19 @@
 #pragma once
 
-#include <vector>
+#include <SFML/Graphics/Sprite.hpp>
 
-#include "../core/Context.h"
-#include "../core/State.h"
-#include "../ui/Button.h"
-#include "../ui/Label.h"
-#include "../ui/Layout.h"
-#include "../ui/MenuList.h"
-#include "../ui/Spacer.h"
-#include "../rendering/NeonGlow.h"
+#include "MenuScreenState.h"
 
-class MainMenuState final : public State
+class MainMenuState final : public MenuScreenState
 {
-private:
-	enum class MenuAction
-	{
-		StartGame,
-		Options,
-		Statistics,
-		Exit
-	};
-
-	Context& context;
-
-	NeonGlow neonGlow;
-
-	UI::Layout rootLayout;
-	UI::Layout* menuLayout = nullptr;
-	UI::MenuList menuList;
-	std::vector<MenuAction> actions;
-
-	sf::Sprite backgroundSprite;
-	sf::Sprite titleBackgroundSprite;
-
-	void CreateMenuButton(const sf::String& text, MenuAction action);
-	void PerformAction(MenuAction action);
-	void UpdateLayout();
-
 public:
 	explicit MainMenuState(Context& context);
 
-	void HandleEvent(const sf::Event& event) override;
-	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
+
+private:
+	sf::Sprite backgroundSprite;
+	sf::Sprite titleBackgroundSprite;
+
+	void OnBack() override;
 };
