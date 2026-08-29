@@ -45,36 +45,58 @@ Cross-cutting decisions:
 
 ## In progress
 
-### v1.0.6 — GameState split
+### v1.0.7 — Visual pass & first tests
 
-Break the ~950-line `GameState` god-class into a model / state / renderer / effects
-quartet. Behaviour is unchanged; this is pure relocation.
+Make the game look closer to its target, and put a safety net under the rules.
+No gameplay changes.
 
-- **`src/game/` → `src/gameplay/`** (matches ULA, which renamed its `game`
-  folder for the same "what lives where?" reason). Holds `Board`, `Cell`,
-  `Tetromino`, `TetrominoBag`, `TetrominoShapes` and the new rules class.
-- **`gameplay/GameplaySession`** — the pure rules and state of one playthrough:
-  board, bag, active + next piece, gravity, the row-clear delay, scoring,
-  levelling. No SFML, no `Context`. The host feeds it input intents, calls
-  `Update(dt)`, then drains `ConsumeEvents()` (landed / rows detected / rows
-  cleared / levelled up / game over). Named for the *concept*, not the game, so
-  a future rename of Tessera touches nothing here. (ULA calls the same thing
-  `GameplaySession` too.)
-- **`states/GameplayState`** (renamed from `GameState`) — owns the session, the
-  keyboard/gamepad input layer, the HUD, and the two renderers; turns session
-  events into sound, HUD text and screen effects.
-- **`rendering/BoardRenderer`** — board gradient, walls, locked cells, ghost,
-  active piece (glow + normal passes), next-piece preview. Reads the session;
-  never mutates it.
-- **`rendering/EffectsController`** — the state machine behind screen shake, the
-  landing flash and the row-clear flash / sweep: `Trigger*` + `Update(dt)` +
-  read-back accessors. `BoardRenderer` draws what it holds.
+- **`rendering/NeonGlow`** (port from ULA) — real bloom: bright parts rendered
+  to an off-screen target, blurred with the ping-pong `Blur` shader, added back
+  over the frame. Replaces the current fake glow (the same sprite scaled 118 %
+  with additive blend). Clears the `Uniform "time" not found in shader` console
+  message on the way.
+- **`ui/NineSliceFrame`** in `Button` / `Panel` — corners stay fixed, only the
+  edges and centre stretch, so panel and button frames stay crisp at any size.
+- **`ui/TextLayout`** — text sized by `setScale`, not `setCharacterSize`
+  (the latter re-rasterises the face and jitters); alignment / wrapping in one
+  place. All `UI::Label`s move onto it.
+- **`/W4` → 0 + warnings-as-errors.** ~42 today: `C4458` (members shadowed in
+  Slider / Element / Label / Layout), `C4100` (unused `deltaTime` / `target` in
+  states), `C4244` (`int` → `uint8_t` narrowing in `BoardRenderer`'s gradient).
+- **First unit tests** — a `TesseraTests` project (its own `.vcxproj`, in the
+  solution, not in the game build) covering `Board` (lock, `FindFullRows`,
+  `ClearRows` compaction, `CanPlace`), `Tetromino` (rotation cycle, block
+  positions), `TetrominoBag` (7-bag, no dupes within a bag),
+  `GameplaySession` (scoring, level threshold, clear delay, game over).
 
-Prerequisite for the game modes later in Phase 2.
+`ScreenFade` and `GlowingCursor` were dropped from this version — cursor design
+and menu transitions are a v1.1+ discussion.
 
 ---
 
 ## Released
+
+### v1.0.6 — GameState split
+
+Broke the ~950-line `GameState` god-class into model / state / renderer /
+effects. Behaviour unchanged — relocation only.
+
+- **`src/game/` → `src/gameplay/`** (matches ULA's own `game` → `gameplay`
+  rename, done for the same "what lives where?" reason).
+- **`gameplay/GameplaySession`** — the pure rules and state of one playthrough:
+  board, bag, active + next piece, gravity, row-clear delay, scoring, levelling.
+  No SFML, no `Context`. The host pushes input intents, calls `Update(dt)`, then
+  drains `ConsumeEvents()` (landed / rows detected / rows cleared / levelled up /
+  game over). Named for the concept, not the game, so a future rename of Tessera
+  touches nothing here. (ULA calls the same thing `GameplaySession` too.)
+- **`states/GameplayState`** (was `GameState`) — owns the session, the input
+  layer, the HUD, and the renderers; turns session events into sound, HUD text
+  and screen effects.
+- **`rendering/BoardRenderer`** — board gradient, walls, locked cells, ghost,
+  active piece (glow + normal), next-piece preview. Reads the session only.
+- **`rendering/EffectsController`** — the timer state machine behind screen
+  shake, the landing flash and the row-clear flash / sweep.
+- Restored a lost UTF-8 BOM that had turned the controls-panel arrows to mojibake.
 
 ### v1.0.5 — Input abstraction, gamepad & DAS/ARR
 
@@ -173,10 +195,9 @@ Prerequisite for the game modes later in Phase 2.
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.7 — Visual pass.** `NeonGlow` real bloom; `NineSliceFrame` in
-  `Button` / `Panel`; `TextLayout`; `ScreenFade`; `GlowingCursor`; `/W4` → 0 +
-  warnings-as-errors; first unit tests (`Board`, `Tetromino`, `TetrominoBag`,
-  `GameplaySession` scoring / levelling / clear).
+- **v1.0.7 — Visual pass & first tests.** (in progress; see above.) `NeonGlow`
+  real bloom; `NineSliceFrame`; `TextLayout`; `/W4` → 0 + warnings-as-errors;
+  `TesseraTests` project. `ScreenFade` / `GlowingCursor` moved out (v1.1+).
 - **v1.0.8 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
   (all strings extracted, English wired) + `LocalizationRevision` + font system;
   threaded loading screen; data-driven content skeleton (piece defs, scoring,
@@ -200,8 +221,8 @@ reduce-motion toggles fold into the **v1.4.0** Options screen.
 
 - **v1.1.0 — Presentation & rumble.** Company splash + `GameVersion.h`; FPS
   counter (Graphics toggle); grey main-menu version text; `MenuBackground`
-  parallax + `MenuIntroAnimation`; `GamepadRumble` (XInput) + Vibration
-  settings.
+  parallax + `MenuIntroAnimation`; `ScreenFade` transitions between states; a
+  designed glowing cursor; `GamepadRumble` (XInput) + Vibration settings.
 - **v1.1.0 — Modern rules.** Buffer rows above the visible field + guideline
   block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
   delay + move reset; hold piece; 5-deep next queue; guideline scoring
