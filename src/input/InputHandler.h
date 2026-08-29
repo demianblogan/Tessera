@@ -31,11 +31,6 @@ public:
 		callbacks[action].push_back(std::move(callback));
 	}
 
-	void UnsubscribeAll(Action action)
-	{
-		callbacks.erase(action);
-	}
-
 	void HandleEvent(const sf::Event& event)
 	{
 		for (const auto& [action, bindings] : actionMap.GetBindingsMap())
