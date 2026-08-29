@@ -73,6 +73,19 @@ namespace UI
 		}
 	}
 
+	void MenuList::PointerPressed(sf::Vector2f point)
+	{
+		for (std::size_t index = 0; index < buttons.size(); index++)
+		{
+			if (buttons[index]->IsEnabled() && buttons[index]->Contains(point))
+			{
+				Select(index);
+				Activate();
+				return;
+			}
+		}
+	}
+
 	void MenuList::Activate()
 	{
 		if (selectedIndex < buttons.size() && buttons[selectedIndex]->IsEnabled() && onActivate)

@@ -4,10 +4,10 @@
 
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
-#include <SFML/Window/Keyboard.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
+#include "../input/MenuInput.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
 #include "MainMenuState.h"
@@ -545,40 +545,15 @@ void SettingsState::UpdateLayout()
 
 void SettingsState::HandleEvent(const sf::Event& event)
 {
-	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-	if (keyPressed == nullptr)
+	switch (MenuInput::Resolve(event, context.gamepad))
 	{
-		return;
-	}
-
-	switch (keyPressed->scancode)
-	{
-	case sf::Keyboard::Scancode::Escape:
-		RequestChange(std::make_unique<MainMenuState>(context));
-		break;
-
-	case sf::Keyboard::Scancode::Up:
-		SelectPrevious();
-		break;
-
-	case sf::Keyboard::Scancode::Down:
-		SelectNext();
-		break;
-
-	case sf::Keyboard::Scancode::Left:
-		DecreaseCurrentSlider();
-		break;
-
-	case sf::Keyboard::Scancode::Right:
-		IncreaseCurrentSlider();
-		break;
-
-	case sf::Keyboard::Scancode::Enter:
-		ActivateCurrentElement();
-		break;
-
-	default:
-		break;
+	case MenuInput::Action::Back:    RequestChange(std::make_unique<MainMenuState>(context)); break;
+	case MenuInput::Action::Up:      SelectPrevious();          break;
+	case MenuInput::Action::Down:    SelectNext();              break;
+	case MenuInput::Action::Left:    DecreaseCurrentSlider();   break;
+	case MenuInput::Action::Right:   IncreaseCurrentSlider();   break;
+	case MenuInput::Action::Confirm: ActivateCurrentElement();  break;
+	default:                                                    break;
 	}
 }
 

@@ -3,10 +3,11 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
-#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
+#include "../input/MenuInput.h"
 #include "../resources/Assets.h"
 #include "MainMenuState.h"
 #include "GameState.h"
@@ -67,32 +68,25 @@ PauseState::PauseState(Context& context)
 
 void PauseState::HandleEvent(const sf::Event& event)
 {
-	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-	if (keyPressed == nullptr)
+	switch (MenuInput::Resolve(event, context.gamepad))
 	{
-		return;
+	case MenuInput::Action::Up:      menuList.SelectPrevious(); return;
+	case MenuInput::Action::Down:    menuList.SelectNext();     return;
+	case MenuInput::Action::Confirm: menuList.Activate();       return;
+	case MenuInput::Action::Back:    RequestPop();              return;
+	default:                                                    break;
 	}
 
-	switch (keyPressed->scancode)
+	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 	{
-	case sf::Keyboard::Scancode::Escape:
-		RequestPop();
-		break;
-
-	case sf::Keyboard::Scancode::Up:
-		menuList.SelectPrevious();
-		break;
-
-	case sf::Keyboard::Scancode::Down:
-		menuList.SelectNext();
-		break;
-
-	case sf::Keyboard::Scancode::Enter:
-		menuList.Activate();
-		break;
-
-	default:
-		break;
+		menuList.SelectAt(context.window.mapPixelToCoords(moved->position));
+	}
+	else if (const auto* clicked = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (clicked->button == sf::Mouse::Button::Left)
+		{
+			menuList.PointerPressed(context.window.mapPixelToCoords(clicked->position));
+		}
 	}
 }
 
