@@ -33,6 +33,7 @@ void Application::HandleInput()
 {
 	while (const std::optional<sf::Event> event = window.pollEvent())
 	{
+		gamepad.HandleEvent(*event);
 		ApplyWindowLifecycleEvent(*event);
 		if (!window.isOpen())
 		{
@@ -144,10 +145,11 @@ Application::Application()
 		shaders,
 		audioPlayer,
 		settings,
-		highScores)
+		highScores,
+		gamepad)
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 {
-	window.setMouseCursorVisible(false);
+	window.setMouseCursorVisible(true);
 	window.setView(gameView);
 
 	const sf::Vector2u renderTextureSize

@@ -9,6 +9,7 @@ class AudioPlayer;
 class StateMachine;
 class SettingsManager;
 class HighScoreManager;
+class GamepadManager;
 
 struct Context
 {
@@ -24,6 +25,7 @@ struct Context
     HighScoreManager& highScores;
     AudioPlayer& audioPlayer;
     ShaderManager& shaders;
+    GamepadManager& gamepad;
     float totalTime = 0.f;
 
     Context(
@@ -36,6 +38,7 @@ struct Context
         ShaderManager& shaders,
         AudioPlayer& audioPlayer,
         SettingsManager& settings,
-        HighScoreManager& highScores
+        HighScoreManager& highScores,
+        GamepadManager& gamepad
     );
 };

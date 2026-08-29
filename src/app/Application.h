@@ -8,6 +8,7 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
+#include "../input/GamepadManager.h"
 #include "../resources/ResourceManager.h"
 #include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
@@ -48,6 +49,7 @@ private:
 	HighScoreManager highScores;
 
 	AudioPlayer audioPlayer;
+	GamepadManager gamepad;
 
 	Context context;
 
