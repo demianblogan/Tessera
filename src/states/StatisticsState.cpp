@@ -6,6 +6,7 @@
 #include <SFML/Window/Keyboard.hpp>
 
 #include "../core/StateMachine.h"
+#include "../input/MenuInput.h"
 #include "../resources/Assets.h"
 #include "MainMenuState.h"
 
@@ -160,26 +161,20 @@ void StatisticsState::UpdateLayout()
 
 void StatisticsState::HandleEvent(const sf::Event& event)
 {
-	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-	if (keyPressed == nullptr)
+	if (MenuInput::Resolve(event, context.gamepad) == MenuInput::Action::Back)
 	{
+		RequestChange(std::make_unique<MainMenuState>(context));
 		return;
 	}
 
-	switch (keyPressed->scancode)
+	if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>())
 	{
-	case sf::Keyboard::Scancode::Escape:
-		RequestChange(std::make_unique<MainMenuState>(context));
-		break;
-
-	case sf::Keyboard::Scancode::Delete:
-		context.highScores.Clear();
-		context.highScores.Save();
-		UpdateScoreLabels();
-		break;
-
-	default:
-		break;
+		if (keyPressed->scancode == sf::Keyboard::Scancode::Delete)
+		{
+			context.highScores.Clear();
+			context.highScores.Save();
+			UpdateScoreLabels();
+		}
 	}
 }
 

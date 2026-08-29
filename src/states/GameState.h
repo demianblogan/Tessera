@@ -7,6 +7,9 @@
 #include "../game/Board.h"
 #include "../game/Tetromino.h"
 #include "../game/TetrominoBag.h"
+#include "../input/ActionMap.h"
+#include "../input/DirectionalRepeater.h"
+#include "../input/InputHandler.h"
 #include "../ui/Label.h"
 #include "../ui/Layout.h"
 #include "../ui/Panel.h"
@@ -26,6 +29,17 @@ private:
 		ClearingRows   // full rows found; the clear animation is running, input is ignored
 	};
 
+	enum class GameplayAction
+	{
+		MoveLeft,
+		MoveRight,
+		SoftDrop,
+		HardDrop,
+		RotateClockwise,
+		RotateCounterClockwise,
+		Pause
+	};
+
 	static constexpr float BLOCK_SIZE = 48.f;
 	static constexpr int WALL_TEXTURE_INDEX = 10;
 	static constexpr sf::Vector2f BOARD_POSITION{ 720.f, 60.f };
@@ -34,6 +48,16 @@ private:
 	static constexpr float CLEAR_ROW_EFFECT_DURATION = 0.45f;
 
 	Context& context;
+
+	ActionMap<GameplayAction> gameplayActions;
+	InputHandler<GameplayAction> gameplayInput;
+	DirectionalRepeater horizontalRepeater;
+
+	int heldHorizontal = 0;
+	int previousHeldHorizontal = 0;
+	bool horizontalWasBlocked = false;
+	bool softDropHeld = false;
+	float softDropTimer = 0.f;
 
 	Board board;
 	TetrominoBag tetrominoBag;
@@ -72,9 +96,14 @@ private:
 
 	void StartScreenShake(float duration, float intensity);
 
+	void SetUpInputBindings();
+	void PollHeldInput();
+	void ApplyGamepadActions();
+	void ApplyHorizontalRepeat(float deltaTime);
+	void ApplySoftDrop(float deltaTime);
+
 	bool SpawnTetromino();
-	void TryMoveTetromino(int offsetX, int offsetY);
-	void TryRotateTetromino();
+	void TryRotateTetromino(bool clockwise);
 	void TryDropTetromino();
 	void HandleTetrominoLanding();
 

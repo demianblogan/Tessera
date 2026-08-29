@@ -57,6 +57,8 @@ private:
 	void UpdateSelection();
 	void UpdateSliderLabels();
 
+	void HandlePointer(sf::Vector2f point, bool clicked);
+
 	void SelectPrevious();
 	void SelectNext();
 

@@ -13,7 +13,8 @@ Context::Context(
     ShaderManager& shaders,
     AudioPlayer& audioPlayer,
     SettingsManager& settings,
-    HighScoreManager& highScores
+    HighScoreManager& highScores,
+    GamepadManager& gamepad
 )
     : stateMachine(stateMachine)
     , window(window)
@@ -25,6 +26,7 @@ Context::Context(
     , audioPlayer(audioPlayer)
     , settings(settings)
     , highScores(highScores)
+    , gamepad(gamepad)
 {
 	// No code
 }

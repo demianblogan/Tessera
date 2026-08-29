@@ -4,10 +4,12 @@
 
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
-#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
+#include "../input/MenuInput.h"
+#include "../ui/Slider.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
 #include "MainMenuState.h"
@@ -545,40 +547,74 @@ void SettingsState::UpdateLayout()
 
 void SettingsState::HandleEvent(const sf::Event& event)
 {
-	const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-	if (keyPressed == nullptr)
+	switch (MenuInput::Resolve(event, context.gamepad))
 	{
+	case MenuInput::Action::Back:    RequestChange(std::make_unique<MainMenuState>(context)); return;
+	case MenuInput::Action::Up:      SelectPrevious();          return;
+	case MenuInput::Action::Down:    SelectNext();              return;
+	case MenuInput::Action::Left:    DecreaseCurrentSlider();   return;
+	case MenuInput::Action::Right:   IncreaseCurrentSlider();   return;
+	case MenuInput::Action::Confirm: ActivateCurrentElement();  return;
+	default:                                                    break;
+	}
+
+	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
+	{
+		HandlePointer(context.window.mapPixelToCoords(moved->position), false);
+	}
+	else if (const auto* clicked = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (clicked->button == sf::Mouse::Button::Left)
+		{
+			HandlePointer(context.window.mapPixelToCoords(clicked->position), true);
+		}
+	}
+}
+
+void SettingsState::HandlePointer(sf::Vector2f point, bool clicked)
+{
+	// Dragging a held slider follows the cursor even when it leaves the track.
+	const bool dragging = !clicked && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+	if (dragging &&
+		selectedIndex >= 0 &&
+		selectedIndex < static_cast<int>(selectableElements.size()) &&
+		selectableElements[selectedIndex].type == SelectableType::Slider)
+	{
+		selectableElements[selectedIndex].slider->SetValueFromPointer(point);
+		UpdateSliderLabels();
+		ApplyAndSaveSettings();
 		return;
 	}
 
-	switch (keyPressed->scancode)
+	for (std::size_t index = 0; index < selectableElements.size(); index++)
 	{
-	case sf::Keyboard::Scancode::Escape:
-		RequestChange(std::make_unique<MainMenuState>(context));
-		break;
+		const SelectableElement& element = selectableElements[index];
 
-	case sf::Keyboard::Scancode::Up:
-		SelectPrevious();
-		break;
+		const bool overButton = element.type == SelectableType::Button && element.button->Contains(point);
+		const bool overSlider = element.type == SelectableType::Slider && element.slider->Contains(point);
+		if (!overButton && !overSlider)
+		{
+			continue;
+		}
 
-	case sf::Keyboard::Scancode::Down:
-		SelectNext();
-		break;
+		if (static_cast<int>(index) != selectedIndex)
+		{
+			selectedIndex = static_cast<int>(index);
+			UpdateSelection();
+		}
 
-	case sf::Keyboard::Scancode::Left:
-		DecreaseCurrentSlider();
-		break;
+		if (clicked && overButton)
+		{
+			ActivateCurrentElement();
+		}
+		else if (clicked && overSlider)
+		{
+			element.slider->SetValueFromPointer(point);
+			UpdateSliderLabels();
+			ApplyAndSaveSettings();
+		}
 
-	case sf::Keyboard::Scancode::Right:
-		IncreaseCurrentSlider();
-		break;
-
-	case sf::Keyboard::Scancode::Enter:
-		ActivateCurrentElement();
-		break;
-
-	default:
-		break;
+		return;
 	}
 }
 
