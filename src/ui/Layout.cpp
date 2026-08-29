@@ -6,6 +6,36 @@
 
 namespace UI
 {
+	namespace
+	{
+		// Reads the "along the layout" (main) and "across the layout" (cross)
+		// components of a vector, and rebuilds one from those, so Measure and
+		// Arrange can be written once instead of once per orientation.
+		struct Axes
+		{
+			bool horizontal = false;
+
+			[[nodiscard]] float Main(sf::Vector2f v) const { return horizontal ? v.x : v.y; }
+			[[nodiscard]] float Cross(sf::Vector2f v) const { return horizontal ? v.y : v.x; }
+
+			[[nodiscard]] sf::Vector2f Make(float main, float cross) const
+			{
+				return horizontal ? sf::Vector2f{ main, cross } : sf::Vector2f{ cross, main };
+			}
+		};
+
+		[[nodiscard]] float ResolveSize(const Element::SizeRule& rule, float measured, float available, float fill)
+		{
+			switch (rule.mode)
+			{
+			case Element::SizeMode::Pixels:  return rule.value;
+			case Element::SizeMode::Percent: return available * rule.value;
+			case Element::SizeMode::Fill:    return fill;
+			default:                         return measured;
+			}
+		}
+	}
+
 	Layout::Layout(Orientation orientation)
 		: orientation(orientation)
 	{
@@ -39,222 +69,118 @@ namespace UI
 
 	sf::Vector2f Layout::Measure() const
 	{
-		float width = 0.f;
-		float height = 0.f;
+		const Axes axes{ orientation == Orientation::Horizontal };
 
-		if (orientation == Orientation::Vertical)
+		float mainTotal = 0.f;
+		float crossMax = 0.f;
+
+		for (const auto& child : children)
 		{
-			for (const auto& child : children)
-			{
-				const sf::Vector2f size = child->Measure();
-				width = std::max(width, size.x);
-				height += size.y;
-			}
-
-			if (!children.empty())
-			{
-				height += gap * static_cast<float>(children.size() - 1);
-			}
-		}
-		else
-		{
-			for (const auto& child : children)
-			{
-				const sf::Vector2f size = child->Measure();
-				width += size.x;
-				height = std::max(height, size.y);
-			}
-
-			if (!children.empty())
-			{
-				width += gap * static_cast<float>(children.size() - 1);
-			}
+			const sf::Vector2f measured = child->Measure();
+			mainTotal += axes.Main(measured);
+			crossMax = std::max(crossMax, axes.Cross(measured));
 		}
 
-		width += padding.left + padding.right;
-		height += padding.top + padding.bottom;
+		if (!children.empty())
+		{
+			mainTotal += gap * static_cast<float>(children.size() - 1);
+		}
 
-		return { width, height };
+		const sf::Vector2f content = axes.Make(mainTotal, crossMax);
+
+		return
+		{
+			content.x + padding.left + padding.right,
+			content.y + padding.top + padding.bottom
+		};
 	}
 
 	void Layout::Arrange(sf::Vector2f position, sf::Vector2f size)
 	{
 		Element::Arrange(position, size);
 
-		const float availableWidth = size.x - padding.left - padding.right;
-		const float availableHeight = size.y - padding.top - padding.bottom;
+		const Axes axes{ orientation == Orientation::Horizontal };
 
-		float fixedWidth = 0.f;
-		float fixedHeight = 0.f;
+		const sf::Vector2f available
+		{
+			size.x - padding.left - padding.right,
+			size.y - padding.top - padding.bottom
+		};
+		const float availableMain = axes.Main(available);
+		const float availableCross = axes.Cross(available);
 
-		int fillWidthCount = 0;
-		int fillHeightCount = 0;
+		const auto mainRuleOf = [&axes](const Element& child)
+			{
+				return axes.horizontal ? child.GetWidthRule() : child.GetHeightRule();
+			};
+		const auto crossRuleOf = [&axes](const Element& child)
+			{
+				return axes.horizontal ? child.GetHeightRule() : child.GetWidthRule();
+			};
+
+		// Split the remaining main-axis space among the children that want to
+		// fill it. Cross-axis Fill simply takes the whole cross extent.
+		float fixedMain = 0.f;
+		int fillMainCount = 0;
 
 		for (const auto& child : children)
 		{
-			const auto& widthRule = child->GetWidthRule();
-			const auto& heightRule = child->GetHeightRule();
+			const Element::SizeRule rule = mainRuleOf(*child);
+
+			if (rule.mode == SizeMode::Fill)
+			{
+				fillMainCount++;
+			}
+			else
+			{
+				fixedMain += ResolveSize(rule, axes.Main(child->Measure()), availableMain, 0.f);
+			}
+		}
+
+		const float totalGap = gap * std::max(0.f, static_cast<float>(children.size()) - 1.f);
+		const float fillMain = fillMainCount > 0
+			? std::max(0.f, availableMain - fixedMain - totalGap) / static_cast<float>(fillMainCount)
+			: 0.f;
+
+		const Alignment crossAlignment = axes.horizontal ? verticalAlignment : horizontalAlignment;
+
+		float cursorMain = 0.f;
+
+		for (auto& child : children)
+		{
 			const sf::Vector2f measured = child->Measure();
 
-			if (widthRule.mode == SizeMode::Fill)
+			const float childMain = ResolveSize(mainRuleOf(*child), axes.Main(measured), availableMain, fillMain);
+			float childCross = ResolveSize(crossRuleOf(*child), axes.Cross(measured), availableCross, availableCross);
+
+			float crossOffset = 0.f;
+
+			switch (crossAlignment)
 			{
-				fillWidthCount++;
-			}
-			else
-			{
-				switch (widthRule.mode)
-				{
-				case SizeMode::Pixels:
-					fixedWidth += widthRule.value;
-					break;
+			case Alignment::Start:
+				break;
 
-				case SizeMode::Percent:
-					fixedWidth += availableWidth * widthRule.value;
-					break;
+			case Alignment::Center:
+				crossOffset = (availableCross - childCross) / 2.f;
+				break;
 
-				default:
-					fixedWidth += measured.x;
-					break;
-				}
+			case Alignment::End:
+				crossOffset = availableCross - childCross;
+				break;
+
+			case Alignment::Stretch:
+				childCross = availableCross;
+				break;
 			}
 
-			if (heightRule.mode == SizeMode::Fill)
-			{
-				fillHeightCount++;
-			}
-			else
-			{
-				switch (heightRule.mode)
-				{
-				case SizeMode::Pixels:
-					fixedHeight += heightRule.value;
-					break;
+			const sf::Vector2f childPosition =
+				position
+				+ sf::Vector2f{ padding.left, padding.top }
+				+ axes.Make(cursorMain, crossOffset);
 
-				case SizeMode::Percent:
-					fixedHeight += availableHeight * heightRule.value;
-					break;
+			child->Arrange(childPosition, axes.Make(childMain, childCross));
 
-				default:
-					fixedHeight += measured.y;
-					break;
-				}
-			}
-		}
-
-		const float totalGap = gap * static_cast<float>(std::max(0, static_cast<int>(children.size()) - 1));
-
-		const float remainingWidth = availableWidth - fixedWidth - totalGap;
-		const float remainingHeight = availableHeight - fixedHeight - totalGap;
-
-		const float fillWidth = fillWidthCount > 0 ? remainingWidth / static_cast<float>(fillWidthCount) : 0.f;
-		const float fillHeight = fillHeightCount > 0 ? remainingHeight / static_cast<float>(fillHeightCount) : 0.f;
-
-		sf::Vector2f cursor =
-		{
-			position.x + padding.left,
-			position.y + padding.top
-		};
-
-		if (orientation == Orientation::Vertical)
-		{
-			for (auto& child : children)
-			{
-				float childWidth = ResolveChildWidth(*child, availableWidth, fillWidth);
-				float childHeight = ResolveChildHeight(*child, availableHeight, fillHeight);
-
-				sf::Vector2f childPosition = cursor;
-
-				switch (horizontalAlignment)
-				{
-				case Alignment::Start:
-					break;
-
-				case Alignment::Center:
-					childPosition.x += (availableWidth - childWidth) / 2.f;
-					break;
-
-				case Alignment::End:
-					childPosition.x += availableWidth - childWidth;
-					break;
-
-				case Alignment::Stretch:
-					childWidth = availableWidth;
-					break;
-				}
-
-				child->Arrange(childPosition, { childWidth, childHeight });
-
-				cursor.y += childHeight + gap;
-			}
-		}
-		else
-		{
-			for (auto& child : children)
-			{
-				float childWidth = ResolveChildWidth(*child, availableWidth, fillWidth);
-				float childHeight = ResolveChildHeight(*child, availableHeight, fillHeight);
-
-				sf::Vector2f childPosition = cursor;
-
-				switch (verticalAlignment)
-				{
-				case Alignment::Center:
-					childPosition.y += (availableHeight - childHeight) / 2.f;
-					break;
-
-				case Alignment::End:
-					childPosition.y += availableHeight - childHeight;
-					break;
-
-				case Alignment::Stretch:
-					childHeight = availableHeight;
-					break;
-				}
-
-				child->Arrange(childPosition, { childWidth,	childHeight });
-
-				cursor.x += childWidth + gap;
-			}
-		}
-	}
-
-	float Layout::ResolveChildWidth(const Element& child, float availableWidth, float fillWidth) const
-	{
-		const auto& rule = child.GetWidthRule();
-
-		switch (rule.mode)
-		{
-		case SizeMode::Pixels:
-			return rule.value;
-
-		case SizeMode::Percent:
-			return availableWidth * rule.value;
-
-		case SizeMode::Fill:
-			return fillWidth;
-
-		default:
-			return child.Measure().x;
-		}
-	}
-
-	float Layout::ResolveChildHeight(const Element& child, float availableHeight, float fillHeight) const
-	{
-		const auto& rule = child.GetHeightRule();
-
-		switch (rule.mode)
-		{
-		case SizeMode::Pixels:
-			return rule.value;
-
-		case SizeMode::Percent:
-			return availableHeight * rule.value;
-
-		case SizeMode::Fill:
-			return fillHeight;
-
-		default:
-			return child.Measure().y;
+			cursorMain += childMain + gap;
 		}
 	}
 

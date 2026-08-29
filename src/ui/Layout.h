@@ -46,9 +46,6 @@ namespace UI
 		Padding padding;
 		float gap = 0.f;
 
-		[[nodiscard]] float ResolveChildWidth(const Element& child, float availableWidth, float fillWidth) const;
-		[[nodiscard]] float ResolveChildHeight(const Element& child, float availableHeight, float fillHeight) const;
-
 	public:
 		explicit Layout(Orientation orientation);
 
