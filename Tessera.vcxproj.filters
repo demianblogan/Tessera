@@ -140,6 +140,9 @@
     <ClInclude Include="src\ui\NineSliceFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\TextLayout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\core\State.h">
       <Filter>Header Files</Filter>
     </ClInclude>

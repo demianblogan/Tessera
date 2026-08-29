@@ -67,6 +67,7 @@ void GameplayState::BuildHud()
 
 		auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Next Tetromino", 60);
 		label->SetFillColor(sf::Color::White);
+		label->SetMaxWidth(330.f);
 		nextTetrominoLabel = label.get();
 		layout->Add(std::move(label));
 
@@ -90,6 +91,7 @@ void GameplayState::BuildHud()
 		{
 			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Score: 0", 60);
 			label->SetFillColor(sf::Color::White);
+			label->SetMaxWidth(220.f);
 			scoreLabel = label.get();
 			layout->Add(std::move(label));
 		}
@@ -97,6 +99,7 @@ void GameplayState::BuildHud()
 		{
 			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Level: 1", 60);
 			label->SetFillColor(sf::Color::White);
+			label->SetMaxWidth(220.f);
 			levelLabel = label.get();
 			layout->Add(std::move(label));
 		}
@@ -134,6 +137,7 @@ void GameplayState::BuildHud()
 
 	auto controlsLabel = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), controlsText, 45);
 	controlsLabel->SetFillColor(sf::Color::White);
+	controlsLabel->SetMaxWidth(520.f);
 	controlsLayout->Add(std::move(controlsLabel));
 
 	controlsPanel->SetChild(std::move(controlsLayout));
