@@ -1,0 +1,352 @@
+#include "BoardRenderer.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <utility>
+
+#include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+
+#include "../core/Context.h"
+#include "../gameplay/Board.h"
+#include "../gameplay/GameplaySession.h"
+#include "../gameplay/Tetromino.h"
+#include "../gameplay/TetrominoShapes.h"
+#include "../settings/GameSettings.h"
+#include "../settings/SettingsManager.h"
+#include "EffectsController.h"
+
+BoardRenderer::BoardRenderer(Context& context)
+	: context(context)
+{
+	// No code
+}
+
+Assets::TextureID BoardRenderer::ResolveBlockTexture() const
+{
+	switch (context.settings.GetSettings().blockRenderStyle)
+	{
+	case BlockRenderStyle::WithOutline:
+		return Assets::TextureID::BlockSpritesheetWithOutline;
+
+	case BlockRenderStyle::WithoutOutline:
+		return Assets::TextureID::BlockSpritesheetWithoutOutline;
+	}
+
+	std::unreachable();
+}
+
+void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects) const
+{
+	sf::Sprite blockSprite(context.textures.Get(ResolveBlockTexture()));
+
+	blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+
+	// =====================================================
+	// Board background tiles
+	// =====================================================
+
+	blockSprite.setTextureRect(
+		{
+			{ WallTextureIndex * SpriteSize, 0 },
+			{ SpriteSize, SpriteSize }
+		}
+	);
+
+	for (int y = 0; y < Board::HEIGHT; y++)
+	{
+		const float t = static_cast<float>(y) / (Board::HEIGHT - 1);
+		const int brightness = static_cast<int>(6 + t * 18);
+
+		blockSprite.setColor(sf::Color(brightness / 2, brightness, brightness + 20));
+
+		for (int x = 0; x < Board::WIDTH; x++)
+		{
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + x * BlockSize,
+					BoardPosition.y + y * BlockSize
+				}
+			);
+
+			target.draw(blockSprite);
+		}
+	}
+
+	blockSprite.setColor(sf::Color::White);
+
+	// =====================================================
+	// Walls
+	// =====================================================
+
+	blockSprite.setTextureRect(
+		{
+			{ WallTextureIndex * SpriteSize, 0 },
+			{ SpriteSize, SpriteSize }
+		}
+	);
+
+	for (int y = 0; y < Board::HEIGHT; y++)
+	{
+		blockSprite.setPosition(
+			{
+				BoardPosition.x - BlockSize,
+				BoardPosition.y + y * BlockSize
+			}
+		);
+		target.draw(blockSprite);
+
+		blockSprite.setPosition(
+			{
+				BoardPosition.x + Board::WIDTH * BlockSize,
+				BoardPosition.y + y * BlockSize
+			}
+		);
+		target.draw(blockSprite);
+	}
+
+	for (int x = -1; x <= Board::WIDTH; x++)
+	{
+		blockSprite.setPosition(
+			{
+				BoardPosition.x + x * BlockSize,
+				BoardPosition.y + Board::HEIGHT * BlockSize
+			}
+		);
+		target.draw(blockSprite);
+	}
+
+	// =====================================================
+	// Locked cells
+	// =====================================================
+
+	const Board::Grid& grid = session.GetBoard().GetGrid();
+
+	for (int y = 0; y < Board::HEIGHT; y++)
+	{
+		for (int x = 0; x < Board::WIDTH; x++)
+		{
+			const Cell& cell = grid[y][x];
+
+			if (!cell.occupied)
+			{
+				continue;
+			}
+
+			blockSprite.setTextureRect(
+				{
+					{ static_cast<int>(cell.tetrominoType) * SpriteSize, 0 },
+					{ SpriteSize, SpriteSize }
+				}
+			);
+
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + x * BlockSize,
+					BoardPosition.y + y * BlockSize
+				}
+			);
+
+			target.draw(blockSprite);
+		}
+	}
+
+	// =====================================================
+	// Row-clear flash / sweep
+	// =====================================================
+
+	for (const EffectsController::RowClearEffect& effect : effects.GetRowClearEffects())
+	{
+		const float t = effect.timer / EffectsController::RowClearDuration;
+		const int alpha = static_cast<int>((1.f - t) * 255.f);
+
+		sf::RectangleShape flash;
+		flash.setPosition(
+			{
+				BoardPosition.x,
+				BoardPosition.y + effect.row * BlockSize
+			}
+		);
+		flash.setSize({ Board::WIDTH * BlockSize, BlockSize });
+		flash.setFillColor(sf::Color(120, 220, 255, alpha));
+		target.draw(flash);
+
+		const float sweepWidth = 120.f;
+		const float sweepX = -sweepWidth + t * (Board::WIDTH * BlockSize + sweepWidth * 2.f);
+
+		sf::RectangleShape sweep;
+		sweep.setPosition(
+			{
+				BoardPosition.x + sweepX,
+				BoardPosition.y + effect.row * BlockSize
+			}
+		);
+		sweep.setSize({ sweepWidth, BlockSize });
+		sweep.setFillColor(sf::Color(180, 255, 255, alpha));
+		target.draw(sweep);
+	}
+
+	// =====================================================
+	// Ghost  (hidden once the piece is locked and rows are clearing)
+	// =====================================================
+
+	if (session.IsFalling())
+	{
+		const Tetromino ghostTetromino = session.GetGhostTetromino();
+
+		blockSprite.setTextureRect(
+			{
+				{ static_cast<int>(ghostTetromino.GetType()) * SpriteSize, 0 },
+				{ SpriteSize, SpriteSize }
+			}
+		);
+
+		sf::Shader& ghostShader = context.shaders.Get(Assets::ShaderID::GhostTetromino);
+		ghostShader.setUniform("time", context.totalTime);
+
+		for (const sf::Vector2i& blockPosition : ghostTetromino.GetBlockPositions())
+		{
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + blockPosition.x * BlockSize,
+					BoardPosition.y + blockPosition.y * BlockSize
+				}
+			);
+
+			target.draw(blockSprite, &ghostShader);
+		}
+	}
+
+	// =====================================================
+	// Landing flash
+	// =====================================================
+
+	if (effects.HasLandingFlash())
+	{
+		const float alpha = effects.GetLandingFlashProgress();
+
+		blockSprite.setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha * 120.f)));
+
+		for (const sf::Vector2i& blockPosition : effects.GetLandingFlashBlocks())
+		{
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + blockPosition.x * BlockSize,
+					BoardPosition.y + blockPosition.y * BlockSize
+				}
+			);
+
+			target.draw(blockSprite);
+		}
+
+		blockSprite.setColor(sf::Color::White);
+	}
+
+	// =====================================================
+	// Active piece  (glow pass, then normal pass)
+	// =====================================================
+
+	if (session.IsFalling())
+	{
+		const auto blockPositions = session.GetCurrentTetromino().GetBlockPositions();
+
+		blockSprite.setTextureRect(
+			{
+				{ static_cast<int>(session.GetCurrentTetromino().GetType()) * SpriteSize, 0 },
+				{ SpriteSize, SpriteSize }
+			}
+		);
+
+		blockSprite.setScale(
+			{
+				(BlockSize / 16.f) * GlowScale,
+				(BlockSize / 16.f) * GlowScale
+			}
+		);
+		blockSprite.setColor(sf::Color(255, 255, 255, 50));
+
+		const float glowOffset = (BlockSize * GlowScale - BlockSize) / 2.f;
+
+		sf::RenderStates glowStates;
+		glowStates.blendMode = sf::BlendAdd;
+		glowStates.shader = &context.shaders.Get(Assets::ShaderID::Glow);
+
+		for (const sf::Vector2i& blockPosition : blockPositions)
+		{
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + blockPosition.x * BlockSize - glowOffset,
+					BoardPosition.y + blockPosition.y * BlockSize - glowOffset
+				}
+			);
+
+			target.draw(blockSprite, glowStates);
+		}
+
+		blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+		blockSprite.setColor(sf::Color::White);
+
+		for (const sf::Vector2i& blockPosition : blockPositions)
+		{
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + blockPosition.x * BlockSize,
+					BoardPosition.y + blockPosition.y * BlockSize
+				}
+			);
+
+			target.draw(blockSprite);
+		}
+	}
+}
+
+void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::Vector2f centre) const
+{
+	sf::Sprite blockSprite(context.textures.Get(ResolveBlockTexture()));
+
+	const auto previewBlockPositions = session.GetNextTetromino().GetBlockPositions();
+
+	blockSprite.setTextureRect(
+		{
+			{ static_cast<int>(session.GetNextTetromino().GetType()) * SpriteSize, 0 },
+			{ SpriteSize, SpriteSize }
+		}
+	);
+
+	blockSprite.setScale({ PreviewBlockSize / 16.f, PreviewBlockSize / 16.f });
+
+	// Different pieces occupy different cells of the 4x4 shape matrix, so centre
+	// the piece's own bounding box on `centre` instead of pinning its top-left
+	// corner there.
+	int minBlockX = TetrominoShapes::MATRIX_SIZE;
+	int maxBlockX = -1;
+	int minBlockY = TetrominoShapes::MATRIX_SIZE;
+	int maxBlockY = -1;
+
+	for (const sf::Vector2i& blockPosition : previewBlockPositions)
+	{
+		minBlockX = std::min(minBlockX, blockPosition.x);
+		maxBlockX = std::max(maxBlockX, blockPosition.x);
+		minBlockY = std::min(minBlockY, blockPosition.y);
+		maxBlockY = std::max(maxBlockY, blockPosition.y);
+	}
+
+	const sf::Vector2f previewOrigin =
+	{
+		centre.x - (minBlockX + maxBlockX + 1) * 0.5f * PreviewBlockSize,
+		centre.y - (minBlockY + maxBlockY + 1) * 0.5f * PreviewBlockSize
+	};
+
+	for (const sf::Vector2i& blockPosition : previewBlockPositions)
+	{
+		blockSprite.setPosition(
+			{
+				previewOrigin.x + blockPosition.x * PreviewBlockSize,
+				previewOrigin.y + blockPosition.y * PreviewBlockSize
+			}
+		);
+
+		target.draw(blockSprite);
+	}
+}

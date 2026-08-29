@@ -10,7 +10,7 @@
 #include "../resources/Assets.h"
 #include "SettingsState.h"
 #include "StatisticsState.h"
-#include "GameState.h"
+#include "GameplayState.h"
 
 namespace
 {
@@ -164,7 +164,7 @@ void MainMenuState::PerformAction(MenuAction action)
 	switch (action)
 	{
 	case MenuAction::StartGame:
-		RequestChange(std::make_unique<GameState>(context));
+		RequestChange(std::make_unique<GameplayState>(context));
 		break;
 
 	case MenuAction::Options:

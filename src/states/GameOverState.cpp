@@ -12,7 +12,7 @@
 #include "../input/MenuInput.h"
 #include "../resources/Assets.h"
 #include "../statistics/HighScoreManager.h"
-#include "GameState.h"
+#include "GameplayState.h"
 #include "MainMenuState.h"
 
 namespace
@@ -221,7 +221,7 @@ void GameOverState::PerformAction(MenuAction action)
 	{
 	case MenuAction::RestartGame:
 		RequestClear();
-		RequestPush(std::make_unique<GameState>(context));
+		RequestPush(std::make_unique<GameplayState>(context));
 		break;
 
 	case MenuAction::MainMenu:

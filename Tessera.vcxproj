@@ -108,7 +108,10 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\game\TetrominoBag.cpp" />
+    <ClCompile Include="src\gameplay\TetrominoBag.cpp" />
+    <ClCompile Include="src\gameplay\GameplaySession.cpp" />
+    <ClCompile Include="src\rendering\BoardRenderer.cpp" />
+    <ClCompile Include="src\rendering\EffectsController.cpp" />
     <ClCompile Include="src\resources\ShaderManager.cpp" />
     <ClCompile Include="src\states\GameOverState.cpp" />
     <ClCompile Include="src\states\PauseState.cpp" />
@@ -117,13 +120,13 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\utils\Random.cpp" />
     <ClCompile Include="src\utils\SafeFileWrite.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
-    <ClCompile Include="src\game\Board.cpp" />
-    <ClCompile Include="src\game\Tetromino.cpp" />
+    <ClCompile Include="src\gameplay\Board.cpp" />
+    <ClCompile Include="src\gameplay\Tetromino.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
     <ClCompile Include="src\input\GamepadManager.cpp" />
     <ClCompile Include="src\input\InputBinding.cpp" />
     <ClCompile Include="src\input\MenuInput.cpp" />
-    <ClCompile Include="src\states\GameState.cpp" />
+    <ClCompile Include="src\states\GameplayState.cpp" />
     <ClCompile Include="src\states\SettingsState.cpp" />
     <ClCompile Include="src\app\Application.cpp" />
     <ClCompile Include="src\core\Context.cpp" />
@@ -143,7 +146,10 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\ui\Spacer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\game\TetrominoBag.h" />
+    <ClInclude Include="src\gameplay\TetrominoBag.h" />
+    <ClInclude Include="src\gameplay\GameplaySession.h" />
+    <ClInclude Include="src\rendering\BoardRenderer.h" />
+    <ClInclude Include="src\rendering\EffectsController.h" />
     <ClInclude Include="src\resources\ShaderManager.h" />
     <ClInclude Include="src\states\GameOverState.h" />
     <ClInclude Include="src\states\PauseState.h" />
@@ -151,10 +157,10 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\utils\AppDataPath.h" />
     <ClInclude Include="src\utils\Random.h" />
     <ClInclude Include="src\utils\SafeFileWrite.h" />
-    <ClInclude Include="src\game\Cell.h" />
-    <ClInclude Include="src\game\Board.h" />
-    <ClInclude Include="src\game\Tetromino.h" />
-    <ClInclude Include="src\game\TetrominoShapes.h" />
+    <ClInclude Include="src\gameplay\Cell.h" />
+    <ClInclude Include="src\gameplay\Board.h" />
+    <ClInclude Include="src\gameplay\Tetromino.h" />
+    <ClInclude Include="src\gameplay\TetrominoShapes.h" />
     <ClInclude Include="src\input\ActionMap.h" />
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
@@ -163,7 +169,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\MenuInput.h" />
     <ClInclude Include="src\resources\Assets.h" />
     <ClInclude Include="src\audio\AudioPlayer.h" />
-    <ClInclude Include="src\states\GameState.h" />
+    <ClInclude Include="src\states\GameplayState.h" />
     <ClInclude Include="src\states\SettingsState.h" />
     <ClInclude Include="src\app\Application.h" />
     <ClInclude Include="src\core\Context.h" />
