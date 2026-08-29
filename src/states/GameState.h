@@ -35,7 +35,8 @@ private:
 		MoveRight,
 		SoftDrop,
 		HardDrop,
-		Rotate,
+		RotateClockwise,
+		RotateCounterClockwise,
 		Pause
 	};
 
@@ -96,11 +97,12 @@ private:
 
 	void SetUpInputBindings();
 	void PollHeldInput();
+	void ApplyGamepadActions();
 	void ApplyHorizontalRepeat(float deltaTime);
 	void ApplySoftDrop(float deltaTime);
 
 	bool SpawnTetromino();
-	void TryRotateTetromino();
+	void TryRotateTetromino(bool clockwise);
 	void TryDropTetromino();
 	void HandleTetrominoLanding();
 

@@ -62,6 +62,7 @@ void Application::HandleInput()
 void Application::Update(float deltaTime)
 {
 	context.totalTime += deltaTime;
+	gamepad.Update();
 
 	if (State* currentState = stateMachine.GetCurrentState())
 	{

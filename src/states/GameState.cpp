@@ -119,9 +119,9 @@ GameState::GameState(Context& context)
 		);
 
 	sf::String controlsText =
-		L"[←] [↓] [→] - Move tetromino\n"
-		L"[↑] - Rotate tetromino\n"
-		L"[Space] - Drop tetromino\n"
+		L"[←] [→] - Move    [↓] - Soft drop\n"
+		L"[↑] - Rotate CW    [Z] - Rotate CCW\n"
+		L"[Space] - Hard drop\n"
 		L"[ESC] - Pause";
 
 	auto controlsLabel = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), controlsText, 45);
@@ -179,7 +179,8 @@ void GameState::SetUpInputBindings()
 	gameplayActions.AddBinding(GameplayAction::MoveRight, InputBinding(controls.moveRight, Trigger::WhileHeld));
 	gameplayActions.AddBinding(GameplayAction::SoftDrop, InputBinding(controls.softDrop, Trigger::WhileHeld));
 	gameplayActions.AddBinding(GameplayAction::HardDrop, InputBinding(controls.hardDrop, Trigger::OnPress));
-	gameplayActions.AddBinding(GameplayAction::Rotate, InputBinding(controls.rotate, Trigger::OnPress));
+	gameplayActions.AddBinding(GameplayAction::RotateClockwise, InputBinding(controls.rotateClockwise, Trigger::OnPress));
+	gameplayActions.AddBinding(GameplayAction::RotateCounterClockwise, InputBinding(controls.rotateCounterClockwise, Trigger::OnPress));
 	gameplayActions.AddBinding(GameplayAction::Pause, InputBinding(controls.pause, Trigger::OnPress));
 
 	gameplayInput.Subscribe(GameplayAction::MoveLeft, [this] { heldHorizontal -= 1; });
@@ -194,11 +195,19 @@ void GameState::SetUpInputBindings()
 			}
 		});
 
-	gameplayInput.Subscribe(GameplayAction::Rotate, [this]
+	gameplayInput.Subscribe(GameplayAction::RotateClockwise, [this]
 		{
 			if (phase == Phase::Falling)
 			{
-				TryRotateTetromino();
+				TryRotateTetromino(true);
+			}
+		});
+
+	gameplayInput.Subscribe(GameplayAction::RotateCounterClockwise, [this]
+		{
+			if (phase == Phase::Falling)
+			{
+				TryRotateTetromino(false);
 			}
 		});
 
@@ -210,26 +219,37 @@ void GameState::SetUpInputBindings()
 
 void GameState::HandleEvent(const sf::Event& event)
 {
-	// Keyboard: OnPress actions (hard drop, rotate, pause).
+	// Keyboard OnPress actions (hard drop, rotate, pause).
 	gameplayInput.HandleEvent(event);
 
-	// Gamepad: same actions, edge-triggered from the event.
+	// Gamepad pause (a button, so an event is fine). Its d-pad / stick / trigger
+	// actions are polled in Update via ApplyGamepadActions.
 	if (context.gamepad.IsPausePressed(event))
 	{
 		RequestPush(std::make_unique<PauseState>(context));
+	}
+}
+
+void GameState::ApplyGamepadActions()
+{
+	if (phase != Phase::Falling)
+	{
 		return;
 	}
 
-	if (phase == Phase::Falling)
+	if (context.gamepad.WasHardDropPressed())
 	{
-		if (context.gamepad.IsRotatePressed(event))
-		{
-			TryRotateTetromino();
-		}
-		else if (context.gamepad.IsHardDropPressed(event))
-		{
-			TryDropTetromino();
-		}
+		TryDropTetromino();
+	}
+
+	if (context.gamepad.WasRotateClockwisePressed())
+	{
+		TryRotateTetromino(true);
+	}
+
+	if (context.gamepad.WasRotateCounterClockwisePressed())
+	{
+		TryRotateTetromino(false);
 	}
 }
 
@@ -307,6 +327,7 @@ void GameState::Update(float deltaTime)
 	// =====================================================
 
 	PollHeldInput();
+	ApplyGamepadActions();
 	ApplyHorizontalRepeat(deltaTime);
 	ApplySoftDrop(deltaTime);
 	previousHeldHorizontal = heldHorizontal;
@@ -867,11 +888,18 @@ bool GameState::SpawnTetromino()
 	return board.CanPlace(currentTetromino);
 }
 
-void GameState::TryRotateTetromino()
+void GameState::TryRotateTetromino(bool clockwise)
 {
 	Tetromino rotatedTetromino = currentTetromino;
 
-	rotatedTetromino.RotateClockwise();
+	if (clockwise)
+	{
+		rotatedTetromino.RotateClockwise();
+	}
+	else
+	{
+		rotatedTetromino.RotateCounterClockwise();
+	}
 
 	if (!board.CanPlace(rotatedTetromino))
 	{

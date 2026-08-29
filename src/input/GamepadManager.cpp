@@ -21,6 +21,16 @@ namespace
 
 	// How far a d-pad / stick has to move to count as a discrete direction.
 	constexpr float DirectionThreshold = 55.f;
+
+	// How far an analog trigger has to be pulled to count as pressed.
+	constexpr float TriggerThreshold = 40.f;
+
+	// Face and shoulder button indices. Face buttons are consistent enough
+	// across Xbox / DualShock via SFML for this game's needs; the analog
+	// triggers on DualShock also show up as buttons 6 / 7.
+	constexpr unsigned int HardDropButton = 0u;              // A / Cross
+	constexpr unsigned int PlayStationLeftTriggerButton = 6u;
+	constexpr unsigned int PlayStationRightTriggerButton = 7u;
 }
 
 GamepadManager::GamepadManager()
@@ -52,6 +62,21 @@ void GamepadManager::HandleEvent(const sf::Event& event)
 			isInUse = true;
 		}
 	}
+}
+
+void GamepadManager::Update()
+{
+	const bool hardDropDown = IsButtonPressed(HardDropButton);
+	hardDropEdge = hardDropDown && !wasHardDropDown;
+	wasHardDropDown = hardDropDown;
+
+	const bool rightTriggerDown = IsTriggerDown(true);
+	rotateClockwiseEdge = rightTriggerDown && !wasRightTriggerDown;
+	wasRightTriggerDown = rightTriggerDown;
+
+	const bool leftTriggerDown = IsTriggerDown(false);
+	rotateCounterClockwiseEdge = leftTriggerDown && !wasLeftTriggerDown;
+	wasLeftTriggerDown = leftTriggerDown;
 }
 
 GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::Event& event) const
@@ -131,20 +156,19 @@ bool GamepadManager::IsSoftDropHeld() const
 		ReadAxis(sf::Joystick::Axis::PovY) < -DirectionThreshold;
 }
 
-bool GamepadManager::IsRotatePressed(const sf::Event& event) const
+bool GamepadManager::WasHardDropPressed() const noexcept
 {
-	// North face button (Triangle / Y) or the confirm button.
-	constexpr unsigned int NorthButton = 3u;
-	const unsigned int confirmButton = (layout == Layout::PlayStation) ? 1u : 0u;
-
-	return IsButtonInEvent(event, NorthButton) || IsButtonInEvent(event, confirmButton);
+	return hardDropEdge;
 }
 
-bool GamepadManager::IsHardDropPressed(const sf::Event& event) const
+bool GamepadManager::WasRotateClockwisePressed() const noexcept
 {
-	// West face button (Square / X).
-	constexpr unsigned int WestButton = 2u;
-	return IsButtonInEvent(event, WestButton);
+	return rotateClockwiseEdge;
+}
+
+bool GamepadManager::WasRotateCounterClockwisePressed() const noexcept
+{
+	return rotateCounterClockwiseEdge;
 }
 
 bool GamepadManager::IsConnected() const noexcept
@@ -217,4 +241,22 @@ float GamepadManager::ReadAxis(sf::Joystick::Axis axis) const
 
 	const float position = sf::Joystick::getAxisPosition(*activeJoystick, axis);
 	return std::abs(position) <= StickDeadZone ? 0.f : position;
+}
+
+bool GamepadManager::IsTriggerDown(bool rightTrigger) const
+{
+	if (layout == Layout::PlayStation)
+	{
+		return IsButtonPressed(rightTrigger ? PlayStationRightTriggerButton : PlayStationLeftTriggerButton);
+	}
+
+	// Xbox / generic: both triggers share the Z axis, resting at 0 -- the right
+	// trigger pulls it negative, the left positive.
+	if (!activeJoystick.has_value() || !sf::Joystick::hasAxis(*activeJoystick, sf::Joystick::Axis::Z))
+	{
+		return false;
+	}
+
+	const float z = sf::Joystick::getAxisPosition(*activeJoystick, sf::Joystick::Axis::Z);
+	return rightTrigger ? (z < -TriggerThreshold) : (z > TriggerThreshold);
 }
