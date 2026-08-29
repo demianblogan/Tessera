@@ -140,7 +140,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 	section->SetHorizontalAlignment(UI::Layout::Alignment::Start);
 
 	{
-		auto label = std::make_unique<UI::Label>(font, "--- Graphics", SectionTitleSize);
+		auto label = std::make_unique<UI::Label>(font, context.localization.GetText(TextKey::Settings::SectionGraphics), SectionTitleSize);
 		label->SetFillColor(sf::Color::White);
 		section->Add(std::move(label));
 	}
@@ -238,7 +238,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 	section->SetHorizontalAlignment(UI::Layout::Alignment::Center);
 
 	{
-		auto label = std::make_unique<UI::Label>(font, "--- Audio", SectionTitleSize);
+		auto label = std::make_unique<UI::Label>(font, context.localization.GetText(TextKey::Settings::SectionAudio), SectionTitleSize);
 		label->SetFillColor(sf::Color::White);
 		section->Add(std::move(label));
 	}

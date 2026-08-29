@@ -21,6 +21,8 @@ game_over.restart    = Restart
 game_over.main_menu  = Main Menu
 
 settings.title                  = Settings
+settings.section_graphics       = --- Graphics
+settings.section_audio          = --- Audio
 settings.footer_return          = ESC - RETURN TO MAIN MENU
 settings.vsync_on               = Vertical synchronization: ON
 settings.vsync_off              = Vertical synchronization: OFF

@@ -38,6 +38,8 @@ namespace TextKey
 	namespace Settings
 	{
 		inline constexpr std::string_view Title             = "settings.title";
+		inline constexpr std::string_view SectionGraphics   = "settings.section_graphics";
+		inline constexpr std::string_view SectionAudio      = "settings.section_audio";
 		inline constexpr std::string_view FooterReturn      = "settings.footer_return";
 		inline constexpr std::string_view VsyncOn           = "settings.vsync_on";
 		inline constexpr std::string_view VsyncOff          = "settings.vsync_off";
