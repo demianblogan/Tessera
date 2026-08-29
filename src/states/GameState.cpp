@@ -411,10 +411,18 @@ void GameState::ApplyHorizontalRepeat(float deltaTime)
 	if (phase != Phase::Falling)
 	{
 		horizontalRepeater.Reset();
+		horizontalWasBlocked = false;
 		return;
 	}
 
 	const int requestedSteps = horizontalRepeater.Update(heldHorizontal, deltaTime);
+
+	if (heldHorizontal == 0)
+	{
+		horizontalWasBlocked = false;
+		return;
+	}
+
 	if (requestedSteps == 0)
 	{
 		return;
@@ -437,11 +445,26 @@ void GameState::ApplyHorizontalRepeat(float deltaTime)
 		movedAny = true;
 	}
 
-	// Only tick a sound on a fresh press / direction change, not on every
-	// auto-repeat step.
-	if (heldHorizontal != previousHeldHorizontal)
+	const bool isFreshPress = heldHorizontal != previousHeldHorizontal;
+
+	if (movedAny)
 	{
-		context.audioPlayer.Play(movedAny ? Assets::SoundID::MovePiece : Assets::SoundID::PieceHitWall);
+		horizontalWasBlocked = false;
+
+		// Move sound on the initial step only, not on every auto-repeat step.
+		if (isFreshPress)
+		{
+			context.audioPlayer.Play(Assets::SoundID::MovePiece);
+		}
+	}
+	else if (isFreshPress || !horizontalWasBlocked)
+	{
+		// Wall contact: fire once when it happens (a fresh press into a wall, or
+		// the piece reaching the wall at the end of an auto-repeat slide), then
+		// stay quiet while it's held there.
+		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
+		StartScreenShake(0.06f, 4.f);
+		horizontalWasBlocked = true;
 	}
 }
 

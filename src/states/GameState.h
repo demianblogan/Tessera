@@ -55,6 +55,7 @@ private:
 
 	int heldHorizontal = 0;
 	int previousHeldHorizontal = 0;
+	bool horizontalWasBlocked = false;
 	bool softDropHeld = false;
 	float softDropTimer = 0.f;
 
