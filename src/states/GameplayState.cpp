@@ -1,4 +1,4 @@
-#include "GameplayState.h"
+﻿#include "GameplayState.h"
 
 #include <algorithm>
 #include <cmath>
