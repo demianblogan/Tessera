@@ -45,6 +45,37 @@ Cross-cutting decisions:
 
 ## In progress
 
+### v1.0.6 — GameState split
+
+Break the ~950-line `GameState` god-class into a model / state / renderer / effects
+quartet. Behaviour is unchanged; this is pure relocation.
+
+- **`src/game/` → `src/gameplay/`** (matches ULA, which renamed its `game`
+  folder for the same "what lives where?" reason). Holds `Board`, `Cell`,
+  `Tetromino`, `TetrominoBag`, `TetrominoShapes` and the new rules class.
+- **`gameplay/GameplaySession`** — the pure rules and state of one playthrough:
+  board, bag, active + next piece, gravity, the row-clear delay, scoring,
+  levelling. No SFML, no `Context`. The host feeds it input intents, calls
+  `Update(dt)`, then drains `ConsumeEvents()` (landed / rows detected / rows
+  cleared / levelled up / game over). Named for the *concept*, not the game, so
+  a future rename of Tessera touches nothing here. (ULA calls the same thing
+  `GameplaySession` too.)
+- **`states/GameplayState`** (renamed from `GameState`) — owns the session, the
+  keyboard/gamepad input layer, the HUD, and the two renderers; turns session
+  events into sound, HUD text and screen effects.
+- **`rendering/BoardRenderer`** — board gradient, walls, locked cells, ghost,
+  active piece (glow + normal passes), next-piece preview. Reads the session;
+  never mutates it.
+- **`rendering/EffectsController`** — the state machine behind screen shake, the
+  landing flash and the row-clear flash / sweep: `Trigger*` + `Update(dt)` +
+  read-back accessors. `BoardRenderer` draws what it holds.
+
+Prerequisite for the game modes later in Phase 2.
+
+---
+
+## Released
+
 ### v1.0.5 — Input abstraction, gamepad & DAS/ARR
 
 - **`input/InputBinding` + `ActionMap<Action>` + `InputHandler<Action>`**
@@ -68,9 +99,6 @@ Cross-cutting decisions:
 - `GameState` drives all gameplay input through the abstraction; `GameSettings`
   gets a `ControlSettings` (default keyboard bindings, not persisted — the
   rebinding UI + save/load land with the Options screen in v1.4.0).
-
-Roadmap shifted one after splitting the old combined v1.0.5: GameState split →
-v1.0.6, visual pass → v1.0.7, rumble → v1.0.8, localization pipe → v1.0.9.
 
 ---
 
@@ -145,20 +173,20 @@ v1.0.6, visual pass → v1.0.7, rumble → v1.0.8, localization pipe → v1.0.9.
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.6 — GameState split.** `TesseraGame` (board + pieces + rules +
-  scoring, no SFML) + `GameplayState` + `BoardRenderer` + `EffectsController`.
-  Prerequisite for the game modes in v1.2.0.
 - **v1.0.7 — Visual pass.** `NeonGlow` real bloom; `NineSliceFrame` in
-  `Button` / `Panel`; `TextLayout`; `ScreenFade`; `GlowingCursor`; per-effect
-  toggles + screen-shake / reduce-motion; `/W4` → 0 + warnings-as-errors; first
-  unit tests (`Board`, `Tetromino`, `TetrominoBag`, scoring).
-- **v1.0.8 — Rumble & presentation.** `GamepadRumble` (XInput) + Vibration
-  settings; `MenuBackground` parallax + `MenuIntroAnimation`; company splash +
-  `GameVersion.h`.
-- **v1.0.9 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
+  `Button` / `Panel`; `TextLayout`; `ScreenFade`; `GlowingCursor`; `/W4` → 0 +
+  warnings-as-errors; first unit tests (`Board`, `Tetromino`, `TetrominoBag`,
+  `GameplaySession` scoring / levelling / clear).
+- **v1.0.8 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
   (all strings extracted, English wired) + `LocalizationRevision` + font system;
   threaded loading screen; data-driven content skeleton (piece defs, scoring,
   gravity as JSON).
+
+Moved to Phase 2 (they change what the game presents, not its code): the company
+splash + `GameVersion.h`, the FPS counter, the main-menu version text, the
+`MenuBackground` parallax + `MenuIntroAnimation`, and `GamepadRumble` (XInput) +
+Vibration settings — now **v1.1.0** below. Per-effect / screen-shake /
+reduce-motion toggles fold into the **v1.4.0** Options screen.
 
 ### End of Phase 1
 
@@ -166,6 +194,14 @@ v1.0.6, visual pass → v1.0.7, rumble → v1.0.8, localization pipe → v1.0.9.
 
 ### Phase 2 — features
 
+> Adding **v1.1.0 — Presentation & rumble** below pushes every later Phase 2
+> version number by one (Modern rules → v1.2.0, and so on). Numbers here are not
+> yet re-flowed — confirm the shift.
+
+- **v1.1.0 — Presentation & rumble.** Company splash + `GameVersion.h`; FPS
+  counter (Graphics toggle); grey main-menu version text; `MenuBackground`
+  parallax + `MenuIntroAnimation`; `GamepadRumble` (XInput) + Vibration
+  settings.
 - **v1.1.0 — Modern rules.** Buffer rows above the visible field + guideline
   block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
   delay + move reset; hold piece; 5-deep next queue; guideline scoring
