@@ -51,6 +51,17 @@ namespace UI
 		return value;
 	}
 
+	void Slider::SetValueFromPointer(sf::Vector2f point)
+	{
+		if (size.x <= 0.f)
+		{
+			return;
+		}
+
+		const float normalized = std::clamp((point.x - position.x) / size.x, 0.f, 1.f);
+		SetValue(minimum + normalized * (maximum - minimum));
+	}
+
 	void Slider::Increase()
 	{
 		if (step > 0.f)

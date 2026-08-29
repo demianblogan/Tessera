@@ -64,6 +64,10 @@ namespace UI
 		void SetValue(float value);
 		[[nodiscard]] float GetValue() const;
 
+		// Sets the value from a pointer position along the track (for mouse
+		// click / drag). `point` is in the slider's own coordinate space.
+		void SetValueFromPointer(sf::Vector2f point);
+
 		void Increase();
 		void Decrease();
 
