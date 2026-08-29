@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <SFML/Graphics/Sprite.hpp>
 
 #include "Element.h"
+#include "NineSliceFrame.h"
 
 namespace UI
 {
@@ -12,6 +14,7 @@ namespace UI
 	{
 	private:
 		sf::Sprite backgroundSprite;
+		std::optional<NineSliceFrame> frame;
 		std::unique_ptr<Element> child;
 		sf::Vector2f padding = { 0.f, 0.f };
 

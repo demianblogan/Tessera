@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 #include "../rendering/NeonGlow.h"
 
@@ -142,6 +143,11 @@ namespace UI
 	{
 		Element::Arrange(position, size);
 
+		if (backgroundSprite)
+		{
+			frame = NineSliceFrame::ForWidget(backgroundSprite->getTexture(), { position, size });
+		}
+
 		if (label == nullptr)
 		{
 			return;
@@ -205,7 +211,12 @@ namespace UI
 		// Normal button
 		// =====================================================
 
-		if (backgroundSprite)
+		if (frame)
+		{
+			frame->SetColor(backgroundColor);
+			frame->Draw(target);
+		}
+		else if (backgroundSprite)
 		{
 			sf::Sprite sprite = *backgroundSprite;
 

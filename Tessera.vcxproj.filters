@@ -27,6 +27,9 @@
     <ClCompile Include="src\ui\MenuList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\NineSliceFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\MainMenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -132,6 +135,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\MenuList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\NineSliceFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\State.h">

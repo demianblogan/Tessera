@@ -7,6 +7,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 
 #include "Label.h"
+#include "NineSliceFrame.h"
 
 namespace UI
 {
@@ -53,6 +54,9 @@ namespace UI
 		float outlineThickness = 0.f;
 
 		std::optional<sf::Sprite> backgroundSprite;
+
+		// Rebuilt in Arrange; SetColor is applied per-frame in the const Render.
+		mutable std::optional<NineSliceFrame> frame;
 
 		sf::Vector2f preferredSize = { 0.f, 0.f };
 
