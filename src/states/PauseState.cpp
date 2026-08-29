@@ -8,6 +8,8 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "MainMenuState.h"
 #include "GameplayState.h"
@@ -36,7 +38,7 @@ PauseState::PauseState(Context& context)
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, 120.f }));
 
 	{
-		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Pause", TitleSize);
+		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Pause::Title), TitleSize);
 		title->SetFillColor(sf::Color::White);
 		rootLayout.Add(std::move(title));
 	}
@@ -60,9 +62,9 @@ PauseState::PauseState(Context& context)
 			PerformAction(actions[index]);
 		};
 
-	CreateMenuButton("Resume Game", MenuAction::ResumeGame);
-	CreateMenuButton("Restart Game", MenuAction::RestartGame);
-	CreateMenuButton("Main Menu", MenuAction::MainMenu);
+	CreateMenuButton(context.localization.GetText(TextKey::Pause::Resume), MenuAction::ResumeGame);
+	CreateMenuButton(context.localization.GetText(TextKey::Pause::Restart), MenuAction::RestartGame);
+	CreateMenuButton(context.localization.GetText(TextKey::Pause::MainMenu), MenuAction::MainMenu);
 
 	UpdateLayout();
 }

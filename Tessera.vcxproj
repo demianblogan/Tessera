@@ -135,6 +135,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\input\GamepadManager.cpp" />
     <ClCompile Include="src\input\InputBinding.cpp" />
     <ClCompile Include="src\input\MenuInput.cpp" />
+    <ClCompile Include="src\localization\LocalizationManager.cpp" />
     <ClCompile Include="src\states\GameplayState.cpp" />
     <ClCompile Include="src\states\SettingsState.cpp" />
     <ClCompile Include="src\app\Application.cpp" />
@@ -178,6 +179,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\InputBinding.h" />
     <ClInclude Include="src\input\InputHandler.h" />
     <ClInclude Include="src\input\MenuInput.h" />
+    <ClInclude Include="src\localization\LocalizationManager.h" />
+    <ClInclude Include="src\localization\TextKeys.h" />
     <ClInclude Include="src\resources\Assets.h" />
     <ClInclude Include="src\audio\AudioPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
@@ -213,6 +216,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
+    <None Include="assets\data\localization\en.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

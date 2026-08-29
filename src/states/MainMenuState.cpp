@@ -7,6 +7,8 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "SettingsState.h"
 #include "StatisticsState.h"
@@ -45,7 +47,7 @@ MainMenuState::MainMenuState(Context& context)
 	{
 		auto title = std::make_unique<UI::Label>(
 			context.fonts.Get(Assets::FontID::Main),
-			"Tessera",
+			context.localization.GetText(TextKey::MainMenu::Title),
 			TitleSize
 		);
 
@@ -77,10 +79,10 @@ MainMenuState::MainMenuState(Context& context)
 			PerformAction(actions[index]);
 		};
 
-	CreateMenuButton("Start Game", MenuAction::StartGame);
-	CreateMenuButton("Options", MenuAction::Options);
-	CreateMenuButton("Statistics", MenuAction::Statistics);
-	CreateMenuButton("Exit", MenuAction::Exit);
+	CreateMenuButton(context.localization.GetText(TextKey::MainMenu::StartGame), MenuAction::StartGame);
+	CreateMenuButton(context.localization.GetText(TextKey::MainMenu::Options), MenuAction::Options);
+	CreateMenuButton(context.localization.GetText(TextKey::MainMenu::Statistics), MenuAction::Statistics);
+	CreateMenuButton(context.localization.GetText(TextKey::MainMenu::Exit), MenuAction::Exit);
 
 	UpdateLayout();
 

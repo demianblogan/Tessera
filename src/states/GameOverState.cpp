@@ -10,6 +10,8 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../statistics/HighScoreManager.h"
 #include "GameplayState.h"
@@ -41,7 +43,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TopSpacing }));
 
 	{
-		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), "Game Over", TitleSize);
+		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::GameOver::Title), TitleSize);
 		title->SetFillColor(sf::Color::White);
 		rootLayout.Add(std::move(title));
 	}
@@ -49,7 +51,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 	{
 		auto label = std::make_unique<UI::Label>(
 			context.fonts.Get(Assets::FontID::Main),
-			"Your score: " + std::to_string(finalScore),
+			context.localization.FormatText(TextKey::GameOver::Score, "{score}", std::to_string(finalScore)),
 			ScoreSize
 		);
 		label->SetFillColor(sf::Color::White);
@@ -77,7 +79,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 		{
 			auto label = std::make_unique<UI::Label>(
 				context.fonts.Get(Assets::FontID::Main),
-				"You broke the record!",
+				context.localization.GetText(TextKey::GameOver::NewRecord),
 				70
 			);
 			label->SetFillColor(sf::Color(255, 215, 0));
@@ -93,7 +95,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 			{
 				auto label = std::make_unique<UI::Label>(
 					context.fonts.Get(Assets::FontID::Main),
-					"Enter your name:",
+					context.localization.GetText(TextKey::GameOver::EnterName),
 					70
 				);
 				label->SetFillColor(sf::Color::White);
@@ -114,12 +116,12 @@ GameOverState::GameOverState(Context& context, int finalScore)
 			rootLayout.Add(std::move(layout));
 		}
 
-		CreateMenuButton("Save", MenuAction::SaveRecord);
+		CreateMenuButton(context.localization.GetText(TextKey::GameOver::Save), MenuAction::SaveRecord);
 	}
 	else
 	{
-		CreateMenuButton("Restart", MenuAction::RestartGame);
-		CreateMenuButton("Main Menu", MenuAction::MainMenu);
+		CreateMenuButton(context.localization.GetText(TextKey::GameOver::Restart), MenuAction::RestartGame);
+		CreateMenuButton(context.localization.GetText(TextKey::GameOver::MainMenu), MenuAction::MainMenu);
 	}
 
 	rootLayout.Add(std::move(menuLayoutElement));

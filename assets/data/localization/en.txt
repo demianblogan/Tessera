@@ -1,0 +1,43 @@
+# Tessera - English string catalog.
+# Format: section.key = value   (# starts a comment, \n is a line break)
+
+main_menu.title      = Tessera
+main_menu.start_game = Start Game
+main_menu.options    = Options
+main_menu.statistics = Statistics
+main_menu.exit       = Exit
+
+pause.title     = Pause
+pause.resume    = Resume Game
+pause.restart   = Restart Game
+pause.main_menu = Main Menu
+
+game_over.title      = Game Over
+game_over.score      = Your score: {score}
+game_over.new_record = You broke the record!
+game_over.enter_name = Enter your name:
+game_over.save       = Save
+game_over.restart    = Restart
+game_over.main_menu  = Main Menu
+
+settings.title                  = Settings
+settings.footer_return          = ESC - RETURN TO MAIN MENU
+settings.vsync_on               = Vertical synchronization: ON
+settings.vsync_off              = Vertical synchronization: OFF
+settings.fps_limit              = FPS limit:
+settings.fps_unlimited          = Unlimited
+settings.block_style_outline    = Block style: With outline
+settings.block_style_no_outline = Block style: Without outline
+settings.sounds                 = Sounds:
+settings.music                  = Music:
+
+stats.title         = TOP-{count} BEST PLAYERS
+stats.footer_return = ESC - RETURN TO MAIN MENU
+stats.footer_delete = DEL - DELETE ALL RECORDS
+stats.row           = {rank}. {name} = {score}
+stats.row_empty     = {rank}. ...
+
+hud.next_piece = Next Tetromino
+hud.score      = Score: {score}
+hud.level      = Level: {level}
+hud.controls   = [←] [→] - Move    [↓] - Soft drop\n[↑] - Rotate CW    [Z] - Rotate CCW\n[Space] - Hard drop\n[ESC] - Pause

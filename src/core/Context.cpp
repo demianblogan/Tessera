@@ -14,7 +14,8 @@ Context::Context(
     AudioPlayer& audioPlayer,
     SettingsManager& settings,
     HighScoreManager& highScores,
-    GamepadManager& gamepad
+    GamepadManager& gamepad,
+    LocalizationManager& localization
 )
     : stateMachine(stateMachine)
     , window(window)
@@ -27,6 +28,7 @@ Context::Context(
     , settings(settings)
     , highScores(highScores)
     , gamepad(gamepad)
+    , localization(localization)
 {
 	// No code
 }

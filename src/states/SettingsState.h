@@ -54,6 +54,8 @@ private:
 	void CreateAudioSection(UI::Layout& parent);
 	void CreateSliderRow(UI::Layout& parent, const sf::String& text, float minimum, float maximum, float value, float step, SliderSetting& setting);
 
+	[[nodiscard]] sf::String FormatFrameRate(int value) const;
+
 	void UpdateSelection();
 	void UpdateSliderLabels();
 

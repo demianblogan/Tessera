@@ -7,6 +7,8 @@
 
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "MainMenuState.h"
 
@@ -42,7 +44,7 @@ StatisticsState::StatisticsState(Context& context)
 	{
 		auto title = std::make_unique<UI::Label>(
 			context.fonts.Get(Assets::FontID::Main),
-			"TOP-" + std::to_string(HighScoreManager::MAX_RECORDS) + " BEST PLAYERS",
+			context.localization.FormatText(TextKey::Stats::Title, "{count}", std::to_string(HighScoreManager::MAX_RECORDS)),
 			TitleSize
 		);
 
@@ -104,7 +106,7 @@ StatisticsState::StatisticsState(Context& context)
 		// =================================================
 		{
 			auto label = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main),
-				"ESC - RETURN TO MAIN MENU",
+				context.localization.GetText(TextKey::Stats::FooterReturn),
 				FooterSize
 			);
 
@@ -119,7 +121,7 @@ StatisticsState::StatisticsState(Context& context)
 		{
 			auto label = std::make_unique<UI::Label>(
 				context.fonts.Get(Assets::FontID::Main),
-				"DEL - DELETE ALL RECORDS",
+				context.localization.GetText(TextKey::Stats::FooterDelete),
 				FooterSize
 			);
 
@@ -140,13 +142,20 @@ void StatisticsState::UpdateScoreLabels()
 
 	for (std::size_t i = 0; i < HighScoreManager::MAX_RECORDS; i++)
 	{
+		const sf::String rank = std::to_string(i + 1);
+
 		if (i < records.size())
 		{
-			scoreLabels[i]->SetString(std::to_string(i + 1) + ". " + records[i].playerName + " = " + std::to_string(records[i].score));
+			scoreLabels[i]->SetString(context.localization.FormatText(TextKey::Stats::Row,
+				{
+					{ "{rank}", rank },
+					{ "{name}", records[i].playerName },
+					{ "{score}", std::to_string(records[i].score) }
+				}));
 		}
 		else
 		{
-			scoreLabels[i]->SetString(std::to_string(i + 1) + ". ...");
+			scoreLabels[i]->SetString(context.localization.FormatText(TextKey::Stats::RowEmpty, "{rank}", rank));
 		}
 	}
 

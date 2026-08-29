@@ -9,6 +9,7 @@
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../input/GamepadManager.h"
+#include "../localization/LocalizationManager.h"
 #include "../resources/ResourceManager.h"
 #include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
@@ -50,6 +51,7 @@ private:
 
 	AudioPlayer audioPlayer;
 	GamepadManager gamepad;
+	LocalizationManager localization;
 
 	Context context;
 

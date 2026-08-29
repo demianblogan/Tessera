@@ -85,6 +85,11 @@ namespace Assets
 			inline constexpr const char* GameBackground = "assets/textures/game_background.png";
 		}
 
+		namespace Data
+		{
+			inline constexpr const char* LocalizationDir = "assets/data/localization";
+		}
+
 		namespace Shaders
 		{
 			inline constexpr const char* CRT = "assets/shaders/crt.frag";
