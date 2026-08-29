@@ -11,8 +11,10 @@ namespace UI
 		this->size = size;
 	}
 
-	void Element::Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const
+	void Element::Render(sf::RenderTarget& target, sf::Shader* /* glowShader */, float /* time */) const
 	{
+		// The glow-aware overload is optional; by default an element just draws
+		// itself and ignores the shader and time.
 		Render(target);
 	}
 

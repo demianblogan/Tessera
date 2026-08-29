@@ -90,9 +90,9 @@ void PauseState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void PauseState::Update(float deltaTime)
+void PauseState::Update(float /* deltaTime */)
 {
-	// No code
+	// Static overlay; nothing advances per frame.
 }
 
 void PauseState::Render(sf::RenderTarget& target)

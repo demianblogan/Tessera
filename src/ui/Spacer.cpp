@@ -14,8 +14,8 @@ namespace UI
 		return preferredSize;
 	}
 
-	void Spacer::Render(sf::RenderTarget& target) const
+	void Spacer::Render(sf::RenderTarget& /* target */) const
 	{
-		// No code
+		// A spacer only reserves layout room; it never draws.
 	}
 }

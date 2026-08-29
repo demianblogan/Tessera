@@ -139,9 +139,9 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void MainMenuState::Update(float deltaTime)
+void MainMenuState::Update(float /* deltaTime */)
 {
-	// No code
+	// Static screen; nothing advances per frame.
 }
 
 void MainMenuState::Render(sf::RenderTarget& target)

@@ -57,9 +57,13 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	for (int y = 0; y < Board::HEIGHT; y++)
 	{
 		const float t = static_cast<float>(y) / (Board::HEIGHT - 1);
-		const int brightness = static_cast<int>(6 + t * 18);
+		const auto brightness = static_cast<std::uint8_t>(6 + t * 18);
 
-		blockSprite.setColor(sf::Color(brightness / 2, brightness, brightness + 20));
+		blockSprite.setColor(sf::Color(
+			static_cast<std::uint8_t>(brightness / 2),
+			brightness,
+			static_cast<std::uint8_t>(brightness + 20)
+		));
 
 		for (int x = 0; x < Board::WIDTH; x++)
 		{
@@ -159,7 +163,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	for (const EffectsController::RowClearEffect& effect : effects.GetRowClearEffects())
 	{
 		const float t = effect.timer / EffectsController::RowClearDuration;
-		const int alpha = static_cast<int>((1.f - t) * 255.f);
+		const auto alpha = static_cast<std::uint8_t>((1.f - t) * 255.f);
 
 		sf::RectangleShape flash;
 		flash.setPosition(

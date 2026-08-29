@@ -173,9 +173,9 @@ void GameOverState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void GameOverState::Update(float deltaTime)
+void GameOverState::Update(float /* deltaTime */)
 {
-	// No code
+	// Static screen; nothing advances per frame.
 }
 
 void GameOverState::Render(sf::RenderTarget& target)
