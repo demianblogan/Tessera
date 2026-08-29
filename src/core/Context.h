@@ -12,6 +12,8 @@ class HighScoreManager;
 class GamepadManager;
 class LocalizationManager;
 
+namespace Haptics { class GamepadHaptics; }
+
 struct Context
 {
     StateMachine& stateMachine;
@@ -27,6 +29,7 @@ struct Context
     AudioPlayer& audioPlayer;
     ShaderManager& shaders;
     GamepadManager& gamepad;
+    Haptics::GamepadHaptics& gamepadHaptics;
     LocalizationManager& localization;
     float totalTime = 0.f;
 
@@ -42,6 +45,7 @@ struct Context
         SettingsManager& settings,
         HighScoreManager& highScores,
         GamepadManager& gamepad,
+        Haptics::GamepadHaptics& gamepadHaptics,
         LocalizationManager& localization
     );
 };

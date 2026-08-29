@@ -64,6 +64,7 @@ void Application::Update(float deltaTime)
 {
 	context.totalTime += deltaTime;
 	gamepad.Update();
+	gamepadHaptics.Update(deltaTime);
 
 	if (State* currentState = stateMachine.GetCurrentState())
 	{
@@ -153,10 +154,14 @@ Application::Application()
 		settings,
 		highScores,
 		gamepad,
+		gamepadHaptics,
 		localization)
 {
 	window.setMouseCursorVisible(true);
 	window.setView(gameView);
+
+	// Menu navigation gets a faint haptic tick for free once this is wired.
+	gamepad.SetHaptics(&gamepadHaptics);
 
 	const sf::Vector2u renderTextureSize
 	{

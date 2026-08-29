@@ -80,6 +80,14 @@ code at "solid Middle, near Middle-Senior"). No behaviour changes.
 `UI::MenuList` and `SettingsRowList` remain two selection models — merging them
 is left to the Phase 2 main-menu overhaul, which rewrites navigation anyway.
 
+Also landed here, ahead of when it's used: **`input/gamepad/GamepadHaptics`**,
+ported whole from ULA (self-contained, no SFML). Xbox rumble via XInput,
+DualSense rumble + lightbar + adaptive triggers via the vendored
+`libs/DualSenseWindows` (MIT, raw HID, built as source at `/W3`). Wired into
+`Application` (owned, ticked) and `GamepadManager::SetHaptics` (a faint tick on
+every gamepad menu move). The gameplay pulses, the by-state lightbar, the
+trigger effects on rotate, and the vibration settings are v1.1.0.
+
 ### v1.0.8 — Localization pipe
 
 Every on-screen string moved from its call site into a flat catalog

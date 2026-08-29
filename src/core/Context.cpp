@@ -15,6 +15,7 @@ Context::Context(
     SettingsManager& settings,
     HighScoreManager& highScores,
     GamepadManager& gamepad,
+    Haptics::GamepadHaptics& gamepadHaptics,
     LocalizationManager& localization
 )
     : stateMachine(stateMachine)
@@ -28,6 +29,7 @@ Context::Context(
     , settings(settings)
     , highScores(highScores)
     , gamepad(gamepad)
+    , gamepadHaptics(gamepadHaptics)
     , localization(localization)
 {
 	// No code

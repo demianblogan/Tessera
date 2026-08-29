@@ -5,6 +5,8 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Joystick.hpp>
 
+#include "gamepad/GamepadHaptics.h"
+
 namespace
 {
 	// USB vendor IDs assigned by the USB-IF -- Microsoft's and Sony's fixed,
@@ -33,9 +35,23 @@ namespace
 	constexpr unsigned int PlayStationRightTriggerButton = 7u;
 }
 
+namespace
+{
+	// A barely-there tick for moving between menu items -- softer than any
+	// gameplay pulse because it fires on every single navigation step.
+	constexpr float MenuNavigationLowMotor = 0.05f;
+	constexpr float MenuNavigationHighMotor = 0.12f;
+	constexpr float MenuNavigationDuration = 0.05f;
+}
+
 GamepadManager::GamepadManager()
 {
 	RefreshConnection();
+}
+
+void GamepadManager::SetHaptics(Haptics::GamepadHaptics* newHaptics) noexcept
+{
+	haptics = newHaptics;
 }
 
 void GamepadManager::HandleEvent(const sf::Event& event)
@@ -80,6 +96,18 @@ void GamepadManager::Update()
 }
 
 GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::Event& event) const
+{
+	const NavigationAction action = ComputeNavigationAction(event);
+
+	if (action != NavigationAction::None && haptics != nullptr)
+	{
+		haptics->PulseVibration(MenuNavigationLowMotor, MenuNavigationHighMotor, MenuNavigationDuration);
+	}
+
+	return action;
+}
+
+GamepadManager::NavigationAction GamepadManager::ComputeNavigationAction(const sf::Event& event) const
 {
 	if (const auto* moved = event.getIf<sf::Event::JoystickMoved>())
 	{
