@@ -60,17 +60,17 @@
            size)`). This is an idiomatic, safe pattern; the warning is noise. -->
       <DisableSpecificWarnings>4458;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;DS5W_BUILD_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)src</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)libs\SFML\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;xinput.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
     <PostBuildEvent>
@@ -91,10 +91,10 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-d-3.dll" "$(OutDir)"</Comm
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;DS5W_BUILD_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)src</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -103,7 +103,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-d-3.dll" "$(OutDir)"</Comm
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(ProjectDir)libs\SFML\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-system.lib;sfml-window.lib;sfml-graphics.lib;sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sfml-system.lib;sfml-window.lib;sfml-graphics.lib;sfml-audio.lib;xinput.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
     <PostBuildEvent>
@@ -133,11 +133,40 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
     <ClCompile Include="src\input\GamepadManager.cpp" />
+    <ClCompile Include="src\input\gamepad\GamepadHaptics.cpp" />
+    <!-- Vendored: Ohjurot/DualSense-Windows (MIT), raw-HID DualSense support.
+         Third-party, so it builds at /W3 without warnings-as-errors. -->
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Input.cpp">
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Output.cpp">
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.cpp">
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\Helpers.cpp">
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\IO.cpp">
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp" />
     <ClCompile Include="src\input\MenuInput.cpp" />
     <ClCompile Include="src\localization\LocalizationManager.cpp" />
     <ClCompile Include="src\states\GameplayState.cpp" />
     <ClCompile Include="src\states\SettingsState.cpp" />
+    <ClCompile Include="src\states\SettingsRowList.cpp" />
     <ClCompile Include="src\app\Application.cpp" />
     <ClCompile Include="src\core\Context.cpp" />
     <ClCompile Include="src\core\State.cpp" />
@@ -147,6 +176,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\ui\NineSliceFrame.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\states\MainMenuState.cpp" />
+    <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
     <ClCompile Include="src\states\StatisticsState.cpp" />
     <ClCompile Include="src\ui\Button.cpp" />
@@ -176,6 +206,15 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\ActionMap.h" />
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
+    <ClInclude Include="src\input\gamepad\GamepadHaptics.h" />
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h" />
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DS5State.h" />
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DSW_Api.h" />
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Helpers.h" />
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\IO.h" />
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Input.h" />
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Output.h" />
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.h" />
     <ClInclude Include="src\input\InputBinding.h" />
     <ClInclude Include="src\input\InputHandler.h" />
     <ClInclude Include="src\input\MenuInput.h" />
@@ -185,15 +224,16 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\audio\AudioPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
     <ClInclude Include="src\states\SettingsState.h" />
+    <ClInclude Include="src\states\SettingsRowList.h" />
     <ClInclude Include="src\app\Application.h" />
     <ClInclude Include="src\core\Context.h" />
-    <ClInclude Include="src\core\StateId.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
     <ClInclude Include="src\statistics\HighScoreEntry.h" />
     <ClInclude Include="src\statistics\HighScoreManager.h" />
     <ClInclude Include="src\ui\Button.h" />
     <ClInclude Include="src\ui\Element.h" />
     <ClInclude Include="src\states\MainMenuState.h" />
+    <ClInclude Include="src\states\MenuScreenState.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\settings\SettingsManager.h" />
     <ClInclude Include="src\core\State.h" />

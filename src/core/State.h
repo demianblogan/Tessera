@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "StateId.h"
-
 class StateMachine;
 
 namespace sf
@@ -15,6 +13,15 @@ namespace sf
 class State
 {
 public:
+    // What the application should put behind this state. Opaque states cover
+    // the screen themselves; BlurredPrevious asks for the state below to be
+    // rendered and blurred first (the pause overlay).
+    enum class Backdrop
+    {
+        Opaque,
+        BlurredPrevious
+    };
+
     explicit State(StateMachine& stateMachine);
     virtual ~State() = default;
 
@@ -23,17 +30,13 @@ public:
     State(State&&) = delete;
     State& operator=(State&&) = delete;
 
-    [[nodiscard]] virtual StateId GetId() const = 0;
-
     virtual void HandleEvent(const sf::Event& event) = 0;
     virtual void Update(float deltaTime) = 0;
     virtual void Render(sf::RenderTarget& target) = 0;
 
-    // When true, the state below this one is rendered as well (used for the
-    // pause overlay).
-    [[nodiscard]] virtual bool IsTransparent() const
+    [[nodiscard]] virtual Backdrop GetBackdrop() const
     {
-        return false;
+        return Backdrop::Opaque;
     }
 
 protected:

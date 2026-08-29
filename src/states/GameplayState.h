@@ -56,7 +56,6 @@ private:
 	std::unique_ptr<UI::Layout> rightHudLayout;
 	std::unique_ptr<UI::Panel> controlsPanel;
 
-	UI::Label* nextTetrominoLabel = nullptr;
 	UI::Label* scoreLabel = nullptr;
 	UI::Label* levelLabel = nullptr;
 
@@ -76,8 +75,6 @@ private:
 
 public:
 	explicit GameplayState(Context& context);
-
-	[[nodiscard]] StateId GetId() const override { return StateId::Game; }
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;

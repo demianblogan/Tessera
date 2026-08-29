@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="libs\DualSenseWindows">
+      <UniqueIdentifier>{a1b2c3d4-0000-4000-8000-000000000002}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -31,6 +34,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\MainMenuState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\MenuScreenState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\audio\AudioPlayer.cpp">
@@ -52,6 +58,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\SettingsState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\SettingsRowList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\Layout.cpp">
@@ -92,6 +101,24 @@
     </ClCompile>
     <ClCompile Include="src\input\GamepadManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\gamepad\GamepadHaptics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Input.cpp">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Output.cpp">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.cpp">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\Helpers.cpp">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\DualSenseWindows\src\DualSenseWindows\IO.cpp">
+      <Filter>libs\DualSenseWindows</Filter>
     </ClCompile>
     <ClCompile Include="src\input\DirectionalRepeater.cpp">
       <Filter>Source Files</Filter>
@@ -149,10 +176,10 @@
     <ClInclude Include="src\core\State.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\StateId.h">
+    <ClInclude Include="src\states\MainMenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\MainMenuState.h">
+    <ClInclude Include="src\states\MenuScreenState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\ResourceManager.h">
@@ -186,6 +213,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\SettingsState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\SettingsRowList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Element.h">
@@ -235,6 +265,33 @@
     </ClInclude>
     <ClInclude Include="src\input\GamepadManager.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\gamepad\GamepadHaptics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DS5State.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DSW_Api.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Helpers.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\IO.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Input.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS5_Output.h">
+      <Filter>libs\DualSenseWindows</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.h">
+      <Filter>libs\DualSenseWindows</Filter>
     </ClInclude>
     <ClInclude Include="src\input\DirectionalRepeater.h">
       <Filter>Header Files</Filter>

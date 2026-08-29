@@ -44,11 +44,6 @@ namespace UI
 		return text.getString();
 	}
 
-	float Label::GetVisualHeight() const
-	{
-		return static_cast<float>(text.getCharacterSize()) * text.getScale().y;
-	}
-
 	sf::Vector2f Label::Measure() const
 	{
 		const sf::FloatRect bounds = text.getLocalBounds();

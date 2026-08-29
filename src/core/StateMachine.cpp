@@ -67,21 +67,9 @@ State* StateMachine::GetCurrentState()
 
 void StateMachine::RenderStates(sf::RenderTarget& target)
 {
-	if (states.empty())
+	for (const std::unique_ptr<State>& state : states)
 	{
-		return;
-	}
-
-	int startIndex = static_cast<int>(states.size()) - 1;
-
-	while (startIndex > 0 && states[startIndex]->IsTransparent())
-	{
-		startIndex--;
-	}
-
-	for (int i = startIndex; i < static_cast<int>(states.size()); i++)
-	{
-		states[i]->Render(target);
+		state->Render(target);
 	}
 }
 

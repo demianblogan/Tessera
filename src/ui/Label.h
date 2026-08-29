@@ -25,7 +25,6 @@ namespace UI
 		void SetMaxWidth(float maxWidth);
 
 		[[nodiscard]] sf::String GetString() const;
-		[[nodiscard]] float GetVisualHeight() const;
 
 		[[nodiscard]] sf::Vector2f Measure() const override;
 		void Arrange(sf::Vector2f position, sf::Vector2f size) override;

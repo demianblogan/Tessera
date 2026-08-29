@@ -6,14 +6,20 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
 
+#include <memory>
+
 #include "../audio/AudioPlayer.h"
 #include "../core/StateMachine.h"
 #include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
-#include "../ui/Slider.h"
-#include "../resources/Assets.h"
+#include "../settings/GameSettings.h"
 #include "../settings/SettingsManager.h"
+#include "../resources/Assets.h"
+#include "../ui/Button.h"
+#include "../ui/Label.h"
+#include "../ui/Slider.h"
+#include "../ui/Spacer.h"
 #include "MainMenuState.h"
 
 namespace
@@ -31,13 +37,11 @@ namespace
 	constexpr float SliderHandleHeight = 40.f;
 	constexpr float ToggleButtonWidth = 700.f;
 	constexpr float ToggleButtonHeight = 60.f;
-	constexpr float BlockStyleButtonWidth = 260.f;
 	constexpr unsigned int TitleSize = 120;
 	constexpr unsigned int SectionTitleSize = 60;
 	constexpr unsigned int RowTextSize = 40;
 	constexpr unsigned int FooterTextSize = 50;
 	constexpr float SectionWidth = 900.f;
-
 	constexpr float FrameRateSliderStep = 10.f;
 	constexpr float VolumeSliderStep = 1.f;
 
@@ -50,6 +54,14 @@ SettingsState::SettingsState(Context& context)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 {
 	backgroundSprite.setColor(sf::Color(255, 255, 255, 180));
+
+	rows.onSelectionChanged = [this] { this->context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected); };
+	rows.onSliderAdjusted = [this](UI::Slider&)
+		{
+			UpdateSliderLabels();
+			ApplyAndSaveSettings();
+		};
+	rows.onButtonActivated = [this](UI::Button& button) { OnButtonActivated(button); };
 
 	rootLayout.SetHorizontalAlignment(UI::Layout::Alignment::Center);
 	rootLayout.SetVerticalAlignment(UI::Layout::Alignment::Start);
@@ -121,7 +133,6 @@ SettingsState::SettingsState(Context& context)
 	}
 
 	UpdateSliderLabels();
-	UpdateSelection();
 	UpdateLayout();
 }
 
@@ -130,7 +141,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 	const auto& font = context.fonts.Get(Assets::FontID::Main);
 
 	auto section = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-	section->SetWidthPixels(900.f);
+	section->SetWidthPixels(SectionWidth);
 	section->SetGap(RowGap);
 
 	// =====================================================
@@ -164,8 +175,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		button->SetSelectedStyle({ .backgroundColor = sf::Color::Transparent, .textColor = sf::Color::Yellow });
 
 		verticalSyncButton = button.get();
-
-		selectableElements.push_back({ .type = SelectableType::Button, .button = verticalSyncButton });
+		rows.AddButton(*verticalSyncButton);
 
 		section->Add(std::move(button));
 	}
@@ -214,8 +224,7 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		);
 
 		blockStyleButton = button.get();
-
-		selectableElements.push_back({ .type = SelectableType::Button, .button = blockStyleButton });
+		rows.AddButton(*blockStyleButton);
 
 		section->Add(std::move(button));
 	}
@@ -228,7 +237,7 @@ void SettingsState::CreateAudioSection(UI::Layout& parent)
 	const auto& font = context.fonts.Get(Assets::FontID::Main);
 
 	auto section = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-	section->SetWidthPixels(900.f);
+	section->SetWidthPixels(SectionWidth);
 	section->SetGap(RowGap);
 
 	// =====================================================
@@ -346,8 +355,6 @@ void SettingsState::CreateSliderRow(
 
 	setting.slider = slider.get();
 
-	selectableElements.push_back({ .type = SelectableType::Slider, .slider = setting.slider });
-
 	row->Add(std::move(slider));
 
 	// =====================================================
@@ -359,55 +366,9 @@ void SettingsState::CreateSliderRow(
 	setting.valueLabel = valueLabel.get();
 	row->Add(std::move(valueLabel));
 
+	rows.AddSlider(*setting.slider, *setting.nameLabel, *setting.valueLabel);
+
 	parent.Add(std::move(row));
-}
-
-void SettingsState::UpdateSelection()
-{
-	for (const SelectableElement& element : selectableElements)
-	{
-		if (element.type == SelectableType::Button)
-		{
-			element.button->SetSelected(false);
-		}
-	}
-
-	auto resetSlider = [](SliderSetting& setting)
-		{
-			setting.nameLabel->SetFillColor(sf::Color::White);
-			setting.valueLabel->SetFillColor(sf::Color::White);
-		};
-
-	resetSlider(frameRateSetting);
-	resetSlider(soundSetting);
-	resetSlider(musicSetting);
-
-	const SelectableElement& selected = selectableElements[selectedIndex];
-
-	if (selected.type == SelectableType::Button)
-	{
-		selected.button->SetSelected(true);
-		return;
-	}
-
-	auto highlightSlider = [](SliderSetting& setting)
-		{
-			setting.nameLabel->SetFillColor(sf::Color::Yellow);
-			setting.valueLabel->SetFillColor(sf::Color::Yellow);
-		};
-
-	if (selected.slider == frameRateSetting.slider)
-	{
-		highlightSlider(frameRateSetting);
-	}
-	else if (selected.slider == soundSetting.slider)
-	{
-		highlightSlider(soundSetting);
-	}
-	else if (selected.slider == musicSetting.slider)
-	{
-		highlightSlider(musicSetting);
-	}
 }
 
 sf::String SettingsState::FormatFrameRate(int value) const
@@ -421,113 +382,52 @@ void SettingsState::UpdateSliderLabels()
 {
 	frameRateSetting.valueLabel->SetString(FormatFrameRate(static_cast<int>(frameRateSetting.slider->GetValue())));
 
-	soundSetting.valueLabel->SetString(
-		std::to_string(static_cast<int>(soundSetting.slider->GetValue()))
-	);
-
-	musicSetting.valueLabel->SetString(
-		std::to_string(static_cast<int>(musicSetting.slider->GetValue()))
-	);
+	soundSetting.valueLabel->SetString(std::to_string(static_cast<int>(soundSetting.slider->GetValue())));
+	musicSetting.valueLabel->SetString(std::to_string(static_cast<int>(musicSetting.slider->GetValue())));
 }
 
-void SettingsState::SelectPrevious()
+void SettingsState::OnButtonActivated(UI::Button& button)
 {
-	selectedIndex--;
-
-	if (selectedIndex < 0)
+	if (&button == verticalSyncButton)
 	{
-		selectedIndex = static_cast<int>(selectableElements.size()) - 1;
+		ToggleVerticalSync();
 	}
-
-	UpdateSelection();
-
-	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-}
-
-void SettingsState::SelectNext()
-{
-	selectedIndex++;
-
-	if (selectedIndex >= static_cast<int>(selectableElements.size()))
+	else if (&button == blockStyleButton)
 	{
-		selectedIndex = 0;
-	}
-
-	UpdateSelection();
-
-	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-}
-
-void SettingsState::IncreaseCurrentSlider()
-{
-	const SelectableElement& selected = selectableElements[selectedIndex];
-
-	if (selected.type != SelectableType::Slider)
-	{
-		return;
-	}
-
-	selected.slider->Increase();
-	UpdateSliderLabels();
-	ApplyAndSaveSettings();
-
-	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-}
-
-void SettingsState::DecreaseCurrentSlider()
-{
-	const SelectableElement& selected = selectableElements[selectedIndex];
-
-	if (selected.type != SelectableType::Slider)
-	{
-		return;
-	}
-
-	selected.slider->Decrease();
-	UpdateSliderLabels();
-	ApplyAndSaveSettings();
-
-	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-}
-
-void SettingsState::ActivateCurrentElement()
-{
-	const SelectableElement& selected = selectableElements[selectedIndex];
-
-	if (selected.type != SelectableType::Button)
-	{
-		return;
-	}
-
-	if (selected.button == verticalSyncButton)
-	{
-		GameSettings& settings = context.settings.GetSettings();
-
-		settings.verticalSyncEnabled = !settings.verticalSyncEnabled;
-
-		verticalSyncButton->GetLabel()->SetString(
-			context.localization.GetText(settings.verticalSyncEnabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff)
-		);
-
-		ApplyAndSaveSettings();
-	}
-	else if (selected.button == blockStyleButton)
-	{
-		GameSettings& settings = context.settings.GetSettings();
-
-		settings.blockRenderStyle =
-			settings.blockRenderStyle == BlockRenderStyle::WithOutline ? BlockRenderStyle::WithoutOutline : BlockRenderStyle::WithOutline;
-
-		const bool withOutline = settings.blockRenderStyle == BlockRenderStyle::WithOutline;
-
-		blockStyleButton->GetLabel()->SetString(
-			context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline)
-		);
-
-		ApplyAndSaveSettings();
+		ToggleBlockStyle();
 	}
 
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+}
+
+void SettingsState::ToggleVerticalSync()
+{
+	GameSettings& settings = context.settings.GetSettings();
+
+	settings.verticalSyncEnabled = !settings.verticalSyncEnabled;
+
+	verticalSyncButton->GetLabel()->SetString(
+		context.localization.GetText(settings.verticalSyncEnabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff)
+	);
+
+	ApplyAndSaveSettings();
+}
+
+void SettingsState::ToggleBlockStyle()
+{
+	GameSettings& settings = context.settings.GetSettings();
+
+	settings.blockRenderStyle = settings.blockRenderStyle == BlockRenderStyle::WithOutline
+		? BlockRenderStyle::WithoutOutline
+		: BlockRenderStyle::WithOutline;
+
+	const bool withOutline = settings.blockRenderStyle == BlockRenderStyle::WithOutline;
+
+	blockStyleButton->GetLabel()->SetString(
+		context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline)
+	);
+
+	ApplyAndSaveSettings();
 }
 
 void SettingsState::ApplyAndSaveSettings()
@@ -550,15 +450,28 @@ void SettingsState::UpdateLayout()
 
 void SettingsState::HandleEvent(const sf::Event& event)
 {
-	switch (MenuInput::Resolve(event, context.gamepad))
+	switch (const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad))
 	{
-	case MenuInput::Action::Back:    RequestChange(std::make_unique<MainMenuState>(context)); return;
-	case MenuInput::Action::Up:      SelectPrevious();          return;
-	case MenuInput::Action::Down:    SelectNext();              return;
-	case MenuInput::Action::Left:    DecreaseCurrentSlider();   return;
-	case MenuInput::Action::Right:   IncreaseCurrentSlider();   return;
-	case MenuInput::Action::Confirm: ActivateCurrentElement();  return;
-	default:                                                    break;
+	case MenuInput::Action::Back:
+		RequestChange(std::make_unique<MainMenuState>(context));
+		return;
+
+	case MenuInput::Action::Up:      rows.SelectPrevious(); return;
+	case MenuInput::Action::Down:    rows.SelectNext();     return;
+
+	case MenuInput::Action::Left:
+	case MenuInput::Action::Right:
+		if (rows.CurrentSlider() != nullptr)
+		{
+			rows.AdjustCurrent(action == MenuInput::Action::Right ? 1 : -1);
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		}
+		return;
+
+	case MenuInput::Action::Confirm: rows.ActivateCurrent(); return;
+
+	default:
+		break;
 	}
 
 	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
@@ -578,46 +491,20 @@ void SettingsState::HandlePointer(sf::Vector2f point, bool clicked)
 {
 	// Dragging a held slider follows the cursor even when it leaves the track.
 	const bool dragging = !clicked && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-	if (dragging &&
-		selectedIndex >= 0 &&
-		selectedIndex < static_cast<int>(selectableElements.size()) &&
-		selectableElements[selectedIndex].type == SelectableType::Slider)
+
+	if (dragging && rows.CurrentSlider() != nullptr)
 	{
-		selectableElements[selectedIndex].slider->SetValueFromPointer(point);
-		UpdateSliderLabels();
-		ApplyAndSaveSettings();
+		rows.DragCurrentTo(point);
 		return;
 	}
 
-	for (std::size_t index = 0; index < selectableElements.size(); index++)
+	if (clicked)
 	{
-		const SelectableElement& element = selectableElements[index];
-
-		const bool overButton = element.type == SelectableType::Button && element.button->Contains(point);
-		const bool overSlider = element.type == SelectableType::Slider && element.slider->Contains(point);
-		if (!overButton && !overSlider)
-		{
-			continue;
-		}
-
-		if (static_cast<int>(index) != selectedIndex)
-		{
-			selectedIndex = static_cast<int>(index);
-			UpdateSelection();
-		}
-
-		if (clicked && overButton)
-		{
-			ActivateCurrentElement();
-		}
-		else if (clicked && overSlider)
-		{
-			element.slider->SetValueFromPointer(point);
-			UpdateSliderLabels();
-			ApplyAndSaveSettings();
-		}
-
-		return;
+		rows.PressAt(point);
+	}
+	else
+	{
+		rows.SelectAt(point);
 	}
 }
 

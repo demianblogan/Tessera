@@ -64,6 +64,7 @@ void Application::Update(float deltaTime)
 {
 	context.totalTime += deltaTime;
 	gamepad.Update();
+	gamepadHaptics.Update(deltaTime);
 
 	if (State* currentState = stateMachine.GetCurrentState())
 	{
@@ -78,13 +79,14 @@ void Application::Render()
 
 	State* currentState = stateMachine.GetCurrentState();
 
-	const bool isPause = currentState != nullptr && currentState->GetId() == StateId::Pause;
+	const bool blurBackdrop = currentState != nullptr
+		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
 
 	// =====================================================
-	// Normal Render
+	// Opaque state: render the stack straight to the screen
 	// =====================================================
 
-	if (!isPause)
+	if (!blurBackdrop)
 	{
 		renderTexture.clear();
 		renderTexture.setView(gameView);
@@ -102,7 +104,7 @@ void Application::Render()
 	}
 
 	// =====================================================
-	// Render gameplay only
+	// Blurred backdrop: the states below, blurred, then the top state on top
 	// =====================================================
 
 	gameplayTexture.clear();
@@ -133,10 +135,13 @@ void Application::Render()
 }
 
 Application::Application()
+	// Members are listed in declaration order so the initialisation order is
+	// obvious; `context` is last because it binds references to the rest.
 	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
-	, audioPlayer(soundBuffers)
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
+	, highScores(AppDataPath::Resolve(SaveFile::Scores))
+	, audioPlayer(soundBuffers)
 	, context(
 		stateMachine,
 		window,
@@ -149,11 +154,14 @@ Application::Application()
 		settings,
 		highScores,
 		gamepad,
+		gamepadHaptics,
 		localization)
-	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 {
 	window.setMouseCursorVisible(true);
 	window.setView(gameView);
+
+	// Menu navigation gets a faint haptic tick for free once this is wired.
+	gamepad.SetHaptics(&gamepadHaptics);
 
 	const sf::Vector2u renderTextureSize
 	{
