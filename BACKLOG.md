@@ -43,39 +43,42 @@ Cross-cutting decisions:
 
 ---
 
-## In progress
+## Released
 
 ### v1.0.9 — Polish pass
 
-The end-of-Phase-1 cleanup, widened after a full read-through. A project review
-put the code at "solid Middle, near Middle-Senior"; this closes the gap before
-feature work. No behaviour changes.
+The end-of-Phase-1 cleanup, widened after a full read-through (a review put the
+code at "solid Middle, near Middle-Senior"). No behaviour changes.
 
-- **`MenuScreenState` base** — MainMenu / Pause / GameOver copy ~40 lines each
-  (button factory, `MenuInput` dispatch + mouse forwarding, layout refresh,
-  selection/activation wiring). Pull the shared scaffolding into one base.
-- **Rendering the pause backdrop** — `Application::Render` hard-codes
-  `StateId::Pause` to blur the layer below, bypassing the general
-  `IsTransparent()` / `StateMachine::RenderStates` path (which is then dead).
-  Replace the enum check with a `State` virtual and drop the unused mechanism.
-- **Dead code** — `Layout::GetChildren` / `SetBackgroundColor` (+ its member and
+- **`MenuScreenState`** — MainMenu / Pause / GameOver shared a copy each of the
+  button factory, `MenuInput` dispatch, mouse forwarding, layout refresh and the
+  MenuList callback wiring. That's the base now; a subclass builds its layout,
+  calls `AddMenuItem(text, callback)`, and overrides `OnBack()` /
+  `HandleExtraEvent()`. The per-screen action enum and `PerformAction` switch
+  are gone.
+- **Pause backdrop** — `Application::Render` hard-coded `StateId::Pause` to blur
+  the layer below, while the generic path (`IsTransparent()` +
+  `StateMachine::RenderStates`' transparent-walk) ran only where nothing is ever
+  transparent. Replaced with `State::GetBackdrop()`; the whole `StateId` enum
+  and `GetId()` (its only consumer) are removed, along with the dead walk.
+- **`SettingsRowList`** — the Settings screen's tagged-union selection model
+  (`SelectableElement`, `selectedIndex`, the three-way highlight chain, a method
+  per direction) is one focused class now: rows, current index, highlight,
+  hit-testing, click-drag, and `onButton/Slider/Selection` callbacks.
+- **`Layout::Arrange` / `Measure`** — the vertical and horizontal branches were
+  mirror images and the size-rule switch was written three times; an `Axes`
+  helper collapses each to one path. Fixes the latent cross-axis Fill case and
+  the missing `Alignment::Start` in the horizontal branch.
+- **Dead code** — `Layout::GetChildren` / `SetBackgroundColor` (+ member +
   render branch), `Label::GetVisualHeight`, `ActionMap::ClearBindings`,
-  `ResourceManager::ForEach() const`, `GameplayState::nextTetrominoLabel`,
-  `SettingsState` `SectionWidth` / `BlockStyleButtonWidth` constants.
-- **`Layout::Arrange`** — the vertical and horizontal branches are mirror-image
-  copies and the size-rule switch is written three times. Fold onto one axis.
-- **`SettingsState.cpp` (630 lines)** — split the section builders out.
-- **Selection** — `UI::MenuList` (buttons) and `SettingsState`'s hand-rolled
-  slider/button navigation are two systems. Give the toolkit one focus
-  abstraction. (If this destabilises the menus, it defers to the Phase 2
-  main-menu overhaul, which rewrites navigation anyway.)
-- Minor: `Application` ctor init-list order; `Board::Contains` /
-  `IntersectsLockedCells` visibility; the missing `Alignment::Start` case in
-  `Layout::Arrange`'s horizontal branch.
+  `ResourceManager::ForEach() const`, `GameplayState::nextTetrominoLabel`, two
+  stray `SettingsState` constants.
+- Minor: `Application` ctor initialiser list follows declaration order;
+  `Board::Contains` / `IntersectsLockedCells` are private (`CanPlace` is the
+  only caller).
 
----
-
-## Released
+`UI::MenuList` and `SettingsRowList` remain two selection models — merging them
+is left to the Phase 2 main-menu overhaul, which rewrites navigation anyway.
 
 ### v1.0.8 — Localization pipe
 
@@ -236,12 +239,13 @@ effects. Behaviour unchanged — relocation only.
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.9 — Polish pass.** (in progress; see above.)
+**Phase 1 is complete** (v1.0.1 – v1.0.9). Next is v1.1.0, the first feature
+version.
 
 The threaded loading screen and the data-driven content skeleton that were
-sketched here landed nowhere in Phase 1: the loader has nothing to show until
-the v1.1.0 splash, and the JSON skeleton is premature until v1.2.0's game modes
-need parameters. Both move to where they earn their keep.
+sketched for Phase 1 landed nowhere: the loader has nothing to show until the
+v1.1.0 splash, and the JSON skeleton is premature until v1.2.0's game modes need
+parameters. Both move to where they earn their keep.
 
 Moved to Phase 2 (they change what the game presents, not its code): the company
 splash + `GameVersion.h`, the FPS counter, the main-menu version text, the
@@ -249,9 +253,6 @@ splash + `GameVersion.h`, the FPS counter, the main-menu version text, the
 Vibration settings — now **v1.1.0** below. Per-effect / screen-shake /
 reduce-motion toggles fold into the **v1.4.0** Options screen.
 
-### End of Phase 1
-
-- Absorbed into v1.0.9 above (the polish pass).
 
 ### Phase 2 — features
 
