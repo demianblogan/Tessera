@@ -43,38 +43,35 @@ Cross-cutting decisions:
 
 ---
 
-## In progress
+## Released
 
 ### v1.0.7 — Visual pass & first tests
 
-Make the game look closer to its target, and put a safety net under the rules.
-No gameplay changes.
+Foundations for the look, and a safety net under the rules. No gameplay changes.
 
-- **`rendering/NeonGlow`** (port from ULA) — real bloom: bright parts rendered
-  to an off-screen target, blurred with the ping-pong `Blur` shader, added back
-  over the frame. Replaces the current fake glow (the same sprite scaled 118 %
-  with additive blend). Clears the `Uniform "time" not found in shader` console
-  message on the way.
-- **`ui/NineSliceFrame`** in `Button` / `Panel` — corners stay fixed, only the
-  edges and centre stretch, so panel and button frames stay crisp at any size.
-- **`ui/TextLayout`** — text sized by `setScale`, not `setCharacterSize`
-  (the latter re-rasterises the face and jitters); alignment / wrapping in one
-  place. All `UI::Label`s move onto it.
-- **`/W4` → 0 + warnings-as-errors.** ~42 today: `C4458` (members shadowed in
-  Slider / Element / Label / Layout), `C4100` (unused `deltaTime` / `target` in
-  states), `C4244` (`int` → `uint8_t` narrowing in `BoardRenderer`'s gradient).
-- **First unit tests** — a `TesseraTests` project (its own `.vcxproj`, in the
-  solution, not in the game build) covering `Board` (lock, `FindFullRows`,
-  `ClearRows` compaction, `CanPlace`), `Tetromino` (rotation cycle, block
-  positions), `TetrominoBag` (7-bag, no dupes within a bag),
-  `GameplaySession` (scoring, level threshold, clear delay, game over).
+- **`rendering/NeonGlow`** — real additive bloom for the active piece and the
+  selected menu button: source rendered to an off-screen buffer, silhouette
+  grown by a square dilation (`neon_dilate.frag`) so the edge-glow is even on
+  every side and corner, softened by a separable Gaussian (`neon_blur.frag`),
+  composited back tinted and pulsing. Replaces the fake 1.18×-scale glow and the
+  flat `glow.frag` menu highlight (both removed). `crt.frag` now uses its `time`
+  uniform, silencing the `Uniform "time" not found` launch warning.
+- **`ui/NineSliceFrame`** in `Button` / `Panel` — corners stay unscaled, edges
+  and centre stretch. *Note:* the current `panel_background` / `button_background`
+  art isn't symmetric, so the payoff is small until those are replaced (see
+  Phase 2 visual overhaul).
+- **`ui/TextLayout`** — `FitWidth` scales text down to a max width instead of
+  changing character size (no per-string atlas rebuild); `CentreOrigin`.
+  `Label::SetMaxWidth`; the gameplay HUD caps its labels so the controls block
+  no longer overruns its panel.
+- **`/W4` → 0 + warnings-as-errors.** C4244 fixed, C4100 fixed, C4458 disabled
+  project-wide (the deliberate ctor/param-name idiom).
+- **First unit tests** — a `TesseraTests` project (own `.vcxproj`, in the
+  solution, out of the game build) on doctest: 25 cases over `Board`,
+  `Tetromino`, `TetrominoBag`, `GameplaySession`.
 
-`ScreenFade` and `GlowingCursor` were dropped from this version — cursor design
-and menu transitions are a v1.1+ discussion.
-
----
-
-## Released
+`ScreenFade` and `GlowingCursor` were dropped — cursor design and menu
+transitions are a v1.1 discussion.
 
 ### v1.0.6 — GameState split
 
@@ -195,9 +192,6 @@ effects. Behaviour unchanged — relocation only.
 
 ### Phase 1b — port systems from ULA
 
-- **v1.0.7 — Visual pass & first tests.** (in progress; see above.) `NeonGlow`
-  real bloom; `NineSliceFrame`; `TextLayout`; `/W4` → 0 + warnings-as-errors;
-  `TesseraTests` project. `ScreenFade` / `GlowingCursor` moved out (v1.1+).
 - **v1.0.8 — Localization pipe & data skeleton.** `LocalizationManager` skeleton
   (all strings extracted, English wired) + `LocalizationRevision` + font system;
   threaded loading screen; data-driven content skeleton (piece defs, scoring,
@@ -243,6 +237,12 @@ reduce-motion toggles fold into the **v1.4.0** Options screen.
 - **v1.6.0 — Main-menu overhaul.** Radical rework of the main menu — look,
   animation, structure. (A game-design change, deliberately after the code is
   mature.)
+- **Visual overhaul (spans the versions above).** The whole game look is to be
+  raised substantially. Part of that: replace `panel_background` /
+  `button_background` / `game_background` etc. with art built to be
+  nine-sliceable — the current frames aren't symmetric, so `NineSliceFrame`
+  (added in v1.0.7) can't do much with them yet. New art unlocks the crisp
+  frames and the nine-slice HUD redesign (v1.5.0).
 - **v2.0.0 — Polish & docs.** Final polish, GitHub documentation, preview GIFs,
   release.
 
