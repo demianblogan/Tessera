@@ -29,6 +29,7 @@ namespace
 GameOverState::GameOverState(Context& context, int finalScore)
 	: State(context.stateMachine)
 	, context(context)
+	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, rootLayout(UI::Layout::Orientation::Vertical)
 	, finalScore(finalScore)
 	, isHighScore(context.highScores.IsHighScore(finalScore))
@@ -173,9 +174,9 @@ void GameOverState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void GameOverState::Update(float /* deltaTime */)
+void GameOverState::Update(float deltaTime)
 {
-	// Static screen; nothing advances per frame.
+	neonGlow.Update(deltaTime);
 }
 
 void GameOverState::Render(sf::RenderTarget& target)
@@ -187,8 +188,7 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 	target.draw(overlay);
 
-	sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
-	rootLayout.Render(target, &glowShader, context.totalTime);
+	rootLayout.Render(target, &neonGlow);
 }
 
 void GameOverState::CreateMenuButton(const sf::String& text, MenuAction action)

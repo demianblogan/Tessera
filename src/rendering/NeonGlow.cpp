@@ -31,8 +31,9 @@ namespace
 	}
 }
 
-NeonGlow::NeonGlow(sf::Shader& blurShader)
-	: blurShader(blurShader)
+NeonGlow::NeonGlow(sf::Shader& dilateShader, sf::Shader& blurShader)
+	: dilateShader(dilateShader)
+	, blurShader(blurShader)
 {
 	// No code
 }
@@ -44,7 +45,7 @@ void NeonGlow::Update(float deltaTime)
 
 float NeonGlow::Pulse() const
 {
-	return 0.75f + 0.25f * (std::sin(elapsedTime * PulseSpeed) * 0.5f + 0.5f);
+	return 0.78f + 0.22f * (std::sin(elapsedTime * PulseSpeed) * 0.5f + 0.5f);
 }
 
 bool NeonGlow::Resize(sf::Vector2f contentSize)
@@ -69,6 +70,26 @@ bool NeonGlow::Resize(sf::Vector2f contentSize)
 
 	cachedContentSize = contentSize;
 	return true;
+}
+
+void NeonGlow::Dilate(sf::RenderTexture& buffer, float radiusPixels)
+{
+	sf::RenderStates dilateStates;
+	dilateStates.blendMode = sf::BlendNone;
+	dilateStates.shader = &dilateShader;
+
+	// Four samples per side, so the step is a quarter of the target radius.
+	const float stepX = radiusPixels / 4.f / static_cast<float>(buffer.getSize().x);
+	dilateShader.setUniform("offset", sf::Glsl::Vec2(stepX, 0.f));
+	scratch.clear(sf::Color::Transparent);
+	scratch.draw(sf::Sprite(buffer.getTexture()), dilateStates);
+	scratch.display();
+
+	const float stepY = radiusPixels / 4.f / static_cast<float>(buffer.getSize().y);
+	dilateShader.setUniform("offset", sf::Glsl::Vec2(0.f, stepY));
+	buffer.clear(sf::Color::Transparent);
+	buffer.draw(sf::Sprite(scratch.getTexture()), dilateStates);
+	buffer.display();
 }
 
 void NeonGlow::Blur(const sf::Texture& input, sf::RenderTexture& output, float radius, unsigned int iterations)
@@ -118,12 +139,15 @@ void NeonGlow::Draw(sf::RenderTarget& target, sf::FloatRect area, const DrawSour
 	drawSource(source, sourceStates);
 	source.display();
 
-	// Downscale into the blur seed.
+	// Downscale into the working buffer.
 	seed.clear(sf::Color::Transparent);
 	sf::Sprite downscaled(source.getTexture());
 	downscaled.setScale({ BloomScale, BloomScale });
 	seed.draw(downscaled);
 	seed.display();
+
+	// Grow the silhouette evenly on every side and corner, then soften it.
+	Dilate(seed, OutlineRadius * BloomScale);
 
 	Blur(seed.getTexture(), innerBlur, InnerBlurRadius, InnerIterations);
 	Blur(seed.getTexture(), outerBlur, OuterBlurRadius, OuterIterations);
@@ -137,14 +161,13 @@ void NeonGlow::Draw(sf::RenderTarget& target, sf::FloatRect area, const DrawSour
 	sf::Sprite outer(outerBlur.getTexture());
 	outer.setPosition(position);
 	outer.setScale({ 1.f / BloomScale, 1.f / BloomScale });
-	outer.setColor(Modulate(tint, 0.90f * pulse));
+	outer.setColor(Modulate(tint, 0.85f * pulse));
 	target.draw(outer, additive);
 	target.draw(outer, additive);
 
 	sf::Sprite inner(innerBlur.getTexture());
 	inner.setPosition(position);
 	inner.setScale({ 1.f / BloomScale, 1.f / BloomScale });
-	inner.setColor(Modulate(tint, 0.95f * (0.70f + pulse * 0.30f)));
-	target.draw(inner, additive);
+	inner.setColor(Modulate(tint, 0.95f * (0.72f + pulse * 0.28f)));
 	target.draw(inner, additive);
 }

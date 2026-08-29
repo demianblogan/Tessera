@@ -4,7 +4,6 @@
 #include <optional>
 
 #include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/Shader.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 
 #include "Label.h"
@@ -92,7 +91,7 @@ namespace UI
 
 		[[nodiscard]] bool Contains(sf::Vector2f point) const;
 
-		void Render(sf::RenderTarget& target, sf::Shader* glowShader, float time) const override;
+		void Render(sf::RenderTarget& target, NeonGlow* glow) const override;
 		void Render(sf::RenderTarget& target) const override;
 	};
 }

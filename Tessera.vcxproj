@@ -205,7 +205,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="assets\shaders\blur.frag" />
     <None Include="assets\shaders\crt.frag" />
     <None Include="assets\shaders\ghost_tetromino.frag" />
-    <None Include="assets\shaders\glow.frag" />
+    <None Include="assets\shaders\neon_dilate.frag" />
     <None Include="assets\shaders\neon_blur.frag" />
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />

@@ -26,6 +26,7 @@ namespace
 MainMenuState::MainMenuState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
+	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, rootLayout(UI::Layout::Orientation::Vertical)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 	, titleBackgroundSprite(context.textures.Get(Assets::TextureID::TitleBackground))
@@ -139,9 +140,9 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	}
 }
 
-void MainMenuState::Update(float /* deltaTime */)
+void MainMenuState::Update(float deltaTime)
 {
-	// Static screen; nothing advances per frame.
+	neonGlow.Update(deltaTime);
 }
 
 void MainMenuState::Render(sf::RenderTarget& target)
@@ -149,8 +150,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 	target.draw(backgroundSprite);
 	target.draw(titleBackgroundSprite);
 
-	sf::Shader& glowShader = context.shaders.Get(Assets::ShaderID::Glow);
-	rootLayout.Render(target, &glowShader, context.totalTime);
+	rootLayout.Render(target, &neonGlow);
 }
 
 void MainMenuState::UpdateLayout()

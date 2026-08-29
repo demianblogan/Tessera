@@ -29,7 +29,7 @@ GameplayState::GameplayState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
 	, boardRenderer(context)
-	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, gameplayInput(gameplayActions)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
 {

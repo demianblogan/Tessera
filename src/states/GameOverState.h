@@ -12,6 +12,7 @@
 #include "../ui/Layout.h"
 #include "../ui/MenuList.h"
 #include "../ui/Spacer.h"
+#include "../rendering/NeonGlow.h"
 
 class GameOverState final : public State
 {
@@ -26,6 +27,8 @@ private:
 	static constexpr std::size_t MaxNameLength = 20;
 
 	Context& context;
+
+	NeonGlow neonGlow;
 
 	UI::Layout rootLayout;
 	UI::Layout* menuLayout = nullptr;

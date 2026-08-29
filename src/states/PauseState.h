@@ -9,6 +9,7 @@
 #include "../ui/Layout.h"
 #include "../ui/MenuList.h"
 #include "../ui/Spacer.h"
+#include "../rendering/NeonGlow.h"
 
 class PauseState final : public State
 {
@@ -21,6 +22,8 @@ private:
 	};
 
 	Context& context;
+
+	NeonGlow neonGlow;
 
 	UI::Layout rootLayout;
 	UI::Layout* menuLayout = nullptr;
