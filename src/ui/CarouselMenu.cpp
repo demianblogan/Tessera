@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 
+#include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
 namespace
@@ -32,6 +33,11 @@ namespace
 	constexpr float RowScale = 0.8f;
 	constexpr float RowAlpha = 0.75f;
 	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
+
+	// Click arrows either side of the front entry.
+	constexpr float ArrowOffsetX = 360.f;    // from the front slot centre
+	constexpr sf::Vector2f ArrowHalfSize{ 46.f, 58.f };
+	constexpr float ArrowHitPadding = 16.f;
 
 	// Where each entry (by index) ends up, as an unrolled angle. The row winds
 	// on through negative angles, so the lead entry -- the one bound for the
@@ -265,5 +271,106 @@ namespace UI
 	void CarouselMenu::RenderFront(sf::RenderTarget& target) const
 	{
 		Render(target, true);
+
+		if (IsReady())
+		{
+			DrawArrow(target, -1);
+			DrawArrow(target, 1);
+		}
+	}
+
+	sf::Vector2f CarouselMenu::FrontSlotPosition() const
+	{
+		return { center.x, center.y + SideBaseY + DepthDropY };
+	}
+
+	sf::FloatRect CarouselMenu::FrontItemBounds() const
+	{
+		if (items.empty())
+		{
+			return {};
+		}
+
+		const std::size_t front = FrontItem();
+		const Placement placement = PlacementOf(front);
+
+		sf::Text label = items[front].text;
+		label.setPosition(placement.position);
+		label.setScale({ placement.scale, placement.scale });
+		return label.getGlobalBounds();
+	}
+
+	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
+	{
+		const sf::Vector2f centreOfArrow{
+			FrontSlotPosition().x + static_cast<float>(side) * ArrowOffsetX,
+			FrontSlotPosition().y };
+
+		return {
+			{ centreOfArrow.x - ArrowHalfSize.x - ArrowHitPadding,
+			  centreOfArrow.y - ArrowHalfSize.y - ArrowHitPadding },
+			{ 2.f * (ArrowHalfSize.x + ArrowHitPadding),
+			  2.f * (ArrowHalfSize.y + ArrowHitPadding) } };
+	}
+
+	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
+	{
+		const sf::Vector2f c{
+			FrontSlotPosition().x + static_cast<float>(side) * ArrowOffsetX,
+			FrontSlotPosition().y };
+		const float dir = static_cast<float>(side);   // -1 points left, +1 points right
+
+		sf::ConvexShape arrow(3);
+		arrow.setPoint(0, { c.x - dir * ArrowHalfSize.x, c.y });
+		arrow.setPoint(1, { c.x + dir * ArrowHalfSize.x, c.y - ArrowHalfSize.y });
+		arrow.setPoint(2, { c.x + dir * ArrowHalfSize.x, c.y + ArrowHalfSize.y });
+
+		const bool hot = hoveredArrow == side;
+		arrow.setFillColor(sf::Color(255, 255, 255, hot ? 230 : 120));
+		target.draw(arrow);
+	}
+
+	void CarouselMenu::PointerMoved(sf::Vector2f point)
+	{
+		hoveredArrow = 0;
+		if (!IsReady())
+		{
+			return;
+		}
+
+		if (ArrowBounds(-1).contains(point))
+		{
+			hoveredArrow = -1;
+		}
+		else if (ArrowBounds(1).contains(point))
+		{
+			hoveredArrow = 1;
+		}
+	}
+
+	CarouselMenu::PointerHit CarouselMenu::PointerPressed(sf::Vector2f point)
+	{
+		if (!IsReady())
+		{
+			return PointerHit::None;
+		}
+
+		if (ArrowBounds(-1).contains(point))
+		{
+			RotateLeft();
+			return PointerHit::Rotated;
+		}
+		if (ArrowBounds(1).contains(point))
+		{
+			RotateRight();
+			return PointerHit::Rotated;
+		}
+		if (FrontItemBounds().contains(point))
+		{
+			Activate();
+			return PointerHit::Activated;
+		}
+
+		return PointerHit::None;
 	}
 }

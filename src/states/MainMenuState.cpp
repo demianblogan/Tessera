@@ -6,6 +6,7 @@
 #include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
@@ -89,17 +90,41 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	case MenuInput::Action::Left:
 		carousel.RotateLeft();
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-		break;
+		return;
 	case MenuInput::Action::Right:
 		carousel.RotateRight();
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-		break;
+		return;
 	case MenuInput::Action::Confirm:
 		context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
 		carousel.Activate();
-		break;
+		return;
 	default:
 		break;
+	}
+
+	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
+	{
+		carousel.PointerMoved(context.window.mapPixelToCoords(moved->position));
+	}
+	else if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (pressed->button != sf::Mouse::Button::Left)
+		{
+			return;
+		}
+
+		switch (carousel.PointerPressed(context.window.mapPixelToCoords(pressed->position)))
+		{
+		case UI::CarouselMenu::PointerHit::Rotated:
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			break;
+		case UI::CarouselMenu::PointerHit::Activated:
+			context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+			break;
+		case UI::CarouselMenu::PointerHit::None:
+			break;
+		}
 	}
 }
 

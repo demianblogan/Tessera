@@ -4,6 +4,7 @@
 #include <functional>
 #include <vector>
 
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -41,6 +42,11 @@ namespace UI
 		void RotateRight();
 		void Activate();
 
+		// Mouse. The caller maps the pixel to view coordinates first.
+		enum class PointerHit { None, Rotated, Activated };
+		PointerHit PointerPressed(sf::Vector2f point);
+		void PointerMoved(sf::Vector2f point);
+
 		void Update(float deltaTime);
 		void RenderBack(sf::RenderTarget& target) const;
 		void RenderFront(sf::RenderTarget& target) const;
@@ -64,6 +70,11 @@ namespace UI
 		void Render(sf::RenderTarget& target, bool frontHalf) const;
 		[[nodiscard]] std::size_t FrontItem() const;
 
+		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;
+		[[nodiscard]] sf::FloatRect FrontItemBounds() const;
+		[[nodiscard]] sf::FloatRect ArrowBounds(int side) const;   // side: -1 left, +1 right
+		void DrawArrow(sf::RenderTarget& target, int side) const;
+
 		const sf::Font& font;
 		unsigned int characterSize;
 
@@ -78,5 +89,7 @@ namespace UI
 
 		bool started = false;
 		float introTimer = 0.f;      // 0..1 across the fly-in
+
+		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
 	};
 }
