@@ -78,6 +78,9 @@
     <ClCompile Include="src\ui\Element.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\FpsCounter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\ui\Spacer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -222,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\FpsCounter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Layout.h">

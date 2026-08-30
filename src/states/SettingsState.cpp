@@ -156,33 +156,15 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		section->Add(std::move(label));
 	}
 
-	// =====================================================
-	// Vertical sync
-	// =====================================================
-
 	{
-		const bool enabled = context.settings.GetSettings().verticalSyncEnabled;
+		const GameSettings& settings = context.settings.GetSettings();
 
-		auto button = std::make_unique<UI::Button>(sf::Vector2f{ ToggleButtonWidth,	ToggleButtonHeight });
-		button->SetTextAlignment(UI::Button::TextAlignment::Left);
-		button->SetLabel(std::make_unique<UI::Label>(
-			font,
-			context.localization.GetText(enabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff),
-			RowTextSize)
-		);
+		verticalSyncButton = &CreateToggleRow(*section,
+			context.localization.GetText(settings.verticalSyncEnabled ? TextKey::Settings::VsyncOn : TextKey::Settings::VsyncOff));
 
-		button->SetNormalStyle({ .backgroundColor = sf::Color::Transparent,	.textColor = sf::Color::White });
-		button->SetSelectedStyle({ .backgroundColor = sf::Color::Transparent, .textColor = sf::Color::Yellow });
-
-		verticalSyncButton = button.get();
-		rows.AddButton(*verticalSyncButton);
-
-		section->Add(std::move(button));
+		showFpsButton = &CreateToggleRow(*section,
+			context.localization.GetText(settings.showFps ? TextKey::Settings::ShowFpsOn : TextKey::Settings::ShowFpsOff));
 	}
-
-	// =====================================================
-	// FPS limit
-	// =====================================================
 
 	CreateSliderRow(
 		*section,
@@ -194,42 +176,31 @@ void SettingsState::CreateGraphicsSection(UI::Layout& parent)
 		frameRateSetting
 	);
 
-	// =====================================================
-	// Block style
-	// =====================================================
-
 	{
 		const bool withOutline = context.settings.GetSettings().blockRenderStyle == BlockRenderStyle::WithOutline;
 
-		auto button = std::make_unique<UI::Button>(sf::Vector2f{ ToggleButtonWidth,	ToggleButtonHeight });
-		button->SetTextAlignment(UI::Button::TextAlignment::Left);
-		button->SetLabel(std::make_unique<UI::Label>(
-			font,
-			context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline),
-			RowTextSize)
-		);
-
-		button->SetNormalStyle(
-			{
-				.backgroundColor = sf::Color::Transparent,
-				.textColor = sf::Color::White
-			}
-		);
-
-		button->SetSelectedStyle(
-			{
-				.backgroundColor = sf::Color::Transparent,
-				.textColor = sf::Color::Yellow
-			}
-		);
-
-		blockStyleButton = button.get();
-		rows.AddButton(*blockStyleButton);
-
-		section->Add(std::move(button));
+		blockStyleButton = &CreateToggleRow(*section,
+			context.localization.GetText(withOutline ? TextKey::Settings::BlockStyleOutline : TextKey::Settings::BlockStyleNoOutline));
 	}
 
 	parent.Add(std::move(section));
+}
+
+UI::Button& SettingsState::CreateToggleRow(UI::Layout& section, const sf::String& text)
+{
+	const auto& font = context.fonts.Get(Assets::FontID::Main);
+
+	auto button = std::make_unique<UI::Button>(sf::Vector2f{ ToggleButtonWidth, ToggleButtonHeight });
+	button->SetTextAlignment(UI::Button::TextAlignment::Left);
+	button->SetLabel(std::make_unique<UI::Label>(font, text, RowTextSize));
+	button->SetNormalStyle({ .backgroundColor = sf::Color::Transparent, .textColor = sf::Color::White });
+	button->SetSelectedStyle({ .backgroundColor = sf::Color::Transparent, .textColor = sf::Color::Yellow });
+
+	UI::Button& reference = *button;
+	rows.AddButton(reference);
+	section.Add(std::move(button));
+
+	return reference;
 }
 
 void SettingsState::CreateAudioSection(UI::Layout& parent)
@@ -392,12 +363,29 @@ void SettingsState::OnButtonActivated(UI::Button& button)
 	{
 		ToggleVerticalSync();
 	}
+	else if (&button == showFpsButton)
+	{
+		ToggleShowFps();
+	}
 	else if (&button == blockStyleButton)
 	{
 		ToggleBlockStyle();
 	}
 
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+}
+
+void SettingsState::ToggleShowFps()
+{
+	GameSettings& settings = context.settings.GetSettings();
+
+	settings.showFps = !settings.showFps;
+
+	showFpsButton->GetLabel()->SetString(
+		context.localization.GetText(settings.showFps ? TextKey::Settings::ShowFpsOn : TextKey::Settings::ShowFpsOff)
+	);
+
+	ApplyAndSaveSettings();
 }
 
 void SettingsState::ToggleVerticalSync()

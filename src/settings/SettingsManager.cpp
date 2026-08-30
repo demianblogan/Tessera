@@ -35,6 +35,7 @@ void SettingsManager::Load()
 		>> parsed.verticalSyncEnabled
 		>> parsed.frameRateLimit
 		>> blockRenderStyleValue
+		>> parsed.showFps
 		>> parsed.soundVolume
 		>> parsed.musicVolume;
 
@@ -77,6 +78,7 @@ void SettingsManager::Save() const
 		file << settings.verticalSyncEnabled << '\n';
 		file << settings.frameRateLimit << '\n';
 		file << static_cast<int>(settings.blockRenderStyle) << '\n';
+		file << settings.showFps << '\n';
 		file << settings.soundVolume << '\n';
 		file << settings.musicVolume << '\n';
 	}

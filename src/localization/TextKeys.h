@@ -43,6 +43,8 @@ namespace TextKey
 		inline constexpr std::string_view FooterReturn      = "settings.footer_return";
 		inline constexpr std::string_view VsyncOn           = "settings.vsync_on";
 		inline constexpr std::string_view VsyncOff          = "settings.vsync_off";
+		inline constexpr std::string_view ShowFpsOn         = "settings.show_fps_on";
+		inline constexpr std::string_view ShowFpsOff        = "settings.show_fps_off";
 		inline constexpr std::string_view FpsLimit          = "settings.fps_limit";
 		inline constexpr std::string_view FpsUnlimited      = "settings.fps_unlimited";
 		inline constexpr std::string_view BlockStyleOutline = "settings.block_style_outline";

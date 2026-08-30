@@ -86,6 +86,9 @@ void Application::Render()
 	// Opaque state: render the stack straight to the screen
 	// =====================================================
 
+	window.clear();
+	crtShader.setUniform("time", context.totalTime);
+
 	if (!blurBackdrop)
 	{
 		renderTexture.clear();
@@ -93,44 +96,30 @@ void Application::Render()
 		stateMachine.RenderStates(renderTexture);
 		renderTexture.display();
 
-		sf::Sprite screenSprite(renderTexture.getTexture());
+		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
+	}
+	else
+	{
+		// The states below, blurred, then the top state drawn crisp on top.
+		gameplayTexture.clear();
+		gameplayTexture.setView(gameView);
+		stateMachine.RenderStatesExceptTop(gameplayTexture);
+		gameplayTexture.display();
 
-		window.clear();
-		crtShader.setUniform("time", context.totalTime);
-		window.draw(screenSprite, &crtShader);
-		window.display();
+		finalTexture.clear();
+		finalTexture.draw(sf::Sprite(gameplayTexture.getTexture()), &blurShader);
+		stateMachine.RenderTopState(finalTexture);
+		finalTexture.display();
 
-		return;
+		window.draw(sf::Sprite(finalTexture.getTexture()), &crtShader);
 	}
 
-	// =====================================================
-	// Blurred backdrop: the states below, blurred, then the top state on top
-	// =====================================================
+	// A crisp overlay, drawn after the CRT pass so it isn't warped by it.
+	if (fpsCounter && context.settings.GetSettings().showFps)
+	{
+		fpsCounter->Render(window);
+	}
 
-	gameplayTexture.clear();
-	gameplayTexture.setView(gameView);
-	stateMachine.RenderStatesExceptTop(gameplayTexture);
-	gameplayTexture.display();
-
-	// =====================================================
-	// Compose final scene
-	// =====================================================
-
-	finalTexture.clear();
-
-	sf::Sprite gameplaySprite(gameplayTexture.getTexture());
-	finalTexture.draw(gameplaySprite, &blurShader);
-	stateMachine.RenderTopState(finalTexture);
-	finalTexture.display();
-
-	// =====================================================
-	// Final CRT pass
-	// =====================================================
-
-	sf::Sprite finalSprite(finalTexture.getTexture());
-	window.clear();
-	crtShader.setUniform("time", context.totalTime);
-	window.draw(finalSprite, &crtShader);
 	window.display();
 }
 
@@ -183,6 +172,7 @@ Application::Application()
 	shaders.Load(Assets::ShaderID::NeonBlur, Assets::Paths::Shaders::NeonBlur, sf::Shader::Type::Fragment);
 
 	fonts.Load(Assets::FontID::Main, Assets::Paths::Fonts::Main);
+	fpsCounter.emplace(fonts.Get(Assets::FontID::Main));
 
 	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, Assets::Paths::Textures::BlockSpritesheetWithOutline);
 	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, Assets::Paths::Textures::BlockSpritesheetWithoutOutline);
@@ -226,7 +216,15 @@ void Application::Run()
 
 	while (IsWindowOpen())
 	{
-		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MaxFrameTime);
+		// The raw frame time drives the FPS readout; a clamped copy drives
+		// gameplay so one stall can't teleport a piece several rows.
+		const float frameSeconds = deltaTimeClock.restart().asSeconds();
+		const float deltaTime = std::min(frameSeconds, MaxFrameTime);
+
+		if (fpsCounter)
+		{
+			fpsCounter->Update(frameSeconds);
+		}
 
 		HandleInput();
 		stateMachine.ApplyPendingChanges();

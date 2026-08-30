@@ -41,6 +41,7 @@ private:
 	SettingsRowList rows;
 
 	UI::Button* verticalSyncButton = nullptr;
+	UI::Button* showFpsButton = nullptr;
 	UI::Button* blockStyleButton = nullptr;
 
 	SliderSetting frameRateSetting;
@@ -50,9 +51,11 @@ private:
 	void CreateGraphicsSection(UI::Layout& parent);
 	void CreateAudioSection(UI::Layout& parent);
 	void CreateSliderRow(UI::Layout& parent, const sf::String& text, float minimum, float maximum, float value, float step, SliderSetting& setting);
+	[[nodiscard]] UI::Button& CreateToggleRow(UI::Layout& section, const sf::String& text);
 
 	void OnButtonActivated(UI::Button& button);
 	void ToggleVerticalSync();
+	void ToggleShowFps();
 	void ToggleBlockStyle();
 
 	[[nodiscard]] sf::String FormatFrameRate(int value) const;

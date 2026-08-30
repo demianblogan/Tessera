@@ -15,6 +15,9 @@
 #include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
 #include "../statistics/HighScoreManager.h"
+#include "../ui/FpsCounter.h"
+
+#include <optional>
 
 namespace sf
 {
@@ -56,6 +59,9 @@ private:
 	LocalizationManager localization;
 
 	Context context;
+
+	// Emplaced once the font is loaded.
+	std::optional<UI::FpsCounter> fpsCounter;
 
 	[[nodiscard]] bool IsWindowOpen() const;
 
