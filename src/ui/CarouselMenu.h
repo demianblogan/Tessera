@@ -13,6 +13,7 @@ namespace sf
 {
 	class Font;
 	class RenderTarget;
+	class Texture;
 }
 
 namespace UI
@@ -28,7 +29,7 @@ namespace UI
 	class CarouselMenu
 	{
 	public:
-		CarouselMenu(const sf::Font& font, unsigned int characterSize);
+		CarouselMenu(const sf::Font& font, unsigned int characterSize, const sf::Texture& arrowTexture);
 
 		void AddItem(const sf::String& text, std::function<void()> onActivate);
 		void SetCenter(sf::Vector2f center);
@@ -78,6 +79,7 @@ namespace UI
 
 		const sf::Font& font;
 		unsigned int characterSize;
+		const sf::Texture& arrowTexture;
 
 		std::vector<Item> items;
 		sf::Vector2f center;

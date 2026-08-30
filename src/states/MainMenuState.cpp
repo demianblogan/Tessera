@@ -35,7 +35,7 @@ MainMenuState::MainMenuState(Context& context)
 	, context(context)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-	, carousel(context.fonts.Get(Assets::FontID::Menu), MenuCharSize)
+	, carousel(context.fonts.Get(Assets::FontID::Menu), MenuCharSize, context.textures.Get(Assets::TextureID::UiArrow))
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
 	title.SetCenter(TitleCenter);

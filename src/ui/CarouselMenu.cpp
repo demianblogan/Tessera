@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <utility>
 
-#include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
+#include <SFML/System/Angle.hpp>
 
 namespace
 {
@@ -35,25 +37,29 @@ namespace
 	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
 
 	// Click arrows hugging the front entry, pointing outward (the direction the
-	// ring turns). Placeholder triangles -- sprites will replace them later.
-	constexpr float ArrowGap = 14.f;             // between the widest entry's edge and the arrow
-	constexpr float ArrowHeightFraction = 0.8f;  // arrow height vs the front entry's text height
-	constexpr float ArrowAspect = 0.7f;          // half-width / half-height
-	constexpr float ArrowHitPadding = 16.f;
+	// ring turns). The source sprite points up; it is rotated a quarter turn.
+	constexpr float ArrowGap = 16.f;             // between the widest entry's edge and the arrow
+	constexpr float ArrowHeightFraction = 0.85f; // arrow on-screen height vs the front entry's text height
+	constexpr float ArrowHitPadding = 18.f;
 
 	struct ArrowGeom
 	{
 		sf::Vector2f centre;
-		float halfWidth = 0.f;
-		float halfHeight = 0.f;
+		float scale = 1.f;
+		sf::Vector2f halfExtent;   // on-screen, after the quarter-turn rotation
 	};
 
-	[[nodiscard]] ArrowGeom ComputeArrow(sf::Vector2f frontSlot, float maxHalfWidth, float itemHeight, int side) noexcept
+	[[nodiscard]] ArrowGeom ComputeArrow(sf::Vector2f frontSlot, float maxHalfWidth, float itemHeight,
+		sf::Vector2u textureSize, int side) noexcept
 	{
-		const float halfHeight = std::max(10.f, itemHeight * 0.5f * ArrowHeightFraction);
-		const float halfWidth = halfHeight * ArrowAspect;
-		const float x = frontSlot.x + static_cast<float>(side) * (maxHalfWidth + ArrowGap + halfWidth);
-		return { { x, frontSlot.y }, halfWidth, halfHeight };
+		// After a +/-90 turn the texture's width runs vertically on screen.
+		const float screenHeight = std::max(12.f, itemHeight * ArrowHeightFraction);
+		const float scale = screenHeight / std::max(1.f, static_cast<float>(textureSize.x));
+		const sf::Vector2f halfExtent{
+			static_cast<float>(textureSize.y) * scale * 0.5f,
+			static_cast<float>(textureSize.x) * scale * 0.5f };
+		const float x = frontSlot.x + static_cast<float>(side) * (maxHalfWidth + ArrowGap + halfExtent.x);
+		return { { x, frontSlot.y }, scale, halfExtent };
 	}
 
 	// Where each entry (by index) ends up, as an unrolled angle. The row winds
@@ -108,9 +114,10 @@ namespace
 
 namespace UI
 {
-	CarouselMenu::CarouselMenu(const sf::Font& fontRef, unsigned int size)
+	CarouselMenu::CarouselMenu(const sf::Font& fontRef, unsigned int size, const sf::Texture& arrow)
 		: font(fontRef)
 		, characterSize(size)
+		, arrowTexture(arrow)
 	{
 	}
 
@@ -327,25 +334,26 @@ namespace UI
 
 	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y, side);
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y,
+			arrowTexture.getSize(), side);
 		return {
-			{ g.centre.x - g.halfWidth - ArrowHitPadding, g.centre.y - g.halfHeight - ArrowHitPadding },
-			{ 2.f * (g.halfWidth + ArrowHitPadding), 2.f * (g.halfHeight + ArrowHitPadding) } };
+			{ g.centre.x - g.halfExtent.x - ArrowHitPadding, g.centre.y - g.halfExtent.y - ArrowHitPadding },
+			{ 2.f * (g.halfExtent.x + ArrowHitPadding), 2.f * (g.halfExtent.y + ArrowHitPadding) } };
 	}
 
 	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y, side);
-		const float dir = static_cast<float>(side);
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y,
+			arrowTexture.getSize(), side);
 
-		// Tip points away from the entry -- the way the ring turns on that click.
-		sf::ConvexShape arrow(3);
-		arrow.setPoint(0, { g.centre.x + dir * g.halfWidth, g.centre.y });
-		arrow.setPoint(1, { g.centre.x - dir * g.halfWidth, g.centre.y - g.halfHeight });
-		arrow.setPoint(2, { g.centre.x - dir * g.halfWidth, g.centre.y + g.halfHeight });
-
-		const bool hot = hoveredArrow == side;
-		arrow.setFillColor(sf::Color(255, 255, 255, hot ? 235 : 130));
+		sf::Sprite arrow(arrowTexture);
+		arrow.setOrigin(sf::Vector2f(arrowTexture.getSize()) * 0.5f);
+		arrow.setScale({ g.scale, g.scale });
+		// Source points up; a quarter turn aims it away from the entry -- left
+		// for a left click (ring turns left), right for a right click.
+		arrow.setRotation(sf::degrees(static_cast<float>(side) * 90.f));
+		arrow.setPosition(g.centre);
+		arrow.setColor(sf::Color(255, 255, 255, hoveredArrow == side ? 255 : 150));
 		target.draw(arrow);
 	}
 
