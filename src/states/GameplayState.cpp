@@ -15,6 +15,8 @@
 #include "../gameplay/Board.h"
 #include "../input/GamepadManager.h"
 #include "../input/InputBinding.h"
+#include "../input/gamepad/GamepadHaptics.h"
+#include "../input/gamepad/HapticProfiles.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../settings/SettingsManager.h"
@@ -222,6 +224,12 @@ void GameplayState::Update(float deltaTime)
 	effects.Update(deltaTime);
 	neonGlow.Update(deltaTime);
 
+	// Hold a green throb on the lightbar for as long as rows are clearing.
+	if (session.GetPhase() == GameplaySession::Phase::ClearingRows)
+	{
+		context.gamepadHaptics.PulseLightbar(HapticProfiles::RowClearLightbar, 0.2f);
+	}
+
 	ReactToEvents(session.ConsumeEvents());
 }
 
@@ -318,6 +326,7 @@ void GameplayState::ApplyHorizontalRepeat(float deltaTime)
 		// stay quiet while it's held there.
 		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
 		effects.TriggerShake(0.06f, 4.f);
+		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::WallHit);
 		horizontalWasBlocked = true;
 	}
 }
@@ -367,6 +376,7 @@ void GameplayState::PerformHardDrop()
 
 	context.audioPlayer.Play(Assets::SoundID::DropPiece);
 	effects.TriggerShake(0.12f, 12.f);
+	HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::HardDrop);
 }
 
 void GameplayState::ReactToEvents(const GameplaySession::Events& events)
@@ -374,12 +384,16 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.landed)
 	{
 		effects.TriggerLandingFlash(events.landedBlocks);
+		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::PieceLanded);
 	}
 
 	if (events.rowsDetected)
 	{
 		context.audioPlayer.Play(Assets::SoundID::RowCleared);
 		effects.TriggerRowClear(events.detectedRows);
+
+		const bool isTetris = events.detectedRows.size() >= 4;
+		HapticProfiles::Play(context.gamepadHaptics, isTetris ? HapticProfiles::Tetris : HapticProfiles::RowCleared);
 	}
 
 	if (events.rowsCleared)
@@ -391,10 +405,13 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.leveledUp)
 	{
 		context.audioPlayer.Play(Assets::SoundID::NextLevel);
+		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::LevelUp);
 	}
 
 	if (events.gameOver)
 	{
+		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::GameOver);
+		context.gamepadHaptics.PulseLightbar(HapticProfiles::GameOverLightbar, 0.5f);
 		RequestChange(std::make_unique<GameOverState>(context, session.GetScore()));
 	}
 }

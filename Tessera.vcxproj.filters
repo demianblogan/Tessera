@@ -278,6 +278,9 @@
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\input\gamepad\HapticProfiles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h">
       <Filter>libs\DualSenseWindows</Filter>
     </ClInclude>

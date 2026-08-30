@@ -6,6 +6,7 @@
 #include <SFML/Window/Joystick.hpp>
 
 #include "gamepad/GamepadHaptics.h"
+#include "gamepad/HapticProfiles.h"
 
 namespace
 {
@@ -37,11 +38,8 @@ namespace
 
 namespace
 {
-	// A barely-there tick for moving between menu items -- softer than any
-	// gameplay pulse because it fires on every single navigation step.
-	constexpr float MenuNavigationLowMotor = 0.05f;
-	constexpr float MenuNavigationHighMotor = 0.12f;
-	constexpr float MenuNavigationDuration = 0.05f;
+	// A quick yellow flash on the lightbar for every menu move.
+	constexpr float MenuNavigationLightbarDuration = 0.14f;
 }
 
 GamepadManager::GamepadManager()
@@ -101,7 +99,8 @@ GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::E
 
 	if (action != NavigationAction::None && haptics != nullptr)
 	{
-		haptics->PulseVibration(MenuNavigationLowMotor, MenuNavigationHighMotor, MenuNavigationDuration);
+		HapticProfiles::Play(*haptics, HapticProfiles::MenuNavigation);
+		haptics->PulseLightbar(HapticProfiles::MenuLightbar, MenuNavigationLightbarDuration);
 	}
 
 	return action;
