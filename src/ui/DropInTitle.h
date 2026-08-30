@@ -69,6 +69,8 @@ namespace UI
 		[[nodiscard]] Pose EvaluateGlyph(std::size_t index) const;
 		[[nodiscard]] sf::Vector2f RestingPosition(std::size_t index, const Pose& pose) const;
 
+		void DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
+			sf::Vector2f position, float scaleSignY, float intensityScale) const;
 		void DrawGradientLetter(sf::RenderTarget& target, std::size_t index, const Pose& pose,
 			sf::Vector2f drawPosition, float scaleSignY, std::uint8_t alpha) const;
 

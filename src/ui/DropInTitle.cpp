@@ -60,6 +60,7 @@ namespace
 
 	constexpr std::uint8_t ReflectionAlpha = 46;
 	constexpr float MirrorDistance = 120.f;      // gap below the word the reflection mirrors about
+	constexpr float ReflectionGlowScale = 0.4f;  // how much of the real letter's bloom the reflection gets
 
 	// One per letter, cycled: the seven classic tetromino colours, matching
 	// the loading-bar blocks.
@@ -369,6 +370,34 @@ namespace UI
 		}
 	}
 
+	void DropInTitle::DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
+		sf::Vector2f position, float scaleSignY, float intensityScale) const
+	{
+		sf::Text silhouette = glyphs[index].text;
+		silhouette.setPosition(position);
+		silhouette.setRotation(sf::degrees(pose.rotationDegrees));
+		silhouette.setScale({ pose.scaleX, pose.scaleY * scaleSignY });
+
+		const sf::FloatRect bounds = silhouette.getGlobalBounds();
+		const float slack = 18.f;
+		const sf::FloatRect area{
+			{ bounds.position.x - slack, bounds.position.y - slack },
+			{ bounds.size.x + slack * 2.f, bounds.size.y + slack * 2.f } };
+
+		const float strength = std::max(pose.glowStrength, 0.6f + 0.4f * pose.flash);
+		const sf::Color tint = Scale(glyphs[index].colour, strength * intensityScale);
+
+		glow.Draw(target, area,
+			[&silhouette](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			{
+				sf::Text white = silhouette;
+				white.setFillColor(sf::Color::White);
+				white.setOutlineColor(sf::Color::White);
+				buffer.draw(white, states);
+			},
+			tint, false);
+	}
+
 	void DropInTitle::Render(sf::RenderTarget& target, NeonGlow* glow) const
 	{
 		std::vector<Pose> poses(glyphs.size());
@@ -406,41 +435,31 @@ namespace UI
 			}
 		}
 
-		// -- Per-letter neon bloom ----------------------------------------
+		// -- Per-letter neon bloom (word, then its reflection) --------------
 		if (glow != nullptr)
 		{
 			for (std::size_t i = 0; i < glyphs.size(); ++i)
 			{
-				if (!poses[i].visible)
+				if (poses[i].visible)
 				{
-					continue;
+					DrawLetterGlow(target, *glow, i, poses[i], RestingPosition(i, poses[i]), 1.f, 1.f);
 				}
+			}
 
-				const sf::Vector2f position = RestingPosition(i, poses[i]);
-
-				sf::Text silhouette = glyphs[i].text;
-				silhouette.setPosition(position);
-				silhouette.setRotation(sf::degrees(poses[i].rotationDegrees));
-				silhouette.setScale({ poses[i].scaleX, poses[i].scaleY });
-
-				const sf::FloatRect bounds = silhouette.getGlobalBounds();
-				const float slack = 18.f;
-				const sf::FloatRect area{
-					{ bounds.position.x - slack, bounds.position.y - slack },
-					{ bounds.size.x + slack * 2.f, bounds.size.y + slack * 2.f } };
-
-				const float strength = std::max(poses[i].glowStrength, 0.6f + 0.4f * poses[i].flash);
-				const sf::Color tint = Scale(glyphs[i].colour, strength);
-
-				glow->Draw(target, area,
-					[&silhouette](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			if (reflectionEnabled)
+			{
+				const float mirrorY = center.y + kickOffset + MirrorDistance;
+				for (std::size_t i = 0; i < glyphs.size(); ++i)
+				{
+					if (!poses[i].visible)
 					{
-						sf::Text white = silhouette;
-						white.setFillColor(sf::Color::White);
-						white.setOutlineColor(sf::Color::White);
-						buffer.draw(white, states);
-					},
-					tint, false);
+						continue;
+					}
+
+					const sf::Vector2f upright = RestingPosition(i, poses[i]);
+					const sf::Vector2f mirrored{ upright.x, 2.f * mirrorY - upright.y };
+					DrawLetterGlow(target, *glow, i, poses[i], mirrored, -1.f, ReflectionGlowScale);
+				}
 			}
 		}
 
