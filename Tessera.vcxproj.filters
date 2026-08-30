@@ -102,7 +102,7 @@
     <ClCompile Include="src\ui\MenuBackdrop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\MenuGrid.cpp">
+    <ClCompile Include="src\ui\MenuSparks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\Spacer.cpp">
@@ -278,7 +278,7 @@
     <ClInclude Include="src\ui\MenuBackdrop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\MenuGrid.h">
+    <ClInclude Include="src\ui\MenuSparks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Layout.h">

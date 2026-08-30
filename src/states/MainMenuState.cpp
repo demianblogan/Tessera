@@ -148,8 +148,8 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 void MainMenuState::Update(float deltaTime)
 {
-	grid.Update(deltaTime);
 	backdrop.Update(deltaTime);
+	sparks.Update(deltaTime);
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
 
@@ -166,8 +166,8 @@ void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 	target.draw(backgroundSprite);
-	grid.Render(target);
 	backdrop.Render(target);
+	sparks.Render(target);
 
 	carousel.RenderBack(target);
 	title.Render(target, &titleGlow);
