@@ -1,7 +1,5 @@
 #include "AssetLoadJob.h"
 
-#include <filesystem>
-
 #include "LoadingProgress.h"
 #include "../resources/Assets.h"
 
@@ -35,13 +33,7 @@ namespace Loading
 			stage(Stage::Audio, [&]
 			{
 				soundBuffers.Load(Assets::SoundID::TitleButtonDrop, Paths::Sounds::TitleButtonDrop);
-
-				// Not shipped yet -- load only if present.
-				if (std::filesystem::exists(Paths::Sounds::MenuItemAppeared))
-				{
-					soundBuffers.Load(Assets::SoundID::MenuItemAppeared, Paths::Sounds::MenuItemAppeared);
-				}
-
+				soundBuffers.Load(Assets::SoundID::MenuItemAppeared, Paths::Sounds::MenuItemAppeared);
 				soundBuffers.Load(Assets::SoundID::MenuItemSelected, Paths::Sounds::MenuItemSelected);
 				soundBuffers.Load(Assets::SoundID::MenuItemPressed, Paths::Sounds::MenuItemPressed);
 				soundBuffers.Load(Assets::SoundID::DropPiece, Paths::Sounds::DropPiece);
