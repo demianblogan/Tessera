@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 
 #include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
@@ -222,10 +223,16 @@ namespace UI
 		kickVelocity = 0.f;
 	}
 
+	void DropInTitle::SetLandCallback(std::function<void(std::size_t)> callback)
+	{
+		onLetterLand = std::move(callback);
+	}
+
 	void DropInTitle::Update(float deltaTime)
 	{
-		for (Glyph& glyph : glyphs)
+		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
+			Glyph& glyph = glyphs[i];
 			const float before = glyph.elapsed - glyph.startDelay;
 			glyph.elapsed += deltaTime;
 			const float after = glyph.elapsed - glyph.startDelay;
@@ -233,6 +240,10 @@ namespace UI
 			if (before < FallDuration && after >= FallDuration)
 			{
 				kickVelocity += KickPerLanding;
+				if (onLetterLand)
+				{
+					onLetterLand(i);
+				}
 			}
 		}
 

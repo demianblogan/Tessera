@@ -26,6 +26,11 @@ namespace
 
 	constexpr unsigned int MenuCharSize = 58;
 
+	// The title-letter landing sound: pitched well down, rising a little per
+	// letter across "TESSERA".
+	constexpr float LandBasePitch = 0.5f;
+	constexpr float LandPitchStep = 0.06f;
+
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 }
@@ -43,6 +48,11 @@ MainMenuState::MainMenuState(Context& context)
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
 	title.SetCenter(TitleCenter);
+	title.SetLandCallback([this](std::size_t letter)
+		{
+			this->context.audioPlayer.Play(Assets::SoundID::TitleButtonDrop,
+				LandBasePitch + static_cast<float>(letter) * LandPitchStep);
+		});
 
 	versionText.setFillColor(sf::Color(150, 160, 170));
 	const sf::FloatRect versionBounds = versionText.getLocalBounds();

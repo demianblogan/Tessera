@@ -8,7 +8,7 @@ AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
 	// No code
 }
 
-void AudioPlayer::Play(Assets::SoundID soundID)
+void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
 {
 	if (activeSounds.size() >= MaxActiveSounds)
 	{
@@ -24,6 +24,7 @@ void AudioPlayer::Play(Assets::SoundID soundID)
 
 	ActiveSound& activeSound = activeSounds.back();
 	activeSound.sound.setVolume(globalVolume);
+	activeSound.sound.setPitch(pitch);
 	activeSound.sound.play();
 }
 

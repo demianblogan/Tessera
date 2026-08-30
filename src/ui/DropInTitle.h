@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -31,6 +32,9 @@ namespace UI
 		DropInTitle(const sf::Font& font, const sf::String& text, unsigned int characterSize);
 
 		void SetCenter(sf::Vector2f center);
+
+		// Called with the letter index each time a falling letter lands.
+		void SetLandCallback(std::function<void(std::size_t)> callback);
 
 		void Update(float deltaTime);
 		void Skip();   // jump straight to the settled title
@@ -90,5 +94,7 @@ namespace UI
 		// Small vertical spring: every landing nudges the whole word.
 		float kickOffset = 0.f;
 		float kickVelocity = 0.f;
+
+		std::function<void(std::size_t)> onLetterLand;
 	};
 }

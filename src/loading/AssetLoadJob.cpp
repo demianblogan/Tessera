@@ -60,6 +60,7 @@ namespace Loading
 			})
 			&& stage(Stage::Audio, [&]
 			{
+				soundBuffers.Load(Assets::SoundID::TitleButtonDrop, Paths::Sounds::TitleButtonDrop);
 				soundBuffers.Load(Assets::SoundID::MenuItemSelected, Paths::Sounds::MenuItemSelected);
 				soundBuffers.Load(Assets::SoundID::MenuItemPressed, Paths::Sounds::MenuItemPressed);
 				soundBuffers.Load(Assets::SoundID::DropPiece, Paths::Sounds::DropPiece);

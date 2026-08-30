@@ -18,6 +18,8 @@ namespace Assets
 
 	enum class SoundID
 	{
+		TitleButtonDrop,
+
 		MenuItemSelected,
 		MenuItemPressed,
 
@@ -68,22 +70,24 @@ namespace Assets
 
 		namespace Music
 		{
-			inline constexpr const char* MainMenu = "assets/music/main_menu_music.ogg";
-			inline constexpr const char* Gameplay = "assets/music/gameplay_music.ogg";
-			inline constexpr const char* GameOver = "assets/music/game_over_music.ogg";
+			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
+			inline constexpr const char* Gameplay = "assets/audio/music/gameplay_music.ogg";
+			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 		}
 
 		namespace Sounds
 		{
-			inline constexpr const char* MenuItemSelected = "assets/sounds/menu_item_selected.ogg";
-			inline constexpr const char* MenuItemPressed = "assets/sounds/menu_item_pressed.ogg";
+			inline constexpr const char* TitleButtonDrop = "assets/audio/sounds/title_button_drop.ogg";
 
-			inline constexpr const char* DropPiece = "assets/sounds/drop_piece.ogg";
-			inline constexpr const char* MovePiece = "assets/sounds/move_piece.ogg";
-			inline constexpr const char* NextLevel = "assets/sounds/next_level.ogg";
-			inline constexpr const char* PieceHitWall = "assets/sounds/piece_hit_wall.ogg";
-			inline constexpr const char* RotatePiece = "assets/sounds/rotate_piece.ogg";
-			inline constexpr const char* RowCleared = "assets/sounds/row_cleared.ogg";
+			inline constexpr const char* MenuItemSelected = "assets/audio/sounds/menu_item_selected.ogg";
+			inline constexpr const char* MenuItemPressed = "assets/audio/sounds/menu_item_pressed.ogg";
+
+			inline constexpr const char* DropPiece = "assets/audio/sounds/drop_piece.ogg";
+			inline constexpr const char* MovePiece = "assets/audio/sounds/move_piece.ogg";
+			inline constexpr const char* NextLevel = "assets/audio/sounds/next_level.ogg";
+			inline constexpr const char* PieceHitWall = "assets/audio/sounds/piece_hit_wall.ogg";
+			inline constexpr const char* RotatePiece = "assets/audio/sounds/rotate_piece.ogg";
+			inline constexpr const char* RowCleared = "assets/audio/sounds/row_cleared.ogg";
 		}
 
 		namespace Textures

@@ -35,7 +35,7 @@ private:
 public:
 	AudioPlayer(SoundBufferManager& soundBuffers);
 
-	void Play(Assets::SoundID soundID);
+	void Play(Assets::SoundID soundID, float pitch = 1.f);
 	void Restart(Assets::SoundID soundID);
 	void RemoveStoppedSounds();
 	void SetGlobalVolume(float volume);
