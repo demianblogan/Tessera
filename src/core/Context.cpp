@@ -12,6 +12,7 @@ Context::Context(
     TextureManager& textures,
     ShaderManager& shaders,
     AudioPlayer& audioPlayer,
+    AudioBalance& audioBalance,
     SettingsManager& settings,
     HighScoreManager& highScores,
     GamepadManager& gamepad,
@@ -26,6 +27,7 @@ Context::Context(
     , textures(textures)
     , shaders(shaders)
     , audioPlayer(audioPlayer)
+    , audioBalance(audioBalance)
     , settings(settings)
     , highScores(highScores)
     , gamepad(gamepad)

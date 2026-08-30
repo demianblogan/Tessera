@@ -197,7 +197,8 @@ Application::Application()
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
-	, audioPlayer(soundBuffers)
+	, balance("assets/data/audio_balance.json")
+	, audioPlayer(soundBuffers, balance)
 	, context(
 		stateMachine,
 		window,
@@ -207,6 +208,7 @@ Application::Application()
 		textures,
 		shaders,
 		audioPlayer,
+		balance,
 		settings,
 		highScores,
 		gamepad,

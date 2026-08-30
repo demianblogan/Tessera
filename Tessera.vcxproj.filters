@@ -48,6 +48,9 @@
     <ClCompile Include="src\states\MenuScreenState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\audio\AudioBalance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\audio\AudioPlayer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -236,7 +239,13 @@
     <ClInclude Include="src\core\GameVersion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\audio\AudioBalance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\audio\AudioPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nlohmann\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\statistics\HighScoreEntry.h">
@@ -419,5 +428,6 @@
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\audio_balance.json" />
   </ItemGroup>
 </Project>

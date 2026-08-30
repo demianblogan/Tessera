@@ -12,6 +12,8 @@
 
 #include "../resources/ResourceManager.h"
 
+class AudioBalance;
+
 struct ActiveSound
 {
 	Assets::SoundID id;
@@ -38,6 +40,7 @@ private:
 	static constexpr std::size_t MaxActiveSounds = 32;
 
 	SoundBufferManager& soundBuffers;
+	const AudioBalance& balance;
 
 	// Heap-owned so the vector's own housekeeping (erase / remove_if, called
 	// every frame) only ever moves pointers -- never a live sf::Sound, which
@@ -46,10 +49,13 @@ private:
 	float globalVolume = 100.f;
 
 public:
-	AudioPlayer(SoundBufferManager& soundBuffers);
+	AudioPlayer(SoundBufferManager& soundBuffers, const AudioBalance& balance);
 
 	void Play(Assets::SoundID soundID, float pitch = 1.f);
 	void Restart(Assets::SoundID soundID);
 	void RemoveStoppedSounds();
 	void SetGlobalVolume(float volume);
+
+private:
+	[[nodiscard]] float VolumeFor(Assets::SoundID soundID) const;
 };

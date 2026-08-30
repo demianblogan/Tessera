@@ -5,6 +5,7 @@
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 
+#include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
@@ -58,6 +59,7 @@ private:
 	SettingsManager settings;
 	HighScoreManager highScores;
 
+	AudioBalance balance;
 	AudioPlayer audioPlayer;
 	GamepadManager gamepad;
 	Haptics::GamepadHaptics gamepadHaptics;

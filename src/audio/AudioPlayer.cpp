@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "AudioBalance.h"
+
 namespace
 {
 	// Slack past a sound's own length before it is reclaimed. SFML 3's
@@ -11,10 +13,16 @@ namespace
 	const sf::Time ReclaimMargin = sf::milliseconds(80);
 }
 
-AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
+AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers, const AudioBalance& balance)
 	: soundBuffers(soundBuffers)
+	, balance(balance)
 {
 	activeSounds.reserve(MaxActiveSounds);
+}
+
+float AudioPlayer::VolumeFor(Assets::SoundID soundID) const
+{
+	return std::clamp(globalVolume * balance.ForSound(soundID) / 100.f, 0.f, 400.f);
 }
 
 void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
@@ -38,7 +46,7 @@ void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
 
 	auto& active = activeSounds.emplace_back(
 		std::make_unique<ActiveSound>(soundID, soundBuffers.Get(soundID), pitch));
-	active->sound.setVolume(globalVolume);
+	active->sound.setVolume(VolumeFor(soundID));
 	active->sound.setPitch(pitch);
 	active->sound.play();
 }
@@ -75,6 +83,6 @@ void AudioPlayer::SetGlobalVolume(float volume)
 
 	for (const std::unique_ptr<ActiveSound>& active : activeSounds)
 	{
-		active->sound.setVolume(globalVolume);
+		active->sound.setVolume(VolumeFor(active->id));
 	}
 }

@@ -152,5 +152,5 @@ It builds a small console runner that links the game's pure-logic code
 src/        → game source code
 tests/      → unit tests (TesseraTests project)
 assets/     → textures, shaders, audio (music + sounds), fonts
-libs/       → external libraries (SFML; DualSenseWindows, vendored as source)
+libs/       → external libraries (SFML; DualSenseWindows and nlohmann/json, vendored)
 ```

@@ -63,7 +63,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;DS5W_BUILD_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)libs;$(ProjectDir)src</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -94,7 +94,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-d-3.dll" "$(OutDir)"</Comm
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;DS5W_BUILD_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)libs\SFML\include;$(ProjectDir)libs\DualSenseWindows\include;$(ProjectDir)libs\DualSenseWindows\src;$(ProjectDir)libs;$(ProjectDir)src</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -128,6 +128,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\utils\AppDataPath.cpp" />
     <ClCompile Include="src\utils\Random.cpp" />
     <ClCompile Include="src\utils\SafeFileWrite.cpp" />
+    <ClCompile Include="src\audio\AudioBalance.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
@@ -232,6 +233,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\localization\LocalizationManager.h" />
     <ClInclude Include="src\localization\TextKeys.h" />
     <ClInclude Include="src\resources\Assets.h" />
+    <ClInclude Include="libs\nlohmann\json.hpp" />
+    <ClInclude Include="src\audio\AudioBalance.h" />
     <ClInclude Include="src\audio\AudioPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
     <ClInclude Include="src\states\SettingsState.h" />
@@ -281,6 +284,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\audio_balance.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

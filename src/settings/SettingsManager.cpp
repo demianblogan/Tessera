@@ -1,8 +1,11 @@
 #include "SettingsManager.h"
 
+#include <algorithm>
+#include <array>
 #include <fstream>
 #include <system_error>
 
+#include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../utils/SafeFileWrite.h"
@@ -97,15 +100,21 @@ void SettingsManager::Apply(Context& context) const
 
 	// --- Audio settings ---
 
-	const float musicVolume = settings.musicVolume * 10.f;
-	context.music.ForEach([musicVolume](sf::Music& music)
+	// Player slider (0-100) combined with each track's own balance coefficient.
+	const float musicSlider = settings.musicVolume * 10.f;
+	constexpr std::array musicIds{ Assets::MusicID::MainMenu, Assets::MusicID::Gameplay, Assets::MusicID::GameOver };
+	for (const Assets::MusicID id : musicIds)
+	{
+		if (context.music.Contains(id))
 		{
-			music.setVolume(musicVolume);
+			context.music.Get(id).setVolume(
+				std::clamp(musicSlider * context.audioBalance.ForMusic(id) / 100.f, 0.f, 400.f));
 		}
-	);
+	}
 
-	const float soundVolume = settings.soundVolume * 10.f;
-	context.audioPlayer.SetGlobalVolume(soundVolume);
+	// The sound slider is stored on the AudioPlayer; per-sound balance is
+	// applied there per instance.
+	context.audioPlayer.SetGlobalVolume(settings.soundVolume * 10.f);
 }
 
 GameSettings& SettingsManager::GetSettings()
