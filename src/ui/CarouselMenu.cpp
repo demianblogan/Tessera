@@ -128,6 +128,7 @@ namespace UI
 		label.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 
 		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
+		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
 		items.push_back({ std::move(label), std::move(onActivate) });
 	}
@@ -334,7 +335,7 @@ namespace UI
 
 	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y,
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, maxItemHeight,
 			arrowTexture.getSize(), side);
 		return {
 			{ g.centre.x - g.halfExtent.x - ArrowHitPadding, g.centre.y - g.halfExtent.y - ArrowHitPadding },
@@ -343,7 +344,7 @@ namespace UI
 
 	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y,
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, maxItemHeight,
 			arrowTexture.getSize(), side);
 
 		sf::Sprite arrow(arrowTexture);

@@ -84,6 +84,7 @@ namespace UI
 		std::vector<Item> items;
 		sf::Vector2f center;
 		float maxItemHalfWidth = 0.f;   // half the widest entry, for anchoring the arrows
+		float maxItemHeight = 0.f;      // tallest entry, for sizing the arrows (stable per switch)
 
 		int frontIndex = 0;          // which item is at the front (may be < 0 or >= size)
 		float angle = 0.f;           // current ring rotation, radians
