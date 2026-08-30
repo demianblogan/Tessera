@@ -7,6 +7,7 @@
 #include "../rendering/NeonGlow.h"
 #include "../ui/CarouselMenu.h"
 #include "../ui/DropInTitle.h"
+#include "../ui/MenuAurora.h"
 #include "../ui/MenuBackdrop.h"
 #include "../ui/MenuSparks.h"
 
@@ -39,6 +40,7 @@ private:
 	Context& context;
 
 	sf::Sprite backgroundSprite;
+	UI::MenuAurora aurora;
 	UI::MenuBackdrop backdrop;
 	UI::MenuSparks sparks;
 	UI::DropInTitle title;

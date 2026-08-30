@@ -84,6 +84,7 @@ namespace Loading
 				shaders.Load(Assets::ShaderID::GhostTetromino, Paths::Shaders::GhostTetromino, sf::Shader::Type::Fragment);
 				shaders.Load(Assets::ShaderID::NeonDilate, Paths::Shaders::NeonDilate, sf::Shader::Type::Fragment);
 				shaders.Load(Assets::ShaderID::NeonBlur, Paths::Shaders::NeonBlur, sf::Shader::Type::Fragment);
+				shaders.Load(Assets::ShaderID::MenuAurora, Paths::Shaders::MenuAurora, sf::Shader::Type::Fragment);
 			})
 			&& stage(Stage::Interface, [&]
 			{

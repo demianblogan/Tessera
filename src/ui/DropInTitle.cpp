@@ -60,9 +60,6 @@ namespace
 	constexpr float GradientTopMix = 0.35f;      // fill: how far the top edge is pushed to white
 	constexpr float GradientBottomFactor = 0.55f; // fill: how far the bottom edge is darkened
 
-	constexpr std::uint8_t ReflectionAlpha = 46;
-	constexpr float MirrorDistance = 120.f;      // gap below the word the reflection mirrors about
-	constexpr float ReflectionGlowScale = 0.4f;  // how much of the real letter's bloom the reflection gets
 
 	// One per letter, cycled: the seven classic tetromino colours, matching
 	// the loading-bar blocks.
@@ -213,11 +210,6 @@ namespace UI
 		center = newCenter;
 	}
 
-	void DropInTitle::SetReflectionEnabled(bool enabled)
-	{
-		reflectionEnabled = enabled;
-	}
-
 	void DropInTitle::Skip()
 	{
 		// Land every letter exactly at rest -- past the settle, before the wave
@@ -315,7 +307,7 @@ namespace UI
 	}
 
 	void DropInTitle::DrawGradientLetter(sf::RenderTarget& target, std::size_t index, const Pose& pose,
-		sf::Vector2f drawPosition, float scaleSignY, std::uint8_t alpha) const
+		sf::Vector2f drawPosition) const
 	{
 		const Glyph& glyph = glyphs[index];
 
@@ -325,10 +317,8 @@ namespace UI
 			base = MixToWhite(base, pose.flash);
 		}
 
-		sf::Color top = MixToWhite(base, GradientTopMix);
-		sf::Color bottom = Darken(base, GradientBottomFactor);
-		top.a = alpha;
-		bottom.a = alpha;
+		const sf::Color top = MixToWhite(base, GradientTopMix);
+		const sf::Color bottom = Darken(base, GradientBottomFactor);
 
 		const sf::Glyph& fontGlyph = font.getGlyph(glyph.codepoint, characterSize, false);
 		const sf::FloatRect texRect(fontGlyph.textureRect);
@@ -339,18 +329,16 @@ namespace UI
 		sf::Transform transform;
 		transform.translate(drawPosition);
 		transform.rotate(sf::degrees(pose.rotationDegrees));
-		transform.scale({ pose.scaleX, pose.scaleY * scaleSignY });
+		transform.scale({ pose.scaleX, pose.scaleY });
 		transform.translate(-inkCentre);
 
 		// Outline: the same glyph, grown, in a dark shade of its own hue.
-		const sf::Color outlineColour = Darken(base, 0.28f);
-
 		sf::Text outline = glyph.text;
 		outline.setPosition(drawPosition);
 		outline.setRotation(sf::degrees(pose.rotationDegrees));
-		outline.setScale({ pose.scaleX, pose.scaleY * scaleSignY });
+		outline.setScale({ pose.scaleX, pose.scaleY });
 		outline.setFillColor(sf::Color::Transparent);
-		outline.setOutlineColor(sf::Color(outlineColour.r, outlineColour.g, outlineColour.b, alpha));
+		outline.setOutlineColor(Darken(base, 0.28f));
 		target.draw(outline);
 
 		sf::VertexArray fill(sf::PrimitiveType::Triangles);
@@ -362,7 +350,7 @@ namespace UI
 		target.draw(fill, states);
 
 		// Chromatic split: additive red / blue copies pulled apart briefly.
-		if (pose.aberration > 0.f && scaleSignY > 0.f)
+		if (pose.aberration > 0.f)
 		{
 			const float shift = pose.aberration * AberrationOffset;
 			const std::uint8_t aberAlpha = ToByte(pose.aberration * 150.f);
@@ -377,7 +365,7 @@ namespace UI
 				sf::Transform ghost;
 				ghost.translate({ drawPosition.x + dx, drawPosition.y });
 				ghost.rotate(sf::degrees(pose.rotationDegrees));
-				ghost.scale({ pose.scaleX, pose.scaleY * scaleSignY });
+				ghost.scale({ pose.scaleX, pose.scaleY });
 				ghost.translate(-inkCentre);
 
 				sf::VertexArray channel(sf::PrimitiveType::Triangles);
@@ -393,7 +381,7 @@ namespace UI
 	}
 
 	void DropInTitle::DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
-		sf::Vector2f position, float scaleSignY, float intensityScale) const
+		sf::Vector2f position) const
 	{
 		// Fixed-size box centred on the letter -- same size for every letter and
 		// every frame, so NeonGlow's buffers never resize after the first call.
@@ -402,12 +390,12 @@ namespace UI
 			glowBoxSize };
 
 		const float strength = std::max(pose.glowStrength, GlowFloor + 0.4f * pose.flash);
-		const sf::Color tint = Scale(glyphs[index].colour, strength * GlowIntensity * intensityScale);
+		const sf::Color tint = Scale(glyphs[index].colour, strength * GlowIntensity);
 
 		sf::Text silhouette = glyphs[index].text;
 		silhouette.setPosition(position);
 		silhouette.setRotation(sf::degrees(pose.rotationDegrees));
-		silhouette.setScale({ pose.scaleX, pose.scaleY * scaleSignY });
+		silhouette.setScale({ pose.scaleX, pose.scaleY });
 
 		glow.Draw(target, area,
 			[&silhouette](sf::RenderTarget& buffer, const sf::RenderStates& states)
@@ -457,30 +445,14 @@ namespace UI
 			}
 		}
 
-		// -- Per-letter neon bloom (word, then its reflection) -------------
+		// -- Per-letter neon bloom ---------------------------------------
 		if (glow != nullptr)
 		{
 			for (std::size_t i = 0; i < glyphs.size(); ++i)
 			{
 				if (poses[i].visible)
 				{
-					DrawLetterGlow(target, *glow, i, poses[i], RestingPosition(i, poses[i]), 1.f, 1.f);
-				}
-			}
-
-			if (reflectionEnabled)
-			{
-				const float mirrorY = center.y + kickOffset + MirrorDistance;
-				for (std::size_t i = 0; i < glyphs.size(); ++i)
-				{
-					if (!poses[i].visible)
-					{
-						continue;
-					}
-
-					const sf::Vector2f upright = RestingPosition(i, poses[i]);
-					const sf::Vector2f mirrored{ upright.x, 2.f * mirrorY - upright.y };
-					DrawLetterGlow(target, *glow, i, poses[i], mirrored, -1.f, ReflectionGlowScale);
+					DrawLetterGlow(target, *glow, i, poses[i], RestingPosition(i, poses[i]));
 				}
 			}
 		}
@@ -506,23 +478,6 @@ namespace UI
 			target.draw(ring);
 		}
 
-		// -- Reflection (dim, mirrored, drawn under the word) ----------------
-		if (reflectionEnabled)
-		{
-			const float mirrorY = center.y + kickOffset + MirrorDistance;
-			for (std::size_t i = 0; i < glyphs.size(); ++i)
-			{
-				if (!poses[i].visible)
-				{
-					continue;
-				}
-
-				const sf::Vector2f upright = RestingPosition(i, poses[i]);
-				const sf::Vector2f mirrored{ upright.x, 2.f * mirrorY - upright.y };
-				DrawGradientLetter(target, i, poses[i], mirrored, -1.f, ReflectionAlpha);
-			}
-		}
-
 		// -- The letters themselves ----------------------------------------
 		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
@@ -531,7 +486,7 @@ namespace UI
 				continue;
 			}
 
-			DrawGradientLetter(target, i, poses[i], RestingPosition(i, poses[i]), 1.f, 255);
+			DrawGradientLetter(target, i, poses[i], RestingPosition(i, poses[i]));
 		}
 	}
 

@@ -50,7 +50,8 @@ namespace Assets
 		Blur,
 		GhostTetromino,
 		NeonDilate,
-		NeonBlur
+		NeonBlur,
+		MenuAurora
 	};
 
 	namespace Paths
@@ -114,6 +115,7 @@ namespace Assets
 			inline constexpr const char* GhostTetromino = "assets/shaders/ghost_tetromino.frag";
 			inline constexpr const char* NeonDilate = "assets/shaders/neon_dilate.frag";
 			inline constexpr const char* NeonBlur = "assets/shaders/neon_blur.frag";
+			inline constexpr const char* MenuAurora = "assets/shaders/menu_aurora.frag";
 		}
 	}
 }

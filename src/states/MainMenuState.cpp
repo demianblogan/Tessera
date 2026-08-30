@@ -22,7 +22,7 @@
 namespace
 {
 	constexpr unsigned int TitleCharSize = 200;
-	constexpr sf::Vector2f TitleCenter{ 960.f, 430.f };
+	constexpr sf::Vector2f TitleCenter{ 960.f, 540.f };
 
 	constexpr unsigned int MenuCharSize = 58;
 
@@ -34,6 +34,7 @@ MainMenuState::MainMenuState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
+	, aurora(context.shaders.Get(Assets::ShaderID::MenuAurora))
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -148,6 +149,7 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 void MainMenuState::Update(float deltaTime)
 {
+	aurora.Update(deltaTime);
 	backdrop.Update(deltaTime);
 	sparks.Update(deltaTime);
 	title.Update(deltaTime);
@@ -166,6 +168,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 	target.draw(backgroundSprite);
+	aurora.Render(target);
 	backdrop.Render(target);
 	sparks.Render(target);
 

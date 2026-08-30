@@ -24,15 +24,13 @@ namespace UI
 	// gentle idle wave in both position and glow. Each letter carries one of
 	// the tetromino colours, a dark outline and a vertical gradient fill, with
 	// a pulsing neon bloom behind it. Landing throws a white flash, a shockwave
-	// ring, a brief chromatic split and a small kick to the whole word. An
-	// optional dim reflection sits below.
+	// ring, a brief chromatic split and a small kick to the whole word.
 	class DropInTitle
 	{
 	public:
 		DropInTitle(const sf::Font& font, const sf::String& text, unsigned int characterSize);
 
 		void SetCenter(sf::Vector2f center);
-		void SetReflectionEnabled(bool enabled);
 
 		void Update(float deltaTime);
 		void Skip();   // jump straight to the settled title
@@ -75,16 +73,15 @@ namespace UI
 		// can't be multi-coloured). The glow box is a single fixed size for
 		// every letter, so NeonGlow resizes its buffers once and never again.
 		void DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
-			sf::Vector2f position, float scaleSignY, float intensityScale) const;
+			sf::Vector2f position) const;
 		void DrawGradientLetter(sf::RenderTarget& target, std::size_t index, const Pose& pose,
-			sf::Vector2f drawPosition, float scaleSignY, std::uint8_t alpha) const;
+			sf::Vector2f drawPosition) const;
 
 		const sf::Font& font;
 		unsigned int characterSize;
 
 		std::vector<Glyph> glyphs;
 		sf::Vector2f center;
-		bool reflectionEnabled = true;
 
 		// Fixed size for the whole-word glow box, so NeonGlow resizes its
 		// buffers once and never again (resizing was a big per-frame cost).
