@@ -23,10 +23,10 @@ namespace
 {
 	constexpr sf::Vector2f VirtualSize{ 1920.f, 1080.f };
 
-	constexpr sf::Vector2f BarSize{ 1200.f, 64.f };
+	constexpr float BarWidth = 1200.f;
 	constexpr float BarOutline = 3.f;
 	constexpr float BarInnerPadding = 10.f;
-	constexpr float CellGap = 3.f;
+	constexpr float CellGap = 4.f;
 	constexpr float BarCentreY = VirtualSize.y * 0.5f;
 
 	// The block spritesheet is a horizontal strip of 16px cells; the first
@@ -34,14 +34,14 @@ namespace
 	constexpr int BlockSpriteSize = 16;
 	constexpr int BlockVariants = 5;
 
-	constexpr unsigned int LabelSize = 40;
-	constexpr float LabelGap = 34.f;
+	constexpr unsigned int LabelSize = 52;
+	constexpr float LabelGap = 40.f;
 
 	// How fast the drawn fill chases the loader's coarse per-stage fraction,
 	// and how a freshly filled cell slides + fades into its slot.
 	constexpr float FractionSmoothing = 4.f;
 	constexpr float CellAppearDuration = 0.4f;
-	constexpr float CellSlideCells = 2.5f;
+	constexpr float CellSlideCells = 1.8f;
 
 	// A short beat after the last block settles before leaving the screen.
 	constexpr float HandoffLinger = 0.35f;
@@ -165,11 +165,18 @@ void LoadingState::Render(sf::RenderTarget& target)
 	backdrop.setFillColor(Background);
 	target.draw(backdrop);
 
-	const sf::Vector2f barTopLeft{
-		(VirtualSize.x - BarSize.x) * 0.5f,
-		BarCentreY - BarSize.y * 0.5f };
+	// Square blocks: pick the block size from the width budget, then let the
+	// bar height follow from it.
+	const float slotWidth = (BarWidth - 2.f * BarInnerPadding) / static_cast<float>(CellCount);
+	const float blockSize = std::max(1.f, slotWidth - CellGap);
+	const float barHeight = blockSize + 2.f * BarInnerPadding;
+	const sf::Vector2f barSize{ BarWidth, barHeight };
 
-	sf::RectangleShape frame(BarSize);
+	const sf::Vector2f barTopLeft{
+		(VirtualSize.x - barSize.x) * 0.5f,
+		BarCentreY - barSize.y * 0.5f };
+
+	sf::RectangleShape frame(barSize);
 	frame.setPosition(barTopLeft);
 	frame.setFillColor(BarTrack);
 	frame.setOutlineThickness(BarOutline);
@@ -180,17 +187,11 @@ void LoadingState::Render(sf::RenderTarget& target)
 	{
 		const float innerLeft = barTopLeft.x + BarInnerPadding;
 		const float innerTop = barTopLeft.y + BarInnerPadding;
-		const float innerWidth = BarSize.x - 2.f * BarInnerPadding;
-		const float slotWidth = innerWidth / static_cast<float>(CellCount);
-		const float blockWidth = std::max(1.f, slotWidth - CellGap);
-		const float blockHeight = BarSize.y - 2.f * BarInnerPadding;
 		const float slideDistance = slotWidth * CellSlideCells;
 
 		const sf::Texture& sheet = context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline);
 		sf::Sprite block(sheet);
-		block.setScale({
-			blockWidth / static_cast<float>(BlockSpriteSize),
-			blockHeight / static_cast<float>(BlockSpriteSize) });
+		block.setScale(sf::Vector2f{ blockSize, blockSize } / static_cast<float>(BlockSpriteSize));
 
 		for (int i = 0; i < CellCount; ++i)
 		{

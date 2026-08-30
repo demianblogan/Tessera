@@ -31,7 +31,9 @@ public:
 	void Render(sf::RenderTarget& target) override;
 
 private:
-	static constexpr int CellCount = 48;
+	// Number of cells in the bar. Kept in the header only because the
+	// appear-time buffer is sized from it; the bar geometry lives in the .cpp.
+	static constexpr int CellCount = 30;
 
 	void RefreshStageLabel();
 

@@ -59,7 +59,7 @@ namespace Assets
 
 			// Used only by the loading screen for now; broad language coverage
 			// (Latin, Cyrillic, ...). Falls back to Main if the file is missing.
-			inline constexpr const char* Loading = "assets/fonts/EpilepsySans.ttf";
+			inline constexpr const char* Loading = "assets/fonts/chis-pix.ttf";
 		}
 
 		namespace Music
