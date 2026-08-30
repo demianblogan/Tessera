@@ -37,8 +37,10 @@ namespace
 	constexpr float WavePhaseStep = 0.7f;    // radians of offset between neighbours
 	constexpr float WaveSwayDegrees = 1.6f;
 	constexpr float WaveRampDuration = 0.7f;
-	constexpr float GlowMin = 0.45f;
-	constexpr float GlowMax = 1.05f;
+	constexpr float GlowMin = 0.35f;         // dimmest point of the idle glow breath
+	constexpr float GlowMax = 0.85f;         // brightest point of the idle glow breath
+	constexpr float GlowFloor = 0.40f;       // never dimmer than this (raised by the impact flash)
+	constexpr float GlowIntensity = 0.55f;   // overall multiplier applied to every letter's bloom
 
 	constexpr float AberrationDuration = 0.10f;
 	constexpr float AberrationOffset = 9.f;
@@ -194,15 +196,16 @@ namespace UI
 			glyph.offsetY = (gb.position.y + gb.size.y * 0.5f) - wordCentreY;
 			glyph.startDelay = static_cast<float>(i) * StaggerDelay;
 
+			glowBoxSize.x = std::max(glowBoxSize.x, gb.size.x);
 			glowBoxSize.y = std::max(glowBoxSize.y, gb.size.y);
 
 			glyphs.push_back(std::move(glyph));
 		}
 
-		// A single box around the whole word, with slack for the impact stretch
-		// and the idle wave. NeonGlow adds its own padding for the bloom spread.
-		glowBoxSize.x = penX * 1.1f + 60.f;
-		glowBoxSize.y = glowBoxSize.y * 1.25f + 2.f * WaveAmplitude + 40.f;
+		// One box size for every letter: the widest/tallest glyph plus slack
+		// for the impact stretch. NeonGlow adds its own bloom padding on top.
+		glowBoxSize.x *= StretchX + 0.2f;
+		glowBoxSize.y *= 1.25f;
 	}
 
 	void DropInTitle::SetCenter(sf::Vector2f newCenter)
@@ -377,47 +380,32 @@ namespace UI
 		}
 	}
 
-	void DropInTitle::DrawWordGlow(sf::RenderTarget& target, NeonGlow& glow, const std::vector<Pose>& poses,
-		bool mirrored, float intensityScale) const
+	void DropInTitle::DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
+		sf::Vector2f position, float scaleSignY, float intensityScale) const
 	{
-		const float scaleSignY = mirrored ? -1.f : 1.f;
-		const float mirrorY = center.y + kickOffset + MirrorDistance;
-		const float uprightCentreY = center.y + kickOffset;
-		const float centreY = mirrored ? (2.f * mirrorY - uprightCentreY) : uprightCentreY;
-
+		// Fixed-size box centred on the letter -- same size for every letter and
+		// every frame, so NeonGlow's buffers never resize after the first call.
 		const sf::FloatRect area{
-			{ center.x - glowBoxSize.x * 0.5f, centreY - glowBoxSize.y * 0.5f },
+			{ position.x - glowBoxSize.x * 0.5f, position.y - glowBoxSize.y * 0.5f },
 			glowBoxSize };
 
+		const float strength = std::max(pose.glowStrength, GlowFloor + 0.4f * pose.flash);
+		const sf::Color tint = Scale(glyphs[index].colour, strength * GlowIntensity * intensityScale);
+
+		sf::Text silhouette = glyphs[index].text;
+		silhouette.setPosition(position);
+		silhouette.setRotation(sf::degrees(pose.rotationDegrees));
+		silhouette.setScale({ pose.scaleX, pose.scaleY * scaleSignY });
+
 		glow.Draw(target, area,
-			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			[&silhouette](sf::RenderTarget& buffer, const sf::RenderStates& states)
 			{
-				for (std::size_t i = 0; i < glyphs.size(); ++i)
-				{
-					if (!poses[i].visible)
-					{
-						continue;
-					}
-
-					sf::Vector2f position = RestingPosition(i, poses[i]);
-					if (mirrored)
-					{
-						position.y = 2.f * mirrorY - position.y;
-					}
-
-					const float strength = std::max(poses[i].glowStrength, 0.6f + 0.4f * poses[i].flash);
-					const sf::Color tint = Scale(glyphs[i].colour, strength * intensityScale);
-
-					sf::Text silhouette = glyphs[i].text;
-					silhouette.setPosition(position);
-					silhouette.setRotation(sf::degrees(poses[i].rotationDegrees));
-					silhouette.setScale({ poses[i].scaleX, poses[i].scaleY * scaleSignY });
-					silhouette.setFillColor(tint);
-					silhouette.setOutlineColor(tint);
-					buffer.draw(silhouette, states);
-				}
+				sf::Text white = silhouette;
+				white.setFillColor(sf::Color::White);
+				white.setOutlineColor(sf::Color::White);
+				buffer.draw(white, states);
 			},
-			sf::Color::White, false);
+			tint, false);
 	}
 
 	void DropInTitle::Render(sf::RenderTarget& target, NeonGlow* glow) const
@@ -457,14 +445,31 @@ namespace UI
 			}
 		}
 
-		// -- Neon bloom: one pass for the word, one for its reflection -----
+		// -- Per-letter neon bloom (word, then its reflection) -------------
 		if (glow != nullptr)
 		{
-			DrawWordGlow(target, *glow, poses, false, 1.f);
+			for (std::size_t i = 0; i < glyphs.size(); ++i)
+			{
+				if (poses[i].visible)
+				{
+					DrawLetterGlow(target, *glow, i, poses[i], RestingPosition(i, poses[i]), 1.f, 1.f);
+				}
+			}
 
 			if (reflectionEnabled)
 			{
-				DrawWordGlow(target, *glow, poses, true, ReflectionGlowScale);
+				const float mirrorY = center.y + kickOffset + MirrorDistance;
+				for (std::size_t i = 0; i < glyphs.size(); ++i)
+				{
+					if (!poses[i].visible)
+					{
+						continue;
+					}
+
+					const sf::Vector2f upright = RestingPosition(i, poses[i]);
+					const sf::Vector2f mirrored{ upright.x, 2.f * mirrorY - upright.y };
+					DrawLetterGlow(target, *glow, i, poses[i], mirrored, -1.f, ReflectionGlowScale);
+				}
 			}
 		}
 

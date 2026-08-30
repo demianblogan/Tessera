@@ -69,11 +69,12 @@ namespace UI
 		[[nodiscard]] Pose EvaluateGlyph(std::size_t index) const;
 		[[nodiscard]] sf::Vector2f RestingPosition(std::size_t index, const Pose& pose) const;
 
-		// One NeonGlow pass for the whole word (or its reflection): every letter
-		// silhouette goes into a single bloom, each pre-tinted with its own
-		// breathing colour. Far cheaper than a pass per letter.
-		void DrawWordGlow(sf::RenderTarget& target, NeonGlow& glow, const std::vector<Pose>& poses,
-			bool mirrored, float intensityScale) const;
+		// One NeonGlow pass per letter (white silhouette + the letter's own
+		// tint -- NeonGlow's dilate discards source colour, so a shared pass
+		// can't be multi-coloured). The glow box is a single fixed size for
+		// every letter, so NeonGlow resizes its buffers once and never again.
+		void DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
+			sf::Vector2f position, float scaleSignY, float intensityScale) const;
 		void DrawGradientLetter(sf::RenderTarget& target, std::size_t index, const Pose& pose,
 			sf::Vector2f drawPosition, float scaleSignY, std::uint8_t alpha) const;
 
