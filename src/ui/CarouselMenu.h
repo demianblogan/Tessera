@@ -1,0 +1,82 @@
+#pragma once
+
+#include <cstddef>
+#include <functional>
+#include <vector>
+
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/System/String.hpp>
+#include <SFML/System/Vector2.hpp>
+
+namespace sf
+{
+	class Font;
+	class RenderTarget;
+}
+
+namespace UI
+{
+	// A ring of menu entries seen at a slight 3D angle: the front entry sits
+	// large and bright below the title, the two sides are smaller and dimmer,
+	// and the back entry is tucked up behind the title, almost invisible.
+	// Left / right navigation rotates the ring so a neighbour swings to the
+	// front. On entry the whole ring flies in from the right.
+	//
+	// Draw order is split: RenderBack() before the title, RenderFront() after,
+	// so the back entry really does pass behind it.
+	class CarouselMenu
+	{
+	public:
+		CarouselMenu(const sf::Font& font, unsigned int characterSize);
+
+		void AddItem(const sf::String& text, std::function<void()> onActivate);
+		void SetCenter(sf::Vector2f center);
+
+		// Kick off the fly-in. Until it finishes IsReady() is false and the
+		// rotate / activate calls do nothing.
+		void Begin();
+		[[nodiscard]] bool IsReady() const;
+
+		void RotateLeft();
+		void RotateRight();
+		void Activate();
+
+		void Update(float deltaTime);
+		void RenderBack(sf::RenderTarget& target) const;
+		void RenderFront(sf::RenderTarget& target) const;
+
+	private:
+		struct Item
+		{
+			sf::Text text;
+			std::function<void()> activate;
+		};
+
+		struct Placement
+		{
+			sf::Vector2f position;
+			float scale = 1.f;
+			float alpha = 1.f;
+			float depth = 0.f;   // +1 front, -1 back
+		};
+
+		[[nodiscard]] Placement PlacementOf(std::size_t index) const;
+		void Render(sf::RenderTarget& target, bool frontHalf) const;
+		[[nodiscard]] std::size_t FrontItem() const;
+
+		const sf::Font& font;
+		unsigned int characterSize;
+
+		std::vector<Item> items;
+		sf::Vector2f center;
+
+		int frontIndex = 0;          // which item is at the front (may be < 0 or >= size)
+		float angle = 0.f;           // current ring rotation, radians
+		float rotateFrom = 0.f;
+		float rotateTo = 0.f;
+		float rotateTimer = 1.f;     // >= 1 means settled
+
+		bool started = false;
+		float introTimer = 0.f;      // 0..1 across the fly-in
+	};
+}

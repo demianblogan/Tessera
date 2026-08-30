@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 
 #include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -24,12 +23,7 @@ namespace
 	constexpr unsigned int TitleCharSize = 200;
 	constexpr sf::Vector2f TitleCenter{ 960.f, 430.f };
 
-	constexpr unsigned int EntryCharSize = 64;
-	constexpr float EntryTop = 700.f;
-	constexpr float EntryGap = 96.f;
-
-	constexpr sf::Color EntryNormal{ 150, 155, 165 };
-	constexpr sf::Color EntrySelected{ 255, 255, 255 };
+	constexpr unsigned int MenuCharSize = 58;
 
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
@@ -40,6 +34,7 @@ MainMenuState::MainMenuState(Context& context)
 	, context(context)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, carousel(context.fonts.Get(Assets::FontID::Menu), MenuCharSize)
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
 	title.SetCenter(TitleCenter);
@@ -52,14 +47,16 @@ MainMenuState::MainMenuState(Context& context)
 			versionBounds.position.y + versionBounds.size.y
 		});
 
-	AddEntry(context.localization.GetText(TextKey::MainMenu::StartGame),
+	// Order around the ring: front, right, back, left.
+	carousel.SetCenter(TitleCenter);
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this] { RequestChange(std::make_unique<GameplayState>(this->context)); });
-	AddEntry(context.localization.GetText(TextKey::MainMenu::Options),
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
 		[this] { RequestChange(std::make_unique<SettingsState>(this->context)); });
-	AddEntry(context.localization.GetText(TextKey::MainMenu::Records),
-		[this] { RequestChange(std::make_unique<StatisticsState>(this->context)); });
-	AddEntry(context.localization.GetText(TextKey::MainMenu::Quit),
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { this->context.window.close(); });
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
+		[this] { RequestChange(std::make_unique<StatisticsState>(this->context)); });
 
 	context.music.Get(Assets::MusicID::Gameplay).stop();
 	context.music.Get(Assets::MusicID::GameOver).stop();
@@ -72,58 +69,35 @@ MainMenuState::MainMenuState(Context& context)
 	}
 }
 
-void MainMenuState::AddEntry(const sf::String& text, std::function<void()> activate)
-{
-	sf::Text label(context.fonts.Get(Assets::FontID::Main), text, EntryCharSize);
-	const sf::FloatRect bounds = label.getLocalBounds();
-	label.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-
-	entries.push_back({ std::move(label), std::move(activate) });
-}
-
-bool MainMenuState::MenuReady() const
-{
-	return title.IsFinished();
-}
-
-void MainMenuState::Select(std::size_t index)
-{
-	if (index == selected)
-	{
-		return;
-	}
-
-	selected = index;
-	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-}
-
-void MainMenuState::Activate()
-{
-	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	entries[selected].activate();
-}
-
 void MainMenuState::HandleEvent(const sf::Event& event)
 {
-	if (!MenuReady())
+	const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad);
+
+	if (action == MenuInput::Action::Back)
+	{
+		context.window.close();
+		return;
+	}
+
+	if (!carousel.IsReady())
 	{
 		return;
 	}
 
-	switch (MenuInput::Resolve(event, context.gamepad))
+	switch (action)
 	{
-	case MenuInput::Action::Up:
-		Select((selected + entries.size() - 1) % entries.size());
-		return;
-	case MenuInput::Action::Down:
-		Select((selected + 1) % entries.size());
-		return;
+	case MenuInput::Action::Left:
+		carousel.RotateLeft();
+		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		break;
+	case MenuInput::Action::Right:
+		carousel.RotateRight();
+		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		break;
 	case MenuInput::Action::Confirm:
-		Activate();
-		return;
-	case MenuInput::Action::Back:
-		context.window.close();
-		return;
+		context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+		carousel.Activate();
+		break;
 	default:
 		break;
 	}
@@ -133,24 +107,23 @@ void MainMenuState::Update(float deltaTime)
 {
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
+
+	if (!carouselStarted && title.IsFinished())
+	{
+		carousel.Begin();
+		carouselStarted = true;
+	}
+
+	carousel.Update(deltaTime);
 }
 
 void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 
+	carousel.RenderBack(target);
 	title.Render(target, &titleGlow);
-
-	if (MenuReady())
-	{
-		for (std::size_t i = 0; i < entries.size(); ++i)
-		{
-			sf::Text& label = entries[i].label;
-			label.setPosition({ TitleCenter.x, EntryTop + static_cast<float>(i) * EntryGap });
-			label.setFillColor(i == selected ? EntrySelected : EntryNormal);
-			target.draw(label);
-		}
-	}
+	carousel.RenderFront(target);
 
 	versionText.setPosition(target.getView().getSize() - VersionMargin);
 	target.draw(versionText);

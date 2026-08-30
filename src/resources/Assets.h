@@ -5,7 +5,8 @@ namespace Assets
 	enum class FontID
 	{
 		Main,
-		Loading
+		Loading,
+		Menu
 	};
 
 	enum class MusicID
@@ -60,6 +61,9 @@ namespace Assets
 			// Used only by the loading screen for now; broad language coverage
 			// (Latin, Cyrillic, ...). Falls back to Main if the file is missing.
 			inline constexpr const char* Loading = "assets/fonts/chis-pix.ttf";
+
+			// Main-menu carousel entries. Pixel face with localisation coverage.
+			inline constexpr const char* Menu = "assets/fonts/chispix-bold.ttf";
 		}
 
 		namespace Music
