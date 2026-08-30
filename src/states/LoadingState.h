@@ -30,14 +30,14 @@ public:
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 
-	// Crisp: the bar and its label sit still, so the CRT warp would only bow
-	// straight edges for no gain.
-	[[nodiscard]] bool UsesCrtEffect() const override { return false; }
-
 private:
 	static constexpr int CellCount = 48;
 
 	void RefreshStageLabel();
+
+	// The block spritesheet is loaded by the first stage, so its texture is
+	// only safe to sample once that stage is behind us.
+	[[nodiscard]] bool TexturesReady() const;
 
 	Context& context;
 

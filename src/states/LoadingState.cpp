@@ -1,13 +1,15 @@
 #include "LoadingState.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Window/Event.hpp>
 
 #include "../core/Context.h"
@@ -25,7 +27,12 @@ namespace
 	constexpr float BarOutline = 3.f;
 	constexpr float BarInnerPadding = 10.f;
 	constexpr float CellGap = 3.f;
-	constexpr float BarCentreY = 640.f;
+	constexpr float BarCentreY = VirtualSize.y * 0.5f;
+
+	// The block spritesheet is a horizontal strip of 16px cells; the first
+	// five are the most distinct colours.
+	constexpr int BlockSpriteSize = 16;
+	constexpr int BlockVariants = 5;
 
 	constexpr unsigned int LabelSize = 40;
 	constexpr float LabelGap = 34.f;
@@ -42,17 +49,6 @@ namespace
 	constexpr sf::Color Background{ 12, 14, 22 };
 	constexpr sf::Color BarFrame{ 90, 120, 160 };
 	constexpr sf::Color BarTrack{ 8, 10, 16, 220 };
-
-	// Classic tetromino colours, brightened a little for the neon look.
-	constexpr std::array<sf::Color, 7> BlockPalette{
-		sf::Color{ 0, 240, 240 },   // I
-		sf::Color{ 245, 220, 40 },  // O
-		sf::Color{ 180, 60, 240 },  // T
-		sf::Color{ 60, 230, 90 },   // S
-		sf::Color{ 240, 60, 70 },   // Z
-		sf::Color{ 70, 110, 240 },  // J
-		sf::Color{ 245, 160, 40 },  // L
-	};
 
 	[[nodiscard]] std::string_view StageKey(Loading::Stage stage) noexcept
 	{
@@ -81,7 +77,7 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 	, context(context)
 	, job(context.textures, context.soundBuffers, context.music, context.shaders, context.fonts)
 	, onLoaded(std::move(onLoaded))
-	, stageLabel(context.fonts.Get(Assets::FontID::Pixel), "", LabelSize)
+	, stageLabel(context.fonts.Get(Assets::FontID::Loading), "", LabelSize)
 {
 	stageLabel.setFillColor(sf::Color::White);
 
@@ -110,6 +106,11 @@ void LoadingState::RefreshStageLabel()
 		bounds.position.y + bounds.size.y });
 
 	labelledStage = stage;
+}
+
+bool LoadingState::TexturesReady() const
+{
+	return progress.IsDone() || progress.GetStage() != Loading::Stage::Textures;
 }
 
 void LoadingState::Update(float deltaTime)
@@ -175,36 +176,43 @@ void LoadingState::Render(sf::RenderTarget& target)
 	frame.setOutlineColor(BarFrame);
 	target.draw(frame);
 
-	const float innerLeft = barTopLeft.x + BarInnerPadding;
-	const float innerTop = barTopLeft.y + BarInnerPadding;
-	const float innerWidth = BarSize.x - 2.f * BarInnerPadding;
-	const float slotWidth = innerWidth / static_cast<float>(CellCount);
-	const float blockWidth = std::max(1.f, slotWidth - CellGap);
-	const float blockHeight = BarSize.y - 2.f * BarInnerPadding;
-	const float slideDistance = slotWidth * CellSlideCells;
-
-	sf::RectangleShape block({ blockWidth, blockHeight });
-
-	for (int i = 0; i < CellCount; ++i)
+	if (TexturesReady())
 	{
-		const float appearTime = cellAppearTime[static_cast<std::size_t>(i)];
-		if (appearTime < 0.f)
+		const float innerLeft = barTopLeft.x + BarInnerPadding;
+		const float innerTop = barTopLeft.y + BarInnerPadding;
+		const float innerWidth = BarSize.x - 2.f * BarInnerPadding;
+		const float slotWidth = innerWidth / static_cast<float>(CellCount);
+		const float blockWidth = std::max(1.f, slotWidth - CellGap);
+		const float blockHeight = BarSize.y - 2.f * BarInnerPadding;
+		const float slideDistance = slotWidth * CellSlideCells;
+
+		const sf::Texture& sheet = context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline);
+		sf::Sprite block(sheet);
+		block.setScale({
+			blockWidth / static_cast<float>(BlockSpriteSize),
+			blockHeight / static_cast<float>(BlockSpriteSize) });
+
+		for (int i = 0; i < CellCount; ++i)
 		{
-			continue;
+			const float appearTime = cellAppearTime[static_cast<std::size_t>(i)];
+			if (appearTime < 0.f)
+			{
+				continue;
+			}
+
+			const float t = std::clamp((elapsed - appearTime) / CellAppearDuration, 0.f, 1.f);
+			const float eased = EaseOutCubic(t);
+
+			const float slotX = innerLeft + static_cast<float>(i) * slotWidth;
+			const float x = slotX + (1.f - eased) * slideDistance;
+
+			block.setTextureRect(sf::IntRect{
+				{ (i % BlockVariants) * BlockSpriteSize, 0 },
+				{ BlockSpriteSize, BlockSpriteSize } });
+			block.setPosition({ x, innerTop });
+			block.setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(eased * 255.f)));
+			target.draw(block);
 		}
-
-		const float t = std::clamp((elapsed - appearTime) / CellAppearDuration, 0.f, 1.f);
-		const float eased = EaseOutCubic(t);
-
-		const float slotX = innerLeft + static_cast<float>(i) * slotWidth;
-		const float x = slotX + (1.f - eased) * slideDistance;
-
-		sf::Color colour = BlockPalette[static_cast<std::size_t>(i) % BlockPalette.size()];
-		colour.a = static_cast<std::uint8_t>(eased * 255.f);
-
-		block.setPosition({ x, innerTop });
-		block.setFillColor(colour);
-		target.draw(block);
 	}
 
 	stageLabel.setPosition({ VirtualSize.x * 0.5f, barTopLeft.y - LabelGap });

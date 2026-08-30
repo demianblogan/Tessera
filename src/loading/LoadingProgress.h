@@ -28,7 +28,11 @@ namespace Loading
 	public:
 		void SetStage(Stage stage) noexcept
 		{
-			currentStage.store(stage, std::memory_order_relaxed);
+			// Release / acquire: whatever assets the worker finished before
+			// advancing the stage are guaranteed visible to the main thread
+			// once it observes the new stage (the loading screen reads the
+			// block spritesheet as soon as the Textures stage is behind it).
+			currentStage.store(stage, std::memory_order_release);
 		}
 
 		void MarkDone() noexcept
@@ -38,7 +42,7 @@ namespace Loading
 
 		[[nodiscard]] Stage GetStage() const noexcept
 		{
-			return currentStage.load(std::memory_order_relaxed);
+			return currentStage.load(std::memory_order_acquire);
 		}
 
 		[[nodiscard]] bool IsDone() const noexcept

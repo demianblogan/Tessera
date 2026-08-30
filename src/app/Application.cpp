@@ -115,8 +115,6 @@ void Application::Render()
 	const bool blurBackdrop = currentState != nullptr
 		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
 
-	const bool applyCrt = currentState == nullptr || currentState->UsesCrtEffect();
-
 	// =====================================================
 	// Opaque state: render the stack straight to the screen
 	// =====================================================
@@ -131,14 +129,7 @@ void Application::Render()
 		stateMachine.RenderStates(renderTexture);
 		renderTexture.display();
 
-		if (applyCrt)
-		{
-			window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
-		}
-		else
-		{
-			window.draw(sf::Sprite(renderTexture.getTexture()));
-		}
+		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
 	}
 	else
 	{
@@ -213,10 +204,10 @@ Application::Application()
 	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
 
-	const std::filesystem::path pixelFontPath = Assets::Paths::Fonts::Pixel;
+	const std::filesystem::path loadingFontPath = Assets::Paths::Fonts::Loading;
 	fonts.Load(
-		Assets::FontID::Pixel,
-		std::filesystem::exists(pixelFontPath) ? pixelFontPath : std::filesystem::path(Assets::Paths::Fonts::Main));
+		Assets::FontID::Loading,
+		std::filesystem::exists(loadingFontPath) ? loadingFontPath : std::filesystem::path(Assets::Paths::Fonts::Main));
 
 	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
 	{
