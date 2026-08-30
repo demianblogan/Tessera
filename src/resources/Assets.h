@@ -79,7 +79,7 @@ namespace Assets
 		namespace Sounds
 		{
 			inline constexpr const char* TitleButtonDrop = "assets/audio/sounds/title_button_drop.ogg";
-			inline constexpr const char* MenuItemAppeared = "assets/audio/sounds/menu_item_appeared.ogg";
+			inline constexpr const char* MenuItemAppeared = "assets/audio/sounds/menu_item_appeared.mp3";
 
 			inline constexpr const char* MenuItemSelected = "assets/audio/sounds/menu_item_selected.ogg";
 			inline constexpr const char* MenuItemPressed = "assets/audio/sounds/menu_item_pressed.ogg";
