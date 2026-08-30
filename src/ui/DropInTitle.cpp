@@ -218,6 +218,18 @@ namespace UI
 		reflectionEnabled = enabled;
 	}
 
+	void DropInTitle::Skip()
+	{
+		// Land every letter exactly at rest -- past the settle, before the wave
+		// ramps in, so nothing jumps.
+		for (Glyph& glyph : glyphs)
+		{
+			glyph.elapsed = glyph.startDelay + FallDuration + SettleDuration;
+		}
+		kickOffset = 0.f;
+		kickVelocity = 0.f;
+	}
+
 	void DropInTitle::Update(float deltaTime)
 	{
 		for (Glyph& glyph : glyphs)

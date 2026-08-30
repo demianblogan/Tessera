@@ -35,6 +35,7 @@ namespace UI
 		void SetReflectionEnabled(bool enabled);
 
 		void Update(float deltaTime);
+		void Skip();   // jump straight to the settled title
 		void Render(sf::RenderTarget& target, NeonGlow* glow = nullptr) const;
 
 		[[nodiscard]] bool IsFinished() const;

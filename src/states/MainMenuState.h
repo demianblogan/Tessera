@@ -26,6 +26,9 @@ public:
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 
+	// No cursor while the title / ring build animation is still playing.
+	[[nodiscard]] bool ShowsCursor() const override { return carousel.IsReady(); }
+
 private:
 	Context& context;
 

@@ -36,6 +36,7 @@ namespace UI
 		// Kick off the fly-in. Until it finishes IsReady() is false and the
 		// rotate / activate calls do nothing.
 		void Begin();
+		void Skip();                       // jump straight to the settled ring
 		[[nodiscard]] bool IsReady() const;
 
 		void RotateLeft();
@@ -80,6 +81,7 @@ namespace UI
 
 		std::vector<Item> items;
 		sf::Vector2f center;
+		float maxItemHalfWidth = 0.f;   // half the widest entry, for anchoring the arrows
 
 		int frontIndex = 0;          // which item is at the front (may be < 0 or >= size)
 		float angle = 0.f;           // current ring rotation, radians

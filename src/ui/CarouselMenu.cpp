@@ -34,10 +34,27 @@ namespace
 	constexpr float RowAlpha = 0.75f;
 	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
 
-	// Click arrows either side of the front entry.
-	constexpr float ArrowOffsetX = 360.f;    // from the front slot centre
-	constexpr sf::Vector2f ArrowHalfSize{ 46.f, 58.f };
+	// Click arrows hugging the front entry, pointing outward (the direction the
+	// ring turns). Placeholder triangles -- sprites will replace them later.
+	constexpr float ArrowGap = 14.f;             // between the widest entry's edge and the arrow
+	constexpr float ArrowHeightFraction = 0.8f;  // arrow height vs the front entry's text height
+	constexpr float ArrowAspect = 0.7f;          // half-width / half-height
 	constexpr float ArrowHitPadding = 16.f;
+
+	struct ArrowGeom
+	{
+		sf::Vector2f centre;
+		float halfWidth = 0.f;
+		float halfHeight = 0.f;
+	};
+
+	[[nodiscard]] ArrowGeom ComputeArrow(sf::Vector2f frontSlot, float maxHalfWidth, float itemHeight, int side) noexcept
+	{
+		const float halfHeight = std::max(10.f, itemHeight * 0.5f * ArrowHeightFraction);
+		const float halfWidth = halfHeight * ArrowAspect;
+		const float x = frontSlot.x + static_cast<float>(side) * (maxHalfWidth + ArrowGap + halfWidth);
+		return { { x, frontSlot.y }, halfWidth, halfHeight };
+	}
 
 	// Where each entry (by index) ends up, as an unrolled angle. The row winds
 	// on through negative angles, so the lead entry -- the one bound for the
@@ -103,6 +120,8 @@ namespace UI
 		const sf::FloatRect bounds = label.getLocalBounds();
 		label.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 
+		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
+
 		items.push_back({ std::move(label), std::move(onActivate) });
 	}
 
@@ -114,6 +133,12 @@ namespace UI
 	void CarouselMenu::Begin()
 	{
 		started = true;
+	}
+
+	void CarouselMenu::Skip()
+	{
+		started = true;
+		introTimer = 1.f;
 	}
 
 	bool CarouselMenu::IsReady() const
@@ -302,31 +327,25 @@ namespace UI
 
 	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
 	{
-		const sf::Vector2f centreOfArrow{
-			FrontSlotPosition().x + static_cast<float>(side) * ArrowOffsetX,
-			FrontSlotPosition().y };
-
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y, side);
 		return {
-			{ centreOfArrow.x - ArrowHalfSize.x - ArrowHitPadding,
-			  centreOfArrow.y - ArrowHalfSize.y - ArrowHitPadding },
-			{ 2.f * (ArrowHalfSize.x + ArrowHitPadding),
-			  2.f * (ArrowHalfSize.y + ArrowHitPadding) } };
+			{ g.centre.x - g.halfWidth - ArrowHitPadding, g.centre.y - g.halfHeight - ArrowHitPadding },
+			{ 2.f * (g.halfWidth + ArrowHitPadding), 2.f * (g.halfHeight + ArrowHitPadding) } };
 	}
 
 	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
 	{
-		const sf::Vector2f c{
-			FrontSlotPosition().x + static_cast<float>(side) * ArrowOffsetX,
-			FrontSlotPosition().y };
-		const float dir = static_cast<float>(side);   // -1 points left, +1 points right
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, FrontItemBounds().size.y, side);
+		const float dir = static_cast<float>(side);
 
+		// Tip points away from the entry -- the way the ring turns on that click.
 		sf::ConvexShape arrow(3);
-		arrow.setPoint(0, { c.x - dir * ArrowHalfSize.x, c.y });
-		arrow.setPoint(1, { c.x + dir * ArrowHalfSize.x, c.y - ArrowHalfSize.y });
-		arrow.setPoint(2, { c.x + dir * ArrowHalfSize.x, c.y + ArrowHalfSize.y });
+		arrow.setPoint(0, { g.centre.x + dir * g.halfWidth, g.centre.y });
+		arrow.setPoint(1, { g.centre.x - dir * g.halfWidth, g.centre.y - g.halfHeight });
+		arrow.setPoint(2, { g.centre.x - dir * g.halfWidth, g.centre.y + g.halfHeight });
 
 		const bool hot = hoveredArrow == side;
-		arrow.setFillColor(sf::Color(255, 255, 255, hot ? 230 : 120));
+		arrow.setFillColor(sf::Color(255, 255, 255, hot ? 235 : 130));
 		target.draw(arrow);
 	}
 

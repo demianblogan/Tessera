@@ -72,16 +72,25 @@ MainMenuState::MainMenuState(Context& context)
 
 void MainMenuState::HandleEvent(const sf::Event& event)
 {
+	// While the build animation plays, any key / button / click skips it.
+	if (!carousel.IsReady())
+	{
+		if (event.is<sf::Event::KeyPressed>()
+			|| event.is<sf::Event::MouseButtonPressed>()
+			|| event.is<sf::Event::JoystickButtonPressed>())
+		{
+			title.Skip();
+			carousel.Skip();
+			carouselStarted = true;
+		}
+		return;
+	}
+
 	const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad);
 
 	if (action == MenuInput::Action::Back)
 	{
 		context.window.close();
-		return;
-	}
-
-	if (!carousel.IsReady())
-	{
 		return;
 	}
 
