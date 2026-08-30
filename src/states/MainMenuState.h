@@ -8,6 +8,7 @@
 #include "../ui/CarouselMenu.h"
 #include "../ui/DropInTitle.h"
 #include "../ui/MenuBackdrop.h"
+#include "../ui/MenuGrid.h"
 
 struct Context;
 
@@ -38,6 +39,7 @@ private:
 	Context& context;
 
 	sf::Sprite backgroundSprite;
+	UI::MenuGrid grid;
 	UI::MenuBackdrop backdrop;
 	UI::DropInTitle title;
 	NeonGlow titleGlow;

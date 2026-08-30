@@ -386,12 +386,12 @@ namespace UI
 		if (ArrowBounds(-1).contains(point))
 		{
 			RotateLeft();
-			return PointerHit::Rotated;
+			return PointerHit::RotatedLeft;
 		}
 		if (ArrowBounds(1).contains(point))
 		{
 			RotateRight();
-			return PointerHit::Rotated;
+			return PointerHit::RotatedRight;
 		}
 		if (FrontItemBounds().contains(point))
 		{

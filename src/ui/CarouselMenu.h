@@ -45,7 +45,7 @@ namespace UI
 		void Activate();
 
 		// Mouse. The caller maps the pixel to view coordinates first.
-		enum class PointerHit { None, Rotated, Activated };
+		enum class PointerHit { None, RotatedLeft, RotatedRight, Activated };
 		PointerHit PointerPressed(sf::Vector2f point);
 		void PointerMoved(sf::Vector2f point);
 

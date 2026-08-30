@@ -1,5 +1,6 @@
 #include "MenuBackdrop.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -21,6 +22,15 @@ namespace
 	constexpr float MinAlpha = 0.05f;
 	constexpr float MaxAlpha = 0.17f;
 	constexpr float MaxSpin = 22.f;         // degrees per second
+
+	constexpr float MinFallSpeed = 55.f;
+	constexpr float FallSpeedByDepth = 145.f;   // added on top, scaled by the piece's depth
+
+	constexpr float PushImpulse = 620.f;   // sideways velocity added per menu switch
+	constexpr float MaxDrift = 1400.f;     // cap on stacked impulses
+	constexpr float DriftDecay = 2.6f;     // per second, exponential
+
+	constexpr float WrapMargin = 140.f;
 
 	// Cell coordinates of each shape's four blocks (spawn orientation).
 	constexpr std::array<std::array<sf::Vector2i, 4>, 7> ShapeCells{ {
@@ -71,7 +81,7 @@ namespace UI
 		piece.cellSize = MinCellSize + unit(rng) * (MaxCellSize - MinCellSize);
 
 		const float depth = (piece.cellSize - MinCellSize) / (MaxCellSize - MinCellSize);   // 0 far .. 1 near
-		piece.fallSpeed = 18.f + depth * 55.f;
+		piece.fallSpeed = MinFallSpeed + depth * FallSpeedByDepth;
 		piece.alpha = MinAlpha + depth * (MaxAlpha - MinAlpha);
 		piece.angularVelocity = (unit(rng) * 2.f - 1.f) * MaxSpin;
 		piece.angleDegrees = unit(rng) * 360.f;
@@ -83,12 +93,34 @@ namespace UI
 		piece.position = { x, y };
 	}
 
+	void MenuBackdrop::Push(float direction)
+	{
+		driftVelocity = std::clamp(driftVelocity + direction * PushImpulse, -MaxDrift, MaxDrift);
+	}
+
 	void MenuBackdrop::Update(float deltaTime)
 	{
+		driftVelocity *= std::exp(-DriftDecay * deltaTime);
+		if (std::abs(driftVelocity) < 1.f)
+		{
+			driftVelocity = 0.f;
+		}
+
 		for (Piece& piece : pieces)
 		{
 			piece.position.y += piece.fallSpeed * deltaTime;
+			piece.position.x += driftVelocity * deltaTime;
 			piece.angleDegrees += piece.angularVelocity * deltaTime;
+
+			// Wrap sideways so a shove can never sweep the field clean.
+			if (piece.position.x < -WrapMargin)
+			{
+				piece.position.x += VirtualSize.x + 2.f * WrapMargin;
+			}
+			else if (piece.position.x > VirtualSize.x + WrapMargin)
+			{
+				piece.position.x -= VirtualSize.x + 2.f * WrapMargin;
+			}
 
 			if (piece.position.y - 4.f * piece.cellSize > VirtualSize.y)
 			{

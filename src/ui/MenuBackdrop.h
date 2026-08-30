@@ -25,6 +25,12 @@ namespace UI
 		void Update(float deltaTime);
 		void Render(sf::RenderTarget& target) const;
 
+		// A sideways shove to every piece (menu navigation kicks the field the
+		// opposite way). `direction` is the way the pieces should move: -1 left,
+		// +1 right. Pieces wrap around the screen edges so a shove can't clear
+		// the field.
+		void Push(float direction);
+
 	private:
 		struct Piece
 		{
@@ -43,5 +49,7 @@ namespace UI
 		std::array<std::array<sf::Vector2f, 4>, 7> relativeCells{};   // cell offsets from each shape's centroid
 		std::vector<Piece> pieces;
 		std::mt19937 rng;
+
+		float driftVelocity = 0.f;   // shared sideways velocity from Push(), decaying
 	};
 }

@@ -100,10 +100,12 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	{
 	case MenuInput::Action::Left:
 		carousel.RotateLeft();
+		backdrop.Push(1.f);
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		return;
 	case MenuInput::Action::Right:
 		carousel.RotateRight();
+		backdrop.Push(-1.f);
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		return;
 	case MenuInput::Action::Confirm:
@@ -127,7 +129,12 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 		switch (carousel.PointerPressed(context.window.mapPixelToCoords(pressed->position)))
 		{
-		case UI::CarouselMenu::PointerHit::Rotated:
+		case UI::CarouselMenu::PointerHit::RotatedLeft:
+			backdrop.Push(1.f);
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			break;
+		case UI::CarouselMenu::PointerHit::RotatedRight:
+			backdrop.Push(-1.f);
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 			break;
 		case UI::CarouselMenu::PointerHit::Activated:
@@ -141,6 +148,7 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 void MainMenuState::Update(float deltaTime)
 {
+	grid.Update(deltaTime);
 	backdrop.Update(deltaTime);
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
@@ -158,6 +166,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 	target.draw(backgroundSprite);
+	grid.Render(target);
 	backdrop.Render(target);
 
 	carousel.RenderBack(target);
