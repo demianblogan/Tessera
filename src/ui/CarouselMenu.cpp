@@ -9,8 +9,11 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Glyph.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
 
 namespace
@@ -43,7 +46,15 @@ namespace
 	// ring turns). The source sprite points up; it is rotated a quarter turn.
 	constexpr float ArrowGap = 16.f;             // between the widest entry's edge and the arrow
 	constexpr float ArrowHeightFraction = 0.85f; // arrow on-screen height vs the front entry's text height
-	constexpr float ArrowHitPadding = 18.f;
+	constexpr float ArrowHitPadding = 4.f;
+
+	// Entry text styling: dark rim, vertical gradient fill, soft drop shadow.
+	constexpr float EntryOutlineThickness = 3.f;
+	constexpr sf::Color EntryOutlineColour{ 10, 10, 16 };
+	constexpr sf::Vector2f EntryShadowOffset{ 5.f, 7.f };   // local units, before the entry scale
+	constexpr float EntryShadowAlpha = 0.5f;
+	constexpr sf::Color EntryFillTop{ 255, 255, 255 };
+	constexpr sf::Color EntryFillBottom{ 150, 158, 176 };
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
 	// nudge, a warm tint, and a quick orange ring).
@@ -129,6 +140,32 @@ namespace
 		const int m = static_cast<int>(modulus);
 		return static_cast<std::size_t>(((value % m) + m) % m);
 	}
+
+	// One glyph quad (two triangles) into `array`, in string-local space:
+	// `penX` is the pen origin, `offset` a local nudge (for the shadow).
+	void AppendGlyphQuad(sf::VertexArray& array, float penX, const sf::Glyph& glyph,
+		sf::Color topColour, sf::Color bottomColour, sf::Vector2f offset = {})
+	{
+		const sf::FloatRect bounds = glyph.bounds;
+		const sf::FloatRect tex(glyph.textureRect);
+
+		const float x0 = penX + bounds.position.x + offset.x;
+		const float x1 = x0 + bounds.size.x;
+		const float y0 = bounds.position.y + offset.y;
+		const float y1 = y0 + bounds.size.y;
+
+		const float u0 = tex.position.x;
+		const float u1 = tex.position.x + tex.size.x;
+		const float v0 = tex.position.y;
+		const float v1 = tex.position.y + tex.size.y;
+
+		array.append({ { x0, y0 }, topColour, { u0, v0 } });
+		array.append({ { x1, y0 }, topColour, { u1, v0 } });
+		array.append({ { x1, y1 }, bottomColour, { u1, v1 } });
+		array.append({ { x0, y0 }, topColour, { u0, v0 } });
+		array.append({ { x1, y1 }, bottomColour, { u1, v1 } });
+		array.append({ { x0, y1 }, bottomColour, { u0, v1 } });
+	}
 }
 
 namespace UI
@@ -149,7 +186,36 @@ namespace UI
 		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		items.push_back({ std::move(label), std::move(onActivate) });
+		Item item{ std::move(label), std::move(onActivate), {}, bounds.position.y + bounds.size.y * 0.5f };
+
+		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
+		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
+		// in this SFML build.
+		std::vector<std::pair<char32_t, float>> raw;
+		float penX = 0.f;
+		char32_t previous = 0;
+		for (std::size_t i = 0; i < text.getSize(); ++i)
+		{
+			const char32_t codepoint = text[i];
+			if (previous != 0)
+			{
+				penX += font.getKerning(previous, codepoint, characterSize);
+			}
+			if (codepoint != U' ')
+			{
+				raw.push_back({ codepoint, penX });
+			}
+			penX += font.getGlyph(codepoint, characterSize, false).advance;
+			previous = codepoint;
+		}
+
+		const float halfWidth = penX * 0.5f;
+		for (const auto& [codepoint, x] : raw)
+		{
+			item.glyphs.push_back({ codepoint, x - halfWidth });
+		}
+
+		items.push_back(std::move(item));
 	}
 
 	void CarouselMenu::SetCenter(sf::Vector2f newCenter)
@@ -313,13 +379,51 @@ namespace UI
 
 		for (const Drawn& entry : drawList)
 		{
-			sf::Text label = items[entry.index].text;
-			label.setPosition(entry.placement.position);
-			label.setScale({ entry.placement.scale, entry.placement.scale });
-			label.setFillColor(sf::Color(255, 255, 255,
-				static_cast<std::uint8_t>(std::clamp(entry.placement.alpha, 0.f, 1.f) * 255.f)));
-			target.draw(label);
+			DrawEntry(target, entry.index, entry.placement);
 		}
+	}
+
+	void CarouselMenu::DrawEntry(sf::RenderTarget& target, std::size_t index, const Placement& placement) const
+	{
+		const Item& item = items[index];
+		const float alphaFraction = std::clamp(placement.alpha, 0.f, 1.f);
+		const auto alpha = static_cast<std::uint8_t>(alphaFraction * 255.f);
+		if (alpha == 0u || item.glyphs.empty())
+		{
+			return;
+		}
+
+		sf::Transform transform;
+		transform.translate(placement.position);
+		transform.scale({ placement.scale, placement.scale });
+		transform.translate({ 0.f, -item.inkCentreY });
+
+		sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
+		sf::Color outlineColour = EntryOutlineColour;   outlineColour.a = alpha;
+		sf::Color fillTop = EntryFillTop;               fillTop.a = alpha;
+		sf::Color fillBottom = EntryFillBottom;         fillBottom.a = alpha;
+
+		sf::VertexArray shadow(sf::PrimitiveType::Triangles);
+		sf::VertexArray outline(sf::PrimitiveType::Triangles);
+		sf::VertexArray fill(sf::PrimitiveType::Triangles);
+
+		for (const Item::Glyph& glyph : item.glyphs)
+		{
+			const sf::Glyph& body = font.getGlyph(glyph.codepoint, characterSize, false);
+			const sf::Glyph& rim = font.getGlyph(glyph.codepoint, characterSize, false, EntryOutlineThickness);
+
+			AppendGlyphQuad(shadow, glyph.penX, body, shadowColour, shadowColour, EntryShadowOffset);
+			AppendGlyphQuad(outline, glyph.penX, rim, outlineColour, outlineColour);
+			AppendGlyphQuad(fill, glyph.penX, body, fillTop, fillBottom);
+		}
+
+		sf::RenderStates states;
+		states.transform = transform;
+		states.texture = &font.getTexture(characterSize);
+
+		target.draw(shadow, states);
+		target.draw(outline, states);
+		target.draw(fill, states);
 	}
 
 	void CarouselMenu::RenderBack(sf::RenderTarget& target) const

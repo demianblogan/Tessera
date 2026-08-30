@@ -56,8 +56,16 @@ namespace UI
 	private:
 		struct Item
 		{
-			sf::Text text;
+			struct Glyph
+			{
+				char32_t codepoint = 0;
+				float penX = 0.f;   // pen origin, relative to the string centre
+			};
+
+			sf::Text text;                 // kept for hit-testing / metrics
 			std::function<void()> activate;
+			std::vector<Glyph> glyphs;
+			float inkCentreY = 0.f;        // vertical ink centre of the string
 		};
 
 		struct Placement
@@ -70,6 +78,7 @@ namespace UI
 
 		[[nodiscard]] Placement PlacementOf(std::size_t index) const;
 		void Render(sf::RenderTarget& target, bool frontHalf) const;
+		void DrawEntry(sf::RenderTarget& target, std::size_t index, const Placement& placement) const;
 		[[nodiscard]] std::size_t FrontItem() const;
 
 		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;
