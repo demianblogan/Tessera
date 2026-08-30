@@ -34,6 +34,7 @@ MainMenuState::MainMenuState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
+	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, carousel(context.fonts.Get(Assets::FontID::Menu), MenuCharSize, context.textures.Get(Assets::TextureID::UiArrow))
@@ -140,6 +141,7 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 void MainMenuState::Update(float deltaTime)
 {
+	backdrop.Update(deltaTime);
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
 
@@ -156,6 +158,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 	target.draw(backgroundSprite);
+	backdrop.Render(target);
 
 	carousel.RenderBack(target);
 	title.Render(target, &titleGlow);

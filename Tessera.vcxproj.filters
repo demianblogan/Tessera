@@ -99,6 +99,9 @@
     <ClCompile Include="src\ui\GlowingCursor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\MenuBackdrop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\ui\Spacer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -267,6 +270,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\GlowingCursor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\MenuBackdrop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Layout.h">
