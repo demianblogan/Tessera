@@ -31,6 +31,13 @@ namespace
 	constexpr float LandBasePitch = 0.5f;
 	constexpr float LandPitchStep = 0.06f;
 
+	// Navigation ticks: higher when moving right / down, lower left / up.
+	constexpr float NavPitchLow = 0.9f;
+	constexpr float NavPitchHigh = 1.14f;
+
+	constexpr float SwooshBasePitch = 0.94f;
+	constexpr float SwooshPitchStep = 0.04f;
+
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 }
@@ -60,6 +67,12 @@ MainMenuState::MainMenuState(Context& context)
 		{
 			versionBounds.position.x + versionBounds.size.x,
 			versionBounds.position.y + versionBounds.size.y
+		});
+
+	carousel.SetSwooshCallback([this](std::size_t entry)
+		{
+			this->context.audioPlayer.Play(Assets::SoundID::MenuEntrySwoosh,
+				SwooshBasePitch + static_cast<float>(entry) * SwooshPitchStep);
 		});
 
 	// Ring order; Achievements and Credits are placeholders for now (disabled).
@@ -113,14 +126,16 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	switch (action)
 	{
 	case MenuInput::Action::Left:
+	case MenuInput::Action::Up:
 		carousel.RotateLeft();
 		backdrop.Push(1.f);
-		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchLow);
 		return;
 	case MenuInput::Action::Right:
+	case MenuInput::Action::Down:
 		carousel.RotateRight();
 		backdrop.Push(-1.f);
-		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+		context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchHigh);
 		return;
 	case MenuInput::Action::Confirm:
 		context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
@@ -145,11 +160,11 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 		{
 		case UI::CarouselMenu::PointerHit::RotatedLeft:
 			backdrop.Push(1.f);
-			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchLow);
 			break;
 		case UI::CarouselMenu::PointerHit::RotatedRight:
 			backdrop.Push(-1.f);
-			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchHigh);
 			break;
 		case UI::CarouselMenu::PointerHit::Activated:
 			context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);

@@ -12,6 +12,13 @@ AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
 
 void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
 {
+	// Sounds that were never loaded (an asset file the project doesn't ship
+	// yet) are silently skipped rather than crashing.
+	if (!soundBuffers.Contains(soundID))
+	{
+		return;
+	}
+
 	if (activeSounds.size() >= MaxActiveSounds)
 	{
 		RemoveStoppedSounds();

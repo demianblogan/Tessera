@@ -39,6 +39,10 @@ namespace UI
 		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true);
 		void SetCenter(sf::Vector2f center);
 
+		// Called with the entry index as that entry swishes in past the screen
+		// edge during the fly-in.
+		void SetSwooshCallback(std::function<void(std::size_t)> callback);
+
 		// Kick off the fly-in. Until it finishes IsReady() is false and the
 		// rotate / activate calls do nothing.
 		void Begin();
@@ -90,6 +94,7 @@ namespace UI
 		[[nodiscard]] float ArrivalFlash(std::size_t index) const;
 		[[nodiscard]] float BreathScale() const;   // front-entry idle pulse, else 1
 		[[nodiscard]] float SlotStep() const;      // angle between adjacent entries
+		[[nodiscard]] float IntroPathAngle(std::size_t index) const;
 		[[nodiscard]] std::size_t FrontItem() const;
 
 		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;
@@ -117,6 +122,9 @@ namespace UI
 
 		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front
 		float breathTime = 0.f;            // drives the front entry's idle breath
+
+		std::function<void(std::size_t)> onSwoosh;
+		std::vector<char> swooshFired;     // one flag per entry, for the fly-in swoosh
 
 		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
 

@@ -42,6 +42,7 @@ namespace
 	// off to the right (lifting up to title level as it goes).
 	constexpr float IntroDuration = 1.6f;
 	constexpr float IntroWindup = 8.6f;       // radians the lead entry travels in from
+	constexpr float SwooshTriggerAngle = 1.7f;   // fires as an entry crosses the right screen edge
 	constexpr float RowScale = 0.8f;
 	constexpr float RowAlpha = 0.75f;
 	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
@@ -290,15 +291,35 @@ namespace UI
 		center = newCenter;
 	}
 
+	void CarouselMenu::SetSwooshCallback(std::function<void(std::size_t)> callback)
+	{
+		onSwoosh = std::move(callback);
+	}
+
 	void CarouselMenu::Begin()
 	{
 		started = true;
+		swooshFired.assign(items.size(), 0);
 	}
 
 	void CarouselMenu::Skip()
 	{
 		started = true;
 		introTimer = 1.f;
+		swooshFired.assign(items.size(), 1);   // no swoosh when the intro is skipped
+	}
+
+	float CarouselMenu::IntroPathAngle(std::size_t index) const
+	{
+		const float step = SlotStep();
+		const float count = static_cast<float>(items.size());
+		const float introLead = -(count - 1.f) * step;
+		const float introTargetI = index == 0
+			? 0.f
+			: -(count - static_cast<float>(index)) * step;
+
+		const float head = Lerp(introLead + IntroWindup, introLead, introTimer);
+		return head + (introTargetI - introLead);
 	}
 
 	bool CarouselMenu::IsReady() const
@@ -371,6 +392,19 @@ namespace UI
 			introTimer = std::min(1.f, introTimer + deltaTime / IntroDuration);
 		}
 
+		// Fire the fly-in swoosh as each entry crosses the right screen edge.
+		if (wasIntro && onSwoosh)
+		{
+			for (std::size_t i = 0; i < items.size() && i < swooshFired.size(); ++i)
+			{
+				if (!swooshFired[i] && IntroPathAngle(i) <= SwooshTriggerAngle)
+				{
+					swooshFired[i] = 1;
+					onSwoosh(i);
+				}
+			}
+		}
+
 		if (rotateTimer < 1.f)
 		{
 			rotateTimer = std::min(1.f, rotateTimer + deltaTime / RotateDuration);
@@ -421,18 +455,8 @@ namespace UI
 
 		// Fly-in. Every entry rides the same path at the same rate; the lead
 		// entry's unrolled angle sweeps linearly from off-screen right down to
-		// its target, and each other entry sits a fixed offset behind it. The
-		// row winds on through negative angles; entry 0 is the tail (barely
-		// moves), entry 1 the lead (winds furthest).
-		const float step = SlotStep();
-		const float count = static_cast<float>(items.size());
-		const float introLead = -(count - 1.f) * step;
-		const float introTargetI = index == 0
-			? 0.f
-			: -(count - static_cast<float>(index)) * step;
-
-		const float head = Lerp(introLead + IntroWindup, introLead, introTimer);
-		const float pathAngle = head + (introTargetI - introLead);
+		// its target, and each other entry sits a fixed offset behind it.
+		const float pathAngle = IntroPathAngle(index);
 
 		placement.position = PathPos(center, pathAngle);
 
