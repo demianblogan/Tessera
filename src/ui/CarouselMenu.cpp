@@ -53,7 +53,8 @@ namespace
 
 	// Entry text styling: dark rim, vertical gradient fill in the entry's own
 	// hue, soft drop shadow.
-	constexpr float EntryOutlineThickness = 5.f;
+	constexpr float EntryOutlineThickness = 4.f;
+	constexpr float EntryLetterSpacing = 0.09f;     // extra tracking, as a fraction of the char size
 	constexpr sf::Vector2f EntryShadowOffset{ 5.f, 7.f };   // local units, before the entry scale
 	constexpr float EntryShadowAlpha = 0.5f;
 	constexpr float EntryGradientTopMix = 0.42f;    // toward white at the top edge
@@ -63,11 +64,16 @@ namespace
 	// Depth cues for the side / back entries: they desaturate and go soft
 	// (drawn as a smear of offset copies) the further round the ring they are.
 	constexpr float EntryMaxDesaturate = 0.62f;
-	constexpr float EntryMaxBlur = 16.f;   // local units at the very back
-	constexpr int EntryBlurTaps = 6;
+	constexpr float EntryMaxBlur = 9.f;    // local units at the very back
+	constexpr float EntryBlurFalloff = 1.9f;   // >1 keeps the sides fairly sharp, blurs the back
+	constexpr int EntryBlurTaps = 5;
 
 	constexpr float EntryGlowIntensity = 0.55f;
 	constexpr float EntryArrivalFlashDuration = 0.24f;
+
+	// Idle "breath" of the front entry.
+	constexpr float EntryBreathAmplitude = 0.018f;
+	constexpr float EntryBreathSpeed = 2.1f;
 
 	// One per entry index: the classic tetromino colours.
 	constexpr std::array<sf::Color, 7> EntryPalette{
@@ -235,7 +241,6 @@ namespace UI
 		const sf::FloatRect bounds = label.getLocalBounds();
 		label.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 
-		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
 		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
@@ -244,6 +249,8 @@ namespace UI
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
 		// in this SFML build.
+		const float tracking = EntryLetterSpacing * static_cast<float>(characterSize);
+
 		std::vector<std::pair<char32_t, float>> raw;
 		float penX = 0.f;
 		char32_t previous = 0;
@@ -254,7 +261,7 @@ namespace UI
 			const char32_t codepoint = text[i];
 			if (previous != 0)
 			{
-				penX += font.getKerning(previous, codepoint, characterSize);
+				penX += font.getKerning(previous, codepoint, characterSize) + tracking;
 			}
 			if (codepoint != U' ')
 			{
@@ -272,6 +279,7 @@ namespace UI
 		item.inkCentreY = (inkTop + inkBottom) * 0.5f;
 
 		const float halfWidth = penX * 0.5f;
+		maxItemHalfWidth = std::max(maxItemHalfWidth, halfWidth);
 		for (const auto& [codepoint, x] : raw)
 		{
 			item.glyphs.push_back({ codepoint, x - halfWidth });
@@ -373,6 +381,7 @@ namespace UI
 		}
 
 		arrivalFlashTime += deltaTime;
+		breathTime += deltaTime;
 
 		for (float& pressTime : arrowPressTime)
 		{
@@ -467,13 +476,20 @@ namespace UI
 			return;
 		}
 
-		sf::Transform transform;
-		transform.translate(placement.position);
-		transform.scale({ placement.scale, placement.scale });
-		transform.translate({ 0.f, -item.inkCentreY });
-
 		// 0 at the back of the ring, 1 at the front.
 		const float depthT = std::clamp((placement.depth + 1.f) * 0.5f, 0.f, 1.f);
+
+		// The front entry breathes very slightly.
+		float scale = placement.scale;
+		if (index == FrontItem() && IsReady())
+		{
+			scale *= 1.f + EntryBreathAmplitude * std::sin(breathTime * EntryBreathSpeed);
+		}
+
+		sf::Transform transform;
+		transform.translate(placement.position);
+		transform.scale({ scale, scale });
+		transform.translate({ 0.f, -item.inkCentreY });
 
 		sf::Color base = Desaturate(item.colour, (1.f - depthT) * EntryMaxDesaturate);
 		const float flash = ArrivalFlash(index);
@@ -484,7 +500,7 @@ namespace UI
 
 		// Side / back entries are drawn as a smear of offset copies (a cheap
 		// depth-of-field blur); the alpha is split across the taps.
-		const float blur = (1.f - depthT) * EntryMaxBlur;
+		const float blur = std::pow(1.f - depthT, EntryBlurFalloff) * EntryMaxBlur;
 		const int taps = blur > 0.6f ? EntryBlurTaps : 0;
 		const float tapFraction = taps == 0 ? 1.f : 1.f / (static_cast<float>(taps) * 0.55f + 1.f);
 		const auto tapAlpha = static_cast<std::uint8_t>(alphaFraction * tapFraction * 255.f);
@@ -631,7 +647,7 @@ namespace UI
 
 	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, maxItemHeight,
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
 			arrowTexture.getSize(), side);
 		return {
 			{ g.centre.x - g.halfExtent.x - ArrowHitPadding, g.centre.y - g.halfExtent.y - ArrowHitPadding },
@@ -640,7 +656,7 @@ namespace UI
 
 	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, maxItemHeight,
+		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
 			arrowTexture.getSize(), side);
 
 		const std::size_t idx = side < 0 ? 0u : 1u;

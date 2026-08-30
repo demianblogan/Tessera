@@ -111,6 +111,7 @@ namespace UI
 		float introTimer = 0.f;      // 0..1 across the fly-in
 
 		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front
+		float breathTime = 0.f;            // drives the front entry's idle breath
 
 		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
 
