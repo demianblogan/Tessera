@@ -186,7 +186,7 @@ namespace UI
 		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		Item item{ std::move(label), std::move(onActivate), {}, bounds.position.y + bounds.size.y * 0.5f };
+		Item item{ std::move(label), std::move(onActivate), {}, 0.f };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
@@ -194,6 +194,8 @@ namespace UI
 		std::vector<std::pair<char32_t, float>> raw;
 		float penX = 0.f;
 		char32_t previous = 0;
+		float inkTop = 0.f;
+		float inkBottom = 0.f;
 		for (std::size_t i = 0; i < text.getSize(); ++i)
 		{
 			const char32_t codepoint = text[i];
@@ -204,10 +206,17 @@ namespace UI
 			if (codepoint != U' ')
 			{
 				raw.push_back({ codepoint, penX });
+
+				// Ink extent in baseline-relative coordinates, matching the quads.
+				const sf::FloatRect gb = font.getGlyph(codepoint, characterSize, false).bounds;
+				inkTop = std::min(inkTop, gb.position.y);
+				inkBottom = std::max(inkBottom, gb.position.y + gb.size.y);
 			}
 			penX += font.getGlyph(codepoint, characterSize, false).advance;
 			previous = codepoint;
 		}
+
+		item.inkCentreY = (inkTop + inkBottom) * 0.5f;
 
 		const float halfWidth = penX * 0.5f;
 		for (const auto& [codepoint, x] : raw)
