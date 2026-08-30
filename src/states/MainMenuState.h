@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Text.hpp>
 
 #include "MenuScreenState.h"
 
@@ -14,6 +15,7 @@ public:
 private:
 	sf::Sprite backgroundSprite;
 	sf::Sprite titleBackgroundSprite;
+	sf::Text versionText;
 
 	void OnBack() override;
 };

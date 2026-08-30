@@ -191,6 +191,9 @@
     <ClInclude Include="src\core\Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\GameVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\audio\AudioPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>

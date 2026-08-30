@@ -1,10 +1,12 @@
 #include "MainMenuState.h"
 
 #include <memory>
+#include <string>
 
 #include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
+#include "../core/GameVersion.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
@@ -20,17 +22,31 @@ namespace
 	constexpr float TitleMenuSpacing = 90.f;
 	constexpr float MenuGap = 30.f;
 	constexpr unsigned int TitleSize = 300;
+
+	constexpr unsigned int VersionTextSize = 34;
+	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 }
 
 MainMenuState::MainMenuState(Context& context)
 	: MenuScreenState(context)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 	, titleBackgroundSprite(context.textures.Get(Assets::TextureID::TitleBackground))
+	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
 	backgroundSprite.setColor(sf::Color(255, 255, 255, 180));
 
 	titleBackgroundSprite.setScale({ 0.6f, 0.45f });
 	titleBackgroundSprite.setPosition({ 565.f, 30.f });
+
+	// Bottom-right corner: origin on the text's own bottom-right so the margin
+	// is measured from the screen edge regardless of the string's length.
+	versionText.setFillColor(sf::Color(150, 160, 170));
+	const sf::FloatRect versionBounds = versionText.getLocalBounds();
+	versionText.setOrigin(
+		{
+			versionBounds.position.x + versionBounds.size.x,
+			versionBounds.position.y + versionBounds.size.y
+		});
 
 	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TopSpacing }));
 
@@ -88,4 +104,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 	target.draw(titleBackgroundSprite);
 
 	RenderMenu(target);
+
+	versionText.setPosition(target.getView().getSize() - VersionMargin);
+	target.draw(versionText);
 }
