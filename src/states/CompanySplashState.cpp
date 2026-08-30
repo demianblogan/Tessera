@@ -8,7 +8,6 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 
-#include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../resources/Assets.h"
@@ -22,8 +21,6 @@ CompanySplashState::CompanySplashState(Context& context)
 	const sf::Vector2f textureSize(logo.getTexture().getSize());
 	logo.setOrigin(textureSize * 0.5f);
 	logo.setColor(sf::Color(255, 255, 255, 0));
-
-	context.audioPlayer.Play(Assets::SoundID::CompanySplash);
 }
 
 void CompanySplashState::HandleEvent(const sf::Event& event)

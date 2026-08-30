@@ -18,8 +18,6 @@ namespace Assets
 
 	enum class SoundID
 	{
-		CompanySplash,
-
 		MenuItemSelected,
 		MenuItemPressed,
 
@@ -77,8 +75,6 @@ namespace Assets
 
 		namespace Sounds
 		{
-			inline constexpr const char* CompanySplash = "assets/sounds/company_splash.ogg";
-
 			inline constexpr const char* MenuItemSelected = "assets/sounds/menu_item_selected.ogg";
 			inline constexpr const char* MenuItemPressed = "assets/sounds/menu_item_pressed.ogg";
 
