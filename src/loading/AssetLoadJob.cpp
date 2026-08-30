@@ -37,9 +37,9 @@ namespace Loading
 				soundBuffers.Load(Assets::SoundID::TitleButtonDrop, Paths::Sounds::TitleButtonDrop);
 
 				// Not shipped yet -- load only if present.
-				if (std::filesystem::exists(Paths::Sounds::MenuEntrySwoosh))
+				if (std::filesystem::exists(Paths::Sounds::MenuItemAppeared))
 				{
-					soundBuffers.Load(Assets::SoundID::MenuEntrySwoosh, Paths::Sounds::MenuEntrySwoosh);
+					soundBuffers.Load(Assets::SoundID::MenuItemAppeared, Paths::Sounds::MenuItemAppeared);
 				}
 
 				soundBuffers.Load(Assets::SoundID::MenuItemSelected, Paths::Sounds::MenuItemSelected);

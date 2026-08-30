@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <vector>
 
 #include <SFML/Audio/Sound.hpp>
@@ -29,7 +30,11 @@ private:
 	static constexpr std::size_t MaxActiveSounds = 32;
 
 	SoundBufferManager& soundBuffers;
-	std::vector<ActiveSound> activeSounds;
+
+	// Heap-owned so the vector's own housekeeping (erase / remove_if, called
+	// every frame) only ever moves pointers -- never a live sf::Sound, which
+	// glitches or silences it under SFML 3's miniaudio backend.
+	std::vector<std::unique_ptr<ActiveSound>> activeSounds;
 	float globalVolume = 100.f;
 
 public:

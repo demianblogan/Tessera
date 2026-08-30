@@ -71,7 +71,7 @@ MainMenuState::MainMenuState(Context& context)
 
 	carousel.SetSwooshCallback([this](std::size_t entry)
 		{
-			this->context.audioPlayer.Play(Assets::SoundID::MenuEntrySwoosh,
+			this->context.audioPlayer.Play(Assets::SoundID::MenuItemAppeared,
 				SwooshBasePitch + static_cast<float>(entry) * SwooshPitchStep);
 		});
 
