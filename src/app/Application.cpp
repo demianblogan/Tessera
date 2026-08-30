@@ -8,8 +8,10 @@
 
 #include <SFML/Window/Event.hpp>
 
-#include <states/CompanySplashState.h>
+#include <states/LoadingState.h>
 #include <utils/AppDataPath.h>
+
+#include <filesystem>
 
 bool Application::IsWindowOpen() const
 {
@@ -205,37 +207,16 @@ Application::Application()
 		throw std::runtime_error("Failed to allocate render textures.");
 	}
 
+	// Only what the loading screen itself needs before the first frame: the
+	// CRT/Blur compositing shaders and the pixel font for its label. Every
+	// other asset is loaded on a background thread by LoadingState.
 	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::GhostTetromino, Assets::Paths::Shaders::GhostTetromino, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::NeonDilate, Assets::Paths::Shaders::NeonDilate, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::NeonBlur, Assets::Paths::Shaders::NeonBlur, sf::Shader::Type::Fragment);
 
-	fonts.Load(Assets::FontID::Main, Assets::Paths::Fonts::Main);
-	fpsCounter.emplace(fonts.Get(Assets::FontID::Main));
-
-	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, Assets::Paths::Textures::BlockSpritesheetWithOutline);
-	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, Assets::Paths::Textures::BlockSpritesheetWithoutOutline);
-	textures.Load(Assets::TextureID::ButtonBackground, Assets::Paths::Textures::ButtonBackground);
-	textures.Load(Assets::TextureID::MenuBackground, Assets::Paths::Textures::MenuBackground);
-	textures.Load(Assets::TextureID::TitleBackground, Assets::Paths::Textures::TitleBackground);
-	textures.Load(Assets::TextureID::PanelBackground, Assets::Paths::Textures::PanelBackground);
-	textures.Load(Assets::TextureID::GameBackground, Assets::Paths::Textures::GameBackground);
-	textures.Load(Assets::TextureID::CompanyLogo, Assets::Paths::Textures::CompanyLogo);
-
-	music.Load(Assets::MusicID::MainMenu, Assets::Paths::Music::MainMenu);
-	music.Load(Assets::MusicID::Gameplay, Assets::Paths::Music::Gameplay);
-	music.Load(Assets::MusicID::GameOver, Assets::Paths::Music::GameOver);
-
-	soundBuffers.Load(Assets::SoundID::CompanySplash, Assets::Paths::Sounds::CompanySplash);
-	soundBuffers.Load(Assets::SoundID::MenuItemSelected, Assets::Paths::Sounds::MenuItemSelected);
-	soundBuffers.Load(Assets::SoundID::MenuItemPressed, Assets::Paths::Sounds::MenuItemPressed);
-	soundBuffers.Load(Assets::SoundID::DropPiece, Assets::Paths::Sounds::DropPiece);
-	soundBuffers.Load(Assets::SoundID::MovePiece, Assets::Paths::Sounds::MovePiece);
-	soundBuffers.Load(Assets::SoundID::RotatePiece, Assets::Paths::Sounds::RotatePiece);
-	soundBuffers.Load(Assets::SoundID::PieceHitWall, Assets::Paths::Sounds::PieceHitWall);
-	soundBuffers.Load(Assets::SoundID::NextLevel, Assets::Paths::Sounds::NextLevel);
-	soundBuffers.Load(Assets::SoundID::RowCleared, Assets::Paths::Sounds::RowCleared);
+	const std::filesystem::path pixelFontPath = Assets::Paths::Fonts::Pixel;
+	fonts.Load(
+		Assets::FontID::Pixel,
+		std::filesystem::exists(pixelFontPath) ? pixelFontPath : std::filesystem::path(Assets::Paths::Fonts::Main));
 
 	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
 	{
@@ -248,7 +229,9 @@ Application::Application()
 
 	highScores.Load();
 
-	stateMachine.PushState(std::make_unique<CompanySplashState>(context));
+	stateMachine.PushState(std::make_unique<LoadingState>(
+		context,
+		[this] { fpsCounter.emplace(fonts.Get(Assets::FontID::Main)); }));
 	stateMachine.ApplyPendingChanges();
 }
 

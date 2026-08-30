@@ -62,6 +62,15 @@ namespace TextKey
 		inline constexpr std::string_view RowEmpty     = "stats.row_empty";     // {rank}
 	}
 
+	namespace Loading
+	{
+		inline constexpr std::string_view Textures  = "loading.textures";
+		inline constexpr std::string_view Audio     = "loading.audio";
+		inline constexpr std::string_view Music     = "loading.music";
+		inline constexpr std::string_view Shaders   = "loading.shaders";
+		inline constexpr std::string_view Interface = "loading.interface";
+	}
+
 	namespace Hud
 	{
 		inline constexpr std::string_view NextPiece = "hud.next_piece";

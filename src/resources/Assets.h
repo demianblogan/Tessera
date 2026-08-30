@@ -4,7 +4,8 @@ namespace Assets
 {
 	enum class FontID
 	{
-		Main
+		Main,
+		Pixel
 	};
 
 	enum class MusicID
@@ -55,6 +56,10 @@ namespace Assets
 		namespace Fonts
 		{
 			inline constexpr const char* Main = "assets/fonts/main.ttf";
+
+			// Pixel/bitmap face with Latin + Cyrillic coverage, used by the
+			// loading screen. Falls back to Main if the file is missing.
+			inline constexpr const char* Pixel = "assets/fonts/pixel.ttf";
 		}
 
 		namespace Music
