@@ -21,17 +21,24 @@ namespace
 
 	constexpr float RotateDuration = 0.26f;
 
-	// Fly-in: the entries start as a straight horizontal row off to the right,
-	// slide left behind the title, and each one curls onto its ring slot once
-	// it clears the title's left edge.
-	constexpr float IntroDuration = 0.9f;
-	constexpr float RowHeadStartX = 880.f;   // leftmost entry starts this far right of centre
-	constexpr float RowSpacing = 300.f;      // gap between entries in the row
-	constexpr float WrapEdgeX = -380.f;      // x (relative to centre) where an entry starts curling
-	constexpr float WrapSpan = 320.f;        // how much further it travels while curling
+	// Fly-in: the entries feed in as one straight row from off-screen right,
+	// travelling behind the title, and each one merges onto the ring exactly
+	// like a car joining a roundabout -- same speed, same spacing, following
+	// the one ahead. The whole thing is parameterised by an "unrolled angle":
+	// a <= 0 is a point on the ring, a > 0 is the straight tangent continuing
+	// off to the right (lifting up to title level as it goes).
+	constexpr float IntroDuration = 1.5f;
+	constexpr float IntroWindup = 7.2f;       // radians the lead entry travels in from
 	constexpr float RowScale = 0.8f;
 	constexpr float RowAlpha = 0.75f;
-	constexpr float FrontThreshold = 0.55f;  // wrap progress past which a front entry draws in front
+	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
+
+	// Where each entry (by index) ends up, as an unrolled angle. The row winds
+	// on through negative angles, so the lead entry -- the one bound for the
+	// slot furthest around -- has the most negative target.
+	//                                    Start   Options  Quit    Records
+	constexpr float IntroTarget[4] = { 0.f, -3.f * QuarterTurn, -2.f * QuarterTurn, -1.f * QuarterTurn };
+	constexpr float IntroLeadTarget = -3.f * QuarterTurn;
 
 	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
 	{
@@ -42,6 +49,31 @@ namespace
 	{
 		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
 		return 1.f - inv * inv * inv;
+	}
+
+	[[nodiscard]] float SmoothStep(float t) noexcept
+	{
+		t = std::clamp(t, 0.f, 1.f);
+		return t * t * (3.f - 2.f * t);
+	}
+
+	[[nodiscard]] sf::Vector2f EllipsePos(sf::Vector2f center, float a) noexcept
+	{
+		return { center.x + std::sin(a) * RadiusX, center.y + SideBaseY + std::cos(a) * DepthDropY };
+	}
+
+	// Position at unrolled angle `a`: on the ring for a <= 0, on the straight
+	// tangent (rising to title level) for a > 0. C1-continuous at a = 0.
+	[[nodiscard]] sf::Vector2f PathPos(sf::Vector2f center, float a) noexcept
+	{
+		if (a <= 0.f)
+		{
+			return EllipsePos(center, a);
+		}
+
+		const sf::Vector2f base = EllipsePos(center, 0.f);
+		const float lift = SmoothStep(a / LiftSpan);
+		return { base.x + a * RadiusX, Lerp(base.y, center.y, lift) };
 	}
 
 	[[nodiscard]] std::size_t PositiveMod(int value, std::size_t modulus) noexcept
@@ -162,35 +194,33 @@ namespace UI
 		placement.scale = ringScale;
 		placement.alpha = ringAlpha;
 
-		if (introTimer >= 1.f)
+		if (introTimer >= 1.f || items.size() != 4)
 		{
 			return placement;
 		}
 
-		// The straight row, sliding left. Entry 0 leads; the rest trail to its
-		// right. Total travel is set so the last entry finishes curling exactly
-		// as introTimer reaches 1.
-		const float lastLineX = center.x + RowHeadStartX + static_cast<float>(items.size() - 1) * RowSpacing;
-		const float totalTravel = (lastLineX - (center.x + WrapEdgeX)) + WrapSpan;
-		const float travel = introTimer * totalTravel;
+		// Fly-in. Every entry rides the same path at the same rate; the lead
+		// entry's unrolled angle sweeps linearly from off-screen right down to
+		// its target, and each other entry sits a fixed offset behind it.
+		const float head = Lerp(IntroLeadTarget + IntroWindup, IntroLeadTarget, introTimer);
+		const float pathAngle = head + (IntroTarget[index] - IntroLeadTarget);
 
-		const float lineX = center.x + RowHeadStartX + static_cast<float>(index) * RowSpacing - travel;
-		const sf::Vector2f linePos{ lineX, center.y };
+		placement.position = PathPos(center, pathAngle);
 
-		// 0 while still a straight row, 1 once fully curled onto the ring.
-		const float wrap = std::clamp(((center.x + WrapEdgeX) - lineX) / WrapSpan, 0.f, 1.f);
-		const float w = EaseOutCubic(wrap);
-
-		// Quadratic curve bowed toward the title centre -- the "curl".
-		const sf::Vector2f mid{ (linePos.x + ringPos.x) * 0.5f, (linePos.y + ringPos.y) * 0.5f };
-		const sf::Vector2f ctrl{ Lerp(mid.x, center.x, 0.45f), Lerp(mid.y, center.y, 0.45f) };
-		const float inv = 1.f - w;
-		placement.position = {
-			inv * inv * linePos.x + 2.f * inv * w * ctrl.x + w * w * ringPos.x,
-			inv * inv * linePos.y + 2.f * inv * w * ctrl.y + w * w * ringPos.y };
-		placement.scale = Lerp(RowScale, ringScale, w);
-		placement.alpha = Lerp(RowAlpha, ringAlpha, w);
-		placement.depth = w >= FrontThreshold ? Lerp(-1.f, ringDepth, w) : -1.f;
+		if (pathAngle <= 0.f)
+		{
+			const float ct = (std::cos(pathAngle) + 1.f) * 0.5f;
+			placement.scale = Lerp(ScaleBack, ScaleFront, ct);
+			placement.alpha = 0.10f + 0.90f * std::pow(ct, 1.6f);
+			placement.depth = std::cos(pathAngle);
+		}
+		else
+		{
+			const float lift = SmoothStep(pathAngle / LiftSpan);
+			placement.scale = Lerp(RowScale, ScaleFront, lift);
+			placement.alpha = Lerp(RowAlpha, 1.f, lift);
+			placement.depth = -1.f;   // still behind the title
+		}
 
 		return placement;
 	}
