@@ -9,7 +9,6 @@
 #include "../ui/DropInTitle.h"
 #include "../ui/MenuAurora.h"
 #include "../ui/MenuBackdrop.h"
-#include "../ui/MenuFlash.h"
 #include "../ui/MenuSparks.h"
 
 struct Context;
@@ -44,7 +43,6 @@ private:
 	UI::MenuAurora aurora;
 	UI::MenuBackdrop backdrop;
 	UI::MenuSparks sparks;
-	UI::MenuFlash flash;
 	UI::DropInTitle title;
 	NeonGlow titleGlow;
 	UI::CarouselMenu carousel;

@@ -190,7 +190,6 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\ui\GlowingCursor.cpp" />
     <ClCompile Include="src\ui\MenuAurora.cpp" />
     <ClCompile Include="src\ui\MenuBackdrop.cpp" />
-    <ClCompile Include="src\ui\MenuFlash.cpp" />
     <ClCompile Include="src\ui\MenuSparks.cpp" />
     <ClCompile Include="src\ui\Label.cpp" />
     <ClCompile Include="src\ui\Layout.cpp" />
@@ -251,7 +250,6 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\ui\GlowingCursor.h" />
     <ClInclude Include="src\ui\MenuAurora.h" />
     <ClInclude Include="src\ui\MenuBackdrop.h" />
-    <ClInclude Include="src\ui\MenuFlash.h" />
     <ClInclude Include="src\ui\MenuSparks.h" />
     <ClInclude Include="src\loading\AssetLoadJob.h" />
     <ClInclude Include="src\loading\LoadingProgress.h" />

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 
+#include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -41,6 +42,16 @@ namespace
 	constexpr float ArrowGap = 16.f;             // between the widest entry's edge and the arrow
 	constexpr float ArrowHeightFraction = 0.85f; // arrow on-screen height vs the front entry's text height
 	constexpr float ArrowHitPadding = 18.f;
+
+	// Press feedback (no pressed sprite -- faked with a squash, an inward
+	// nudge, a warm tint, and a quick orange ring).
+	constexpr float ArrowPressDuration = 0.20f;
+	constexpr float ArrowPressDip = 0.22f;       // scale reduction at the peak
+	constexpr float ArrowPressShift = 8.f;       // px pushed inward at the peak
+	constexpr sf::Color ArrowPressTint{ 255, 150, 60 };
+	constexpr sf::Color ArrowPulseColour{ 255, 140, 40 };
+	constexpr float ArrowPulseRadiusStart = 8.f;
+	constexpr float ArrowPulseRadiusEnd = 44.f;
 
 	struct ArrowGeom
 	{
@@ -170,6 +181,7 @@ namespace UI
 		rotateFrom = angle;
 		rotateTo = static_cast<float>(frontIndex) * QuarterTurn;
 		rotateTimer = 0.f;
+		arrowPressTime[0] = 0.f;
 	}
 
 	void CarouselMenu::RotateRight()
@@ -183,6 +195,7 @@ namespace UI
 		rotateFrom = angle;
 		rotateTo = static_cast<float>(frontIndex) * QuarterTurn;
 		rotateTimer = 0.f;
+		arrowPressTime[1] = 0.f;
 	}
 
 	void CarouselMenu::Activate()
@@ -211,6 +224,11 @@ namespace UI
 		{
 			rotateTimer = std::min(1.f, rotateTimer + deltaTime / RotateDuration);
 			angle = Lerp(rotateFrom, rotateTo, EaseOutCubic(rotateTimer));
+		}
+
+		for (float& pressTime : arrowPressTime)
+		{
+			pressTime += deltaTime;
 		}
 	}
 
@@ -347,14 +365,44 @@ namespace UI
 		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth, maxItemHeight,
 			arrowTexture.getSize(), side);
 
+		const std::size_t idx = side < 0 ? 0u : 1u;
+		const float press = std::clamp(1.f - arrowPressTime[idx] / ArrowPressDuration, 0.f, 1.f);
+
+		// Orange ring, expanding and fading as the press settles.
+		if (press > 0.f)
+		{
+			const float spread = EaseOutCubic(1.f - press);
+			const float radius = Lerp(ArrowPulseRadiusStart, ArrowPulseRadiusEnd, spread);
+
+			sf::CircleShape ring(radius);
+			ring.setOrigin({ radius, radius });
+			ring.setPosition(g.centre);
+			ring.setFillColor(sf::Color::Transparent);
+			ring.setOutlineThickness(Lerp(3.f, 1.f, spread));
+			ring.setOutlineColor(sf::Color(ArrowPulseColour.r, ArrowPulseColour.g, ArrowPulseColour.b,
+				static_cast<std::uint8_t>(press * 200.f)));
+			target.draw(ring);
+		}
+
+		// The arrow itself: squashed and nudged inward while pressed, tinted warm.
+		const float scale = g.scale * (1.f - ArrowPressDip * press);
+		const sf::Vector2f centre{ g.centre.x - static_cast<float>(side) * ArrowPressShift * press, g.centre.y };
+
+		const std::uint8_t restAlpha = hoveredArrow == side ? 255u : 150u;
+		const sf::Color colour{
+			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.r) * press),
+			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.g) * press),
+			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.b) * press),
+			static_cast<std::uint8_t>(restAlpha + (255 - restAlpha) * press) };
+
 		sf::Sprite arrow(arrowTexture);
 		arrow.setOrigin(sf::Vector2f(arrowTexture.getSize()) * 0.5f);
-		arrow.setScale({ g.scale, g.scale });
+		arrow.setScale({ scale, scale });
 		// Source points up; a quarter turn aims it away from the entry -- left
 		// for a left click (ring turns left), right for a right click.
 		arrow.setRotation(sf::degrees(static_cast<float>(side) * 90.f));
-		arrow.setPosition(g.centre);
-		arrow.setColor(sf::Color(255, 255, 255, hoveredArrow == side ? 255 : 150));
+		arrow.setPosition(centre);
+		arrow.setColor(colour);
 		target.draw(arrow);
 	}
 

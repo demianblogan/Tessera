@@ -96,5 +96,9 @@ namespace UI
 		float introTimer = 0.f;      // 0..1 across the fly-in
 
 		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
+
+		// Seconds since each arrow (0 = left, 1 = right) was last pressed; large
+		// means "not pressed", which reads as no feedback.
+		float arrowPressTime[2] = { 1000.f, 1000.f };
 	};
 }

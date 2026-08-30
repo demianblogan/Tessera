@@ -102,13 +102,11 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 	case MenuInput::Action::Left:
 		carousel.RotateLeft();
 		backdrop.Push(1.f);
-		flash.Pulse();
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		return;
 	case MenuInput::Action::Right:
 		carousel.RotateRight();
 		backdrop.Push(-1.f);
-		flash.Pulse();
 		context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		return;
 	case MenuInput::Action::Confirm:
@@ -134,12 +132,10 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 		{
 		case UI::CarouselMenu::PointerHit::RotatedLeft:
 			backdrop.Push(1.f);
-			flash.Pulse();
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 			break;
 		case UI::CarouselMenu::PointerHit::RotatedRight:
 			backdrop.Push(-1.f);
-			flash.Pulse();
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 			break;
 		case UI::CarouselMenu::PointerHit::Activated:
@@ -156,7 +152,6 @@ void MainMenuState::Update(float deltaTime)
 	aurora.Update(deltaTime);
 	backdrop.Update(deltaTime);
 	sparks.Update(deltaTime);
-	flash.Update(deltaTime);
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
 
@@ -176,7 +171,6 @@ void MainMenuState::Render(sf::RenderTarget& target)
 	aurora.Render(target);
 	backdrop.Render(target);
 	sparks.Render(target);
-	flash.Render(target);
 
 	carousel.RenderBack(target);
 	title.Render(target, &titleGlow);
