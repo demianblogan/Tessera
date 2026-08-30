@@ -87,8 +87,9 @@ namespace UI
 		std::vector<Glyph> glyphs;
 		sf::Vector2f center;
 
-		// Fixed size for the whole-word glow box, so NeonGlow resizes its
-		// buffers once and never again (resizing was a big per-frame cost).
+		// One fixed size for every letter's glow box (the largest glyph plus
+		// slack), so NeonGlow resizes its buffers once and never again --
+		// resizing per frame was a big cost.
 		sf::Vector2f glowBoxSize;
 
 		// Small vertical spring: every landing nudges the whole word.

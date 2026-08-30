@@ -137,8 +137,6 @@ void Application::Render()
 	const bool blurBackdrop = currentState != nullptr
 		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
 
-	const bool applyCrt = currentState == nullptr || currentState->UsesCrtEffect();
-
 	// =====================================================
 	// Opaque state: render the stack straight to the screen
 	// =====================================================
@@ -154,15 +152,7 @@ void Application::Render()
 		DrawCursor(renderTexture);
 		renderTexture.display();
 
-		const sf::Sprite composited(renderTexture.getTexture());
-		if (applyCrt)
-		{
-			window.draw(composited, &crtShader);
-		}
-		else
-		{
-			window.draw(composited);
-		}
+		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
 	}
 	else
 	{
@@ -181,7 +171,8 @@ void Application::Render()
 		window.draw(sf::Sprite(finalTexture.getTexture()), &crtShader);
 	}
 
-	// A crisp overlay, drawn after the CRT pass so it isn't warped by it.
+	// A crisp overlay, drawn after the CRT pass so its scanlines / aberration
+	// don't touch the readout.
 	if (fpsCounter && context.settings.GetSettings().showFps)
 	{
 		fpsCounter->Render(window);

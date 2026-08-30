@@ -278,7 +278,13 @@
     <ClInclude Include="src\ui\CarouselMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\ColourUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ui\DropInTitle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\TetrominoPalette.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\FpsCounter.h">

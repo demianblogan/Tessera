@@ -1,7 +1,6 @@
 #include "MenuSparks.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -9,6 +8,8 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+
+#include "TetrominoPalette.h"
 
 namespace
 {
@@ -24,16 +25,6 @@ namespace
 	constexpr float MaxLifetime = 13.f;
 	constexpr float MinPeakAlpha = 0.10f;
 	constexpr float MaxPeakAlpha = 0.32f;
-
-	constexpr std::array<sf::Color, 7> Palette{
-		sf::Color{ 0, 240, 240 },
-		sf::Color{ 245, 220, 40 },
-		sf::Color{ 180, 60, 240 },
-		sf::Color{ 60, 230, 90 },
-		sf::Color{ 240, 60, 70 },
-		sf::Color{ 70, 110, 240 },
-		sf::Color{ 245, 160, 40 },
-	};
 }
 
 namespace UI
@@ -51,7 +42,7 @@ namespace UI
 	void MenuSparks::Respawn(Spark& spark, bool initial)
 	{
 		std::uniform_real_distribution<float> unit(0.f, 1.f);
-		std::uniform_int_distribution<int> colourPick(0, static_cast<int>(Palette.size()) - 1);
+		std::uniform_int_distribution<int> colourPick(0, static_cast<int>(UI::TetrominoColours.size()) - 1);
 
 		spark.baseX = unit(rng) * VirtualSize.x;
 		spark.position = {
@@ -65,7 +56,7 @@ namespace UI
 		spark.lifetime = MinLifetime + unit(rng) * (MaxLifetime - MinLifetime);
 		spark.age = initial ? unit(rng) * spark.lifetime : 0.f;
 		spark.peakAlpha = MinPeakAlpha + unit(rng) * (MaxPeakAlpha - MinPeakAlpha);
-		spark.colour = Palette[static_cast<std::size_t>(colourPick(rng))];
+		spark.colour = UI::TetrominoColours[static_cast<std::size_t>(colourPick(rng))];
 	}
 
 	void MenuSparks::Update(float deltaTime)

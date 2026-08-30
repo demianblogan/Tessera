@@ -1,7 +1,6 @@
 #include "DropInTitle.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -17,6 +16,8 @@
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
 
+#include "ColourUtils.h"
+#include "TetrominoPalette.h"
 #include "../rendering/NeonGlow.h"
 
 namespace
@@ -61,45 +62,14 @@ namespace
 	constexpr float GradientTopMix = 0.35f;      // fill: how far the top edge is pushed to white
 	constexpr float GradientBottomFactor = 0.55f; // fill: how far the bottom edge is darkened
 
-
-	// One per letter, cycled: the seven classic tetromino colours, matching
-	// the loading-bar blocks.
-	constexpr std::array<sf::Color, 7> LetterPalette{
-		sf::Color{ 0, 240, 240 },    // I - cyan
-		sf::Color{ 245, 220, 40 },   // O - yellow
-		sf::Color{ 180, 60, 240 },   // T - purple
-		sf::Color{ 60, 230, 90 },    // S - green
-		sf::Color{ 240, 60, 70 },    // Z - red
-		sf::Color{ 70, 110, 240 },   // J - blue
-		sf::Color{ 245, 160, 40 },   // L - orange
-	};
+	using UI::Darken;
+	using UI::MixToWhite;
+	using UI::ScaleRgb;
+	using UI::ToByte;
 
 	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
 	{
 		return a + (b - a) * t;
-	}
-
-	[[nodiscard]] std::uint8_t ToByte(float value) noexcept
-	{
-		return static_cast<std::uint8_t>(std::clamp(value, 0.f, 255.f));
-	}
-
-	[[nodiscard]] sf::Color Darken(sf::Color colour, float factor) noexcept
-	{
-		return { ToByte(colour.r * factor), ToByte(colour.g * factor), ToByte(colour.b * factor) };
-	}
-
-	[[nodiscard]] sf::Color MixToWhite(sf::Color colour, float t) noexcept
-	{
-		return {
-			ToByte(colour.r + (255.f - colour.r) * t),
-			ToByte(colour.g + (255.f - colour.g) * t),
-			ToByte(colour.b + (255.f - colour.b) * t) };
-	}
-
-	[[nodiscard]] sf::Color Scale(sf::Color colour, float factor) noexcept
-	{
-		return { ToByte(colour.r * factor), ToByte(colour.g * factor), ToByte(colour.b * factor), colour.a };
 	}
 
 	// Overshooting spring: 0 at t=0, 1 at t=1, wobbling past 1 on the way.
@@ -179,7 +149,7 @@ namespace UI
 
 		for (std::size_t i = 0; i < placed.size(); ++i)
 		{
-			const sf::Color colour = LetterPalette[i % LetterPalette.size()];
+			const sf::Color colour = UI::TetrominoColours[i % UI::TetrominoColours.size()];
 
 			Glyph glyph{ sf::Text(font, sf::String(placed[i].codepoint), characterSize), placed[i].codepoint,
 				colour, 0.f, 0.f, 0.f, 0.f };
@@ -401,7 +371,7 @@ namespace UI
 			glowBoxSize };
 
 		const float strength = std::max(pose.glowStrength, GlowFloor + 0.4f * pose.flash);
-		const sf::Color tint = Scale(glyphs[index].colour, strength * GlowIntensity);
+		const sf::Color tint = ScaleRgb(glyphs[index].colour, strength * GlowIntensity);
 
 		sf::Text silhouette = glyphs[index].text;
 		silhouette.setPosition(position);

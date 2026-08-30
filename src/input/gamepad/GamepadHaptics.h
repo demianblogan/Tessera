@@ -78,6 +78,11 @@ namespace Haptics
 		// stronger / longer request, like PulseVibration.
 		void PulseLightbar(RGBColor color, float durationSeconds, int blinks = 1) noexcept;
 
+		// --- Adaptive triggers -------------------------------------------------
+		// Ported from Until Last Asteroid and kept intact although nothing in
+		// Tessera drives them yet -- a future version (harder drop, hold-to-
+		// charge, ...) is expected to. Do not "tidy away".
+
 		// DualSense/DualShock only -- no-op on Xbox (that hardware has no
 		// adaptive triggers). A brief, sharp vibration burst under the
 		// fingertip on the right trigger for one regular shot's recoil --

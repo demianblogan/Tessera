@@ -73,7 +73,10 @@ void AudioPlayer::RemoveStoppedSounds()
 	std::erase_if(activeSounds,
 		[](const std::unique_ptr<ActiveSound>& active)
 		{
-			return active->age.getElapsedTime() >= active->lifespan + ReclaimMargin;
+			// A looping instance never "finishes" -- keep it until it is
+			// stopped explicitly (nothing here loops today, but be safe).
+			return !active->sound.isLooping()
+				&& active->age.getElapsedTime() >= active->lifespan + ReclaimMargin;
 		});
 }
 

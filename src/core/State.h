@@ -46,13 +46,6 @@ public:
         return true;
     }
 
-    // Whether the full-screen CRT post-process is applied over this state.
-    // (Temporarily off on the main menu while its background is being tuned.)
-    [[nodiscard]] virtual bool UsesCrtEffect() const
-    {
-        return true;
-    }
-
 protected:
     // Queue a stack transition. All four are applied together, after the
     // current input / update phase, so a state may call them from inside its

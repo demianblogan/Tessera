@@ -1,7 +1,6 @@
 #include "CarouselMenu.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -17,6 +16,8 @@
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
 
+#include "ColourUtils.h"
+#include "TetrominoPalette.h"
 #include "../rendering/NeonGlow.h"
 
 namespace
@@ -77,46 +78,10 @@ namespace
 	constexpr float EntryBreathAmplitude = 0.018f;
 	constexpr float EntryBreathSpeed = 2.1f;
 
-	constexpr sf::Color EntryDisabledColour{ 146, 150, 158 };
-
-	// One per entry index: the classic tetromino colours.
-	constexpr std::array<sf::Color, 7> EntryPalette{
-		sf::Color{ 0, 240, 240 },    // I
-		sf::Color{ 245, 220, 40 },   // O
-		sf::Color{ 180, 60, 240 },   // T
-		sf::Color{ 60, 230, 90 },    // S
-		sf::Color{ 240, 60, 70 },    // Z
-		sf::Color{ 70, 110, 240 },   // J
-		sf::Color{ 245, 160, 40 },   // L
-	};
-
-	[[nodiscard]] std::uint8_t ToByte(float v) noexcept
-	{
-		return static_cast<std::uint8_t>(std::clamp(v, 0.f, 255.f));
-	}
-
-	[[nodiscard]] sf::Color Darken(sf::Color c, float f) noexcept
-	{
-		return { ToByte(c.r * f), ToByte(c.g * f), ToByte(c.b * f), c.a };
-	}
-
-	[[nodiscard]] sf::Color MixToWhite(sf::Color c, float t) noexcept
-	{
-		return { ToByte(c.r + (255.f - c.r) * t), ToByte(c.g + (255.f - c.g) * t),
-			ToByte(c.b + (255.f - c.b) * t), c.a };
-	}
-
-	[[nodiscard]] sf::Color ScaleRgb(sf::Color c, float f) noexcept
-	{
-		return { ToByte(c.r * f), ToByte(c.g * f), ToByte(c.b * f), c.a };
-	}
-
-	[[nodiscard]] sf::Color Desaturate(sf::Color c, float amount) noexcept
-	{
-		const float grey = 0.30f * c.r + 0.59f * c.g + 0.11f * c.b;
-		return { ToByte(c.r + (grey - c.r) * amount), ToByte(c.g + (grey - c.g) * amount),
-			ToByte(c.b + (grey - c.b) * amount), c.a };
-	}
+	using UI::Darken;
+	using UI::Desaturate;
+	using UI::MixToWhite;
+	using UI::ScaleRgb;
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
 	// nudge, a warm tint, and a quick orange ring).
@@ -241,7 +206,7 @@ namespace UI
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
 		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
-			enabled ? EntryPalette[items.size() % EntryPalette.size()] : EntryDisabledColour,
+			enabled ? UI::TetrominoColours[items.size() % UI::TetrominoColours.size()] : UI::DisabledEntryColour,
 			enabled };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
@@ -339,7 +304,7 @@ namespace UI
 
 	sf::Color CarouselMenu::FrontColour() const
 	{
-		return items.empty() ? sf::Color(146, 150, 158) : items[FrontItem()].colour;
+		return items.empty() ? UI::DisabledEntryColour : items[FrontItem()].colour;
 	}
 
 	void CarouselMenu::RotateLeft()
