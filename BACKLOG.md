@@ -45,6 +45,51 @@ Cross-cutting decisions:
 
 ## Released
 
+### v1.1.0 — Presentation
+
+The first feature version: a proper opening sequence, a rebuilt main menu, the
+gamepad-haptics port, and a data-driven audio mix. No gameplay-rules changes.
+
+- **Loading screen** (`states/LoadingState`, `loading/AssetLoadJob` +
+  `LoadingProgress`) — a tetromino-block progress bar; textures and shaders
+  load synchronously (GPU work on a background thread deadlocks some drivers),
+  a `std::jthread` streams the audio and fonts. Hands off to:
+- **Company splash** (`states/CompanySplashState`) — fade in / hold / fade out
+  over the logo; any input skips.
+- One **shell music track** plays unbroken across loading → splash → menu.
+- **Main menu, rebuilt** (`states/MainMenuState`, no longer `MenuScreenState`):
+  - `ui/DropInTitle` — the "TESSERA" letters fall in one by one, squash and
+    spring, then breathe; per-letter tetromino colour, dark outline, gradient
+    fill, neon bloom, impact flash / shockwave / chromatic split, a landing
+    sound with rising pitch and a growing gamepad pulse.
+  - `ui/CarouselMenu` — entries on a shallow 3-D ring: front large and lit,
+    sides dim and soft, back tucked behind the title. Left / right rotates it
+    (keyboard, gamepad, or on-screen arrows with press feedback); it flies in
+    like cars merging onto a roundabout, each with a swoosh and a rumble. Front
+    entry glows in its colour; arrival flash on lock. Achievements and Credits
+    are in as disabled placeholders.
+  - Ambient background: `ui/MenuBackdrop` (drifting tetrominoes, shoved by
+    navigation), `ui/MenuSparks` (rising embers), `ui/MenuAurora`
+    (`menu_aurora.frag`).
+  - The DualSense lightbar tracks the selected entry's colour.
+- **`ui/GlowingCursor`** — the game draws its own cursor (pulsing glow, no halo,
+  no trail), part of the scene so it gets the CRT pass; the OS cursor is hidden
+  and ours shows only while the mouse is the active device.
+- **`ui/FpsCounter`** + a "Show FPS" toggle in Graphics; grey version text
+  bottom-right (`core/GameVersion.h`).
+- **Gamepad haptics** (`input/gamepad/GamepadHaptics` + `HapticProfiles`,
+  ported from ULA; `libs/DualSenseWindows/` vendored as source): rumble on
+  land / hard-drop / wall / row-clear / tetris / level-up / game-over; a
+  by-state lightbar; pitch-varied navigation ticks. Adaptive-trigger code is
+  carried but dormant.
+- **`audio/AudioBalance`** — per-sound / per-track volume coefficients from
+  `assets/data/audio_balance.json` (`libs/nlohmann/json.hpp` vendored), tunable
+  without a rebuild. `AudioPlayer` reworked to heap-own its voices and reclaim
+  them by wall-clock (SFML 3's status poll cut short sounds).
+- **CRT shader** keeps its scanlines / aberration / flicker / vignette, loses
+  the screen curvature and edge cropping.
+- `assets/music/` + `assets/sounds/` merged under `assets/audio/`.
+
 ### v1.0.9 — Polish pass
 
 The end-of-Phase-1 cleanup, widened after a full read-through (a review put the
@@ -247,51 +292,38 @@ effects. Behaviour unchanged — relocation only.
 
 ### Phase 1b — port systems from ULA
 
-**Phase 1 is complete** (v1.0.1 – v1.0.9). Next is v1.1.0, the first feature
-version.
-
-The threaded loading screen and the data-driven content skeleton that were
-sketched for Phase 1 landed nowhere: the loader has nothing to show until the
-v1.1.0 splash, and the JSON skeleton is premature until v1.2.0's game modes need
-parameters. Both move to where they earn their keep.
-
-Moved to Phase 2 (they change what the game presents, not its code): the company
-splash + `GameVersion.h`, the FPS counter, the main-menu version text, the
-`MenuBackground` parallax + `MenuIntroAnimation`, and `GamepadRumble` (XInput) +
-Vibration settings — now **v1.1.0** below. Per-effect / screen-shake /
-reduce-motion toggles fold into the **v1.4.0** Options screen.
-
+**Phase 1 is complete** (v1.0.1 – v1.0.9). **v1.1.0 — Presentation shipped**
+(see Released). Vibration / lightbar settings toggles were deferred to the
+v1.5.0 Options screen; `ScreenFade` transitions were dropped (the game is fast,
+transitions should feel instant).
 
 ### Phase 2 — features
 
-> Adding **v1.1.0 — Presentation & rumble** below pushes every later Phase 2
-> version number by one (Modern rules → v1.2.0, and so on). Numbers here are not
-> yet re-flowed — confirm the shift.
-
-- **v1.1.0 — Presentation & rumble.** Company splash + `GameVersion.h`; FPS
-  counter (Graphics toggle); grey main-menu version text; `MenuBackground`
-  parallax + `MenuIntroAnimation`; `ScreenFade` transitions between states; a
-  designed glowing cursor; `GamepadRumble` (XInput) + Vibration settings.
-- **v1.1.0 — Modern rules.** Buffer rows above the visible field + guideline
+- **v1.2.0 — Modern rules.** Buffer rows above the visible field + guideline
   block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
   delay + move reset; hold piece; 5-deep next queue; guideline scoring
   (back-to-back, combo, soft/hard-drop points, perfect clear); on-board
   callouts.
-- **v1.2.0 — Game modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
-  per-mode records and extended stats.
-- **v1.3.0 — Challenge ladder & achievements.** A ladder of short
-  objective stages with modifiers (fixed sequences, garbage starts, invisible
-  blocks, 20G, big mode, "clear in N pieces"), escalating difficulty,
-  per-stage stars; `AchievementManager` port.
-- **v1.4.0 — Localization & options.** Full localization (**final language list
+- **v1.3.0 — Game modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
+  per-mode records and extended stats. Wire real `StatisticsState` +
+  `AchievementManager` in behind the disabled Records / Achievements ring
+  entries.
+- **v1.4.0 — Challenge ladder & achievements.** A ladder of short objective
+  stages with modifiers (fixed sequences, garbage starts, invisible blocks,
+  20G, big mode, "clear in N pieces"), escalating difficulty, per-stage stars;
+  `AchievementManager` port; a real `CreditsState` behind the disabled Credits
+  entry.
+- **v1.5.0 — Localization & options.** Full localization (**final language list
   decided here**); a complete Options screen (graphics / audio / controls /
-  gameplay / language — **discuss the setting list before building**); a
-  letterboxing `DisplayManager`.
-- **v1.5.0 — Audio & HUD.** Dynamic-intensity music; a full SFX set; menu
-  ambience; a nine-slice HUD redesign.
-- **v1.6.0 — Main-menu overhaul.** Radical rework of the main menu — look,
-  animation, structure. (A game-design change, deliberately after the code is
-  mature.)
+  gameplay / language — **discuss the setting list before building**), incl.
+  vibration / lightbar / reduce-motion / per-effect toggles; a letterboxing
+  `DisplayManager`.
+- **v1.6.0 — Audio & HUD.** Dynamic-intensity music; a full gameplay SFX set;
+  a nine-slice HUD redesign. Fold `SettingsRowList` and `MenuList` into one
+  selection model (deferred since v1.0.7).
+- **v1.7.0 — In-game menu overhaul.** Bring the Pause / Game Over / Settings /
+  Records screens up to the main menu's visual standard (they still use the
+  old `MenuScreenState` list style).
 - **Visual overhaul (spans the versions above).** The whole game look is to be
   raised substantially. Part of that: replace `panel_background` /
   `button_background` / `game_background` etc. with art built to be

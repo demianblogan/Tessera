@@ -5,28 +5,8 @@ void main()
 {
     vec2 textureCoordinates = gl_TexCoord[0].xy;
 
-    // =====================================================
-    // CRT curvature
-    // =====================================================
-    
-    float screenDistortionStrength = 0.03;
-
-    vec2 curvedTextureCoordinates = textureCoordinates * 2.0 - 1.0;
-    curvedTextureCoordinates += curvedTextureCoordinates * length(curvedTextureCoordinates) * screenDistortionStrength;
-    curvedTextureCoordinates = (curvedTextureCoordinates + 1.0) * 0.5;
-
-    // =====================================================
-    // Outside screen
-    // =====================================================
-
-    if (curvedTextureCoordinates.x < 0.0 ||
-        curvedTextureCoordinates.x > 1.0 ||
-        curvedTextureCoordinates.y < 0.0 ||
-        curvedTextureCoordinates.y > 1.0)
-    {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
-    }
+    // No screen curvature / barrel distortion: the picture stays flat and
+    // nothing is cropped at the edges. Just the CRT "feel" below.
 
     // =====================================================
     // Chromatic aberration
@@ -34,9 +14,9 @@ void main()
 
     float chromaticAberrationStrength = 0.0005;
 
-    float redChannel = texture2D(texture, curvedTextureCoordinates + vec2(chromaticAberrationStrength, 0.0)).r;
-    float greenChannel = texture2D(texture, curvedTextureCoordinates).g;
-    float blueChannel = texture2D(texture, curvedTextureCoordinates - vec2(chromaticAberrationStrength, 0.0)).b;
+    float redChannel = texture2D(texture, textureCoordinates + vec2(chromaticAberrationStrength, 0.0)).r;
+    float greenChannel = texture2D(texture, textureCoordinates).g;
+    float blueChannel = texture2D(texture, textureCoordinates - vec2(chromaticAberrationStrength, 0.0)).b;
 
     vec3 finalColor = vec3(redChannel, greenChannel, blueChannel);
 
@@ -44,7 +24,7 @@ void main()
     // Scanlines  (slowly drifting, like a real CRT's vertical hold)
     // =====================================================
 
-    float scanlineIntensity = sin((curvedTextureCoordinates.y * 1080.0 + time * 24.0) * 1.5) * 0.04;
+    float scanlineIntensity = sin((textureCoordinates.y * 1080.0 + time * 24.0) * 1.5) * 0.04;
 
     finalColor -= scanlineIntensity;
 
@@ -55,7 +35,7 @@ void main()
     // Vignette
     // =====================================================
 
-    float distanceFromScreenCenter = distance(curvedTextureCoordinates, vec2(0.5));
+    float distanceFromScreenCenter = distance(textureCoordinates, vec2(0.5));
 
     finalColor *= 1.0 - distanceFromScreenCenter * 0.5;
 

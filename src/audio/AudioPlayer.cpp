@@ -2,14 +2,38 @@
 
 #include <algorithm>
 
-AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
-	: soundBuffers(soundBuffers)
+#include "AudioBalance.h"
+
+namespace
 {
-	// No code
+	// Slack past a sound's own length before it is reclaimed. SFML 3's
+	// sf::Sound::getStatus() briefly reports Stopped right after play(), so a
+	// per-frame status poll would kill short sounds before they are heard --
+	// instead each instance is kept for its full (pitch-adjusted) duration.
+	const sf::Time ReclaimMargin = sf::milliseconds(80);
 }
 
-void AudioPlayer::Play(Assets::SoundID soundID)
+AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers, const AudioBalance& balance)
+	: soundBuffers(soundBuffers)
+	, balance(balance)
 {
+	activeSounds.reserve(MaxActiveSounds);
+}
+
+float AudioPlayer::VolumeFor(Assets::SoundID soundID) const
+{
+	return std::clamp(globalVolume * balance.ForSound(soundID) / 100.f, 0.f, 400.f);
+}
+
+void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
+{
+	// Sounds that were never loaded (an asset file the project doesn't ship
+	// yet) are silently skipped rather than crashing.
+	if (!soundBuffers.Contains(soundID))
+	{
+		return;
+	}
+
 	if (activeSounds.size() >= MaxActiveSounds)
 	{
 		RemoveStoppedSounds();
@@ -20,22 +44,23 @@ void AudioPlayer::Play(Assets::SoundID soundID)
 		activeSounds.erase(activeSounds.begin());
 	}
 
-	activeSounds.emplace_back(soundID, soundBuffers.Get(soundID));
-
-	ActiveSound& activeSound = activeSounds.back();
-	activeSound.sound.setVolume(globalVolume);
-	activeSound.sound.play();
+	auto& active = activeSounds.emplace_back(
+		std::make_unique<ActiveSound>(soundID, soundBuffers.Get(soundID), pitch));
+	active->sound.setVolume(VolumeFor(soundID));
+	active->sound.setPitch(pitch);
+	active->sound.play();
 }
 
 void AudioPlayer::Restart(Assets::SoundID soundID)
 {
-	for (ActiveSound& activeSound : activeSounds)
+	for (const std::unique_ptr<ActiveSound>& active : activeSounds)
 	{
-		if (activeSound.id == soundID)
+		if (active->id == soundID)
 		{
-			activeSound.sound.stop();
-			activeSound.sound.setPlayingOffset(sf::Time::Zero);
-			activeSound.sound.play();
+			active->sound.stop();
+			active->sound.setPlayingOffset(sf::Time::Zero);
+			active->sound.play();
+			active->age.restart();
 			return;
 		}
 	}
@@ -45,24 +70,22 @@ void AudioPlayer::Restart(Assets::SoundID soundID)
 
 void AudioPlayer::RemoveStoppedSounds()
 {
-	activeSounds.erase(
-		std::remove_if(
-			activeSounds.begin(), activeSounds.end(),
-			[](const ActiveSound& activeSound)
-			{
-				return activeSound.sound.getStatus() == sf::Sound::Status::Stopped;
-			}
-		),
-		activeSounds.end()
-	);
+	std::erase_if(activeSounds,
+		[](const std::unique_ptr<ActiveSound>& active)
+		{
+			// A looping instance never "finishes" -- keep it until it is
+			// stopped explicitly (nothing here loops today, but be safe).
+			return !active->sound.isLooping()
+				&& active->age.getElapsedTime() >= active->lifespan + ReclaimMargin;
+		});
 }
 
 void AudioPlayer::SetGlobalVolume(float volume)
 {
 	globalVolume = volume;
 
-	for (ActiveSound& activeSound : activeSounds)
+	for (const std::unique_ptr<ActiveSound>& active : activeSounds)
 	{
-		activeSound.sound.setVolume(globalVolume);
+		active->sound.setVolume(VolumeFor(active->id));
 	}
 }

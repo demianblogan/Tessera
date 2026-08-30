@@ -33,10 +33,22 @@
     <ClCompile Include="src\ui\NineSliceFrame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\CompanySplashState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\LoadingState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\loading\AssetLoadJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\MainMenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\MenuScreenState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\audio\AudioBalance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\audio\AudioPlayer.cpp">
@@ -76,6 +88,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\Element.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\CarouselMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\DropInTitle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\FpsCounter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\GlowingCursor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\MenuAurora.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\MenuBackdrop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\MenuSparks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\Spacer.cpp">
@@ -176,6 +209,18 @@
     <ClInclude Include="src\core\State.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\states\CompanySplashState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\LoadingState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loading\AssetLoadJob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loading\LoadingProgress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\states\MainMenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -191,7 +236,16 @@
     <ClInclude Include="src\core\Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\GameVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\audio\AudioBalance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\audio\AudioPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nlohmann\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\statistics\HighScoreEntry.h">
@@ -219,6 +273,33 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\CarouselMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ColourUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\DropInTitle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\TetrominoPalette.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\FpsCounter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\GlowingCursor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\MenuAurora.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\MenuBackdrop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\MenuSparks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Layout.h">
@@ -267,6 +348,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\gamepad\HapticProfiles.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h">
@@ -345,9 +429,11 @@
     <None Include="assets\shaders\blur.frag" />
     <None Include="assets\shaders\neon_dilate.frag" />
     <None Include="assets\shaders\neon_blur.frag" />
+    <None Include="assets\shaders\menu_aurora.frag" />
     <None Include="libs\SFML\README.md" />
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\audio_balance.json" />
   </ItemGroup>
 </Project>

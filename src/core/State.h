@@ -39,6 +39,13 @@ public:
         return Backdrop::Opaque;
     }
 
+    // Whether the game's mouse cursor is drawn over this state. The company
+    // splash hides it so nothing sits on top of the logo.
+    [[nodiscard]] virtual bool ShowsCursor() const
+    {
+        return true;
+    }
+
 protected:
     // Queue a stack transition. All four are applied together, after the
     // current input / update phase, so a state may call them from inside its

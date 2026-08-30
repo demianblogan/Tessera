@@ -65,9 +65,23 @@ namespace Haptics
 		void PulseVibration(float lowFrequencyMotor, float highFrequencyMotor, float durationSeconds);
 
 		// DualSense/DualShock only -- no-op on Xbox (that hardware has no
-		// lightbar). Takes effect on the next Update() call; safe to call
-		// every frame with the same color.
+		// lightbar). Sets the resting lightbar color shown whenever no pulse
+		// is running. Takes effect on the next Update(); safe to call every
+		// frame with the same color.
 		void SetLightbarColor(RGBColor color) noexcept;
+
+		// DualSense/DualShock only. Flashes `color` on the lightbar over
+		// durationSeconds. With blinks == 1 it fades back to the resting
+		// color with a faint throb, and re-arming every frame holds it lit
+		// (a sustained glow). With blinks > 1 it does that many clean
+		// on-off flashes across the duration instead. Merges toward the
+		// stronger / longer request, like PulseVibration.
+		void PulseLightbar(RGBColor color, float durationSeconds, int blinks = 1) noexcept;
+
+		// --- Adaptive triggers -------------------------------------------------
+		// Ported from Until Last Asteroid and kept intact although nothing in
+		// Tessera drives them yet -- a future version (harder drop, hold-to-
+		// charge, ...) is expected to. Do not "tidy away".
 
 		// DualSense/DualShock only -- no-op on Xbox (that hardware has no
 		// adaptive triggers). A brief, sharp vibration burst under the
@@ -131,6 +145,13 @@ namespace Haptics
 		float pulseHighMotor = 0.f;
 
 		RGBColor lightbarColor{};
+
+		RGBColor lightbarPulseColor{};
+		float lightbarPulseRemaining = 0.f;
+		float lightbarPulseDuration = 0.f;
+		int lightbarPulseBlinks = 1;
+		float lightbarThrobTime = 0.f;
+		RGBColor currentLightbar{};
 
 		float rightTriggerRecoilRemaining = 0.f;
 		bool isRightTriggerSustainedResistanceActive = false;

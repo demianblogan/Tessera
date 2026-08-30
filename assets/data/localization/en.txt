@@ -1,11 +1,13 @@
 # Tessera - English string catalog.
 # Format: section.key = value   (# starts a comment, \n is a line break)
 
-main_menu.title      = Tessera
-main_menu.start_game = Start Game
-main_menu.options    = Options
-main_menu.statistics = Statistics
-main_menu.exit       = Exit
+main_menu.title        = Tessera
+main_menu.start_game   = Start Game
+main_menu.options      = Options
+main_menu.records      = Records
+main_menu.achievements = Achievements
+main_menu.credits      = Credits
+main_menu.quit         = Quit
 
 pause.title     = Pause
 pause.resume    = Resume Game
@@ -26,6 +28,8 @@ settings.section_audio          = --- Audio
 settings.footer_return          = ESC - RETURN TO MAIN MENU
 settings.vsync_on               = Vertical synchronization: ON
 settings.vsync_off              = Vertical synchronization: OFF
+settings.show_fps_on            = Show FPS: ON
+settings.show_fps_off           = Show FPS: OFF
 settings.fps_limit              = FPS limit:
 settings.fps_unlimited          = Unlimited
 settings.block_style_outline    = Block style: With outline
@@ -38,6 +42,10 @@ stats.footer_return = ESC - RETURN TO MAIN MENU
 stats.footer_delete = DEL - DELETE ALL RECORDS
 stats.row           = {rank}. {name} = {score}
 stats.row_empty     = {rank}. ...
+
+loading.audio     = Loading Audio...
+loading.music     = Loading Music...
+loading.interface = Loading Interface...
 
 hud.next_piece = Next Tetromino
 hud.score      = Score: {score}

@@ -1,19 +1,51 @@
 #pragma once
 
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Text.hpp>
 
-#include "MenuScreenState.h"
+#include "../core/State.h"
+#include "../rendering/NeonGlow.h"
+#include "../ui/CarouselMenu.h"
+#include "../ui/DropInTitle.h"
+#include "../ui/MenuAurora.h"
+#include "../ui/MenuBackdrop.h"
+#include "../ui/MenuSparks.h"
 
-class MainMenuState final : public MenuScreenState
+struct Context;
+
+namespace sf
+{
+	class Event;
+}
+
+// The main menu: the animated "TESSERA" title drops in, then a rotating ring
+// of entries flies in around it. A standalone State (not MenuScreenState) --
+// its navigation model is its own.
+class MainMenuState final : public State
 {
 public:
 	explicit MainMenuState(Context& context);
+	~MainMenuState() override;
 
+	void HandleEvent(const sf::Event& event) override;
+	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 
-private:
-	sf::Sprite backgroundSprite;
-	sf::Sprite titleBackgroundSprite;
+	// No cursor while the title / ring build animation is still playing.
+	[[nodiscard]] bool ShowsCursor() const override { return carousel.IsReady(); }
 
-	void OnBack() override;
+private:
+	Context& context;
+
+	sf::Sprite backgroundSprite;
+	UI::MenuAurora aurora;
+	UI::MenuBackdrop backdrop;
+	UI::MenuSparks sparks;
+	UI::DropInTitle title;
+	NeonGlow titleGlow;
+	NeonGlow entryGlow;
+	UI::CarouselMenu carousel;
+	bool carouselStarted = false;
+
+	sf::Text versionText;
 };

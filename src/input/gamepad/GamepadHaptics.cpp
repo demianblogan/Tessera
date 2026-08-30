@@ -1,6 +1,7 @@
 #include "GamepadHaptics.h"
 
 #include <algorithm>
+#include <cmath>
 
 // NOMINMAX: stops Windows.h from defining its own min/max macros, which
 // would otherwise shadow std::min/std::max (used below) and silently break
@@ -44,6 +45,14 @@ namespace Haptics
 		constexpr unsigned int MaximumDualSenseDevices = 4u;
 
 		constexpr float MotorSpeedScale = 65535.f;
+
+		// Radians/second of the lightbar's throb while a pulse is running.
+		constexpr float LightbarThrobSpeed = 16.f;
+
+		[[nodiscard]] unsigned char Scale(unsigned char channel, float brightness)
+		{
+			return static_cast<unsigned char>(std::clamp(static_cast<float>(channel) * brightness, 0.f, 255.f));
+		}
 
 		// How long a single regular-shot recoil kick lasts before releasing
 		// back to whatever the sustained state is.
@@ -145,6 +154,20 @@ namespace Haptics
 		lightbarColor = color;
 	}
 
+	void GamepadHaptics::PulseLightbar(RGBColor color, float durationSeconds, int blinks) noexcept
+	{
+		if (durationSeconds <= 0.f)
+			return;
+
+		if (lightbarPulseRemaining <= 0.f)
+			lightbarThrobTime = 0.f;
+
+		lightbarPulseColor = color;
+		lightbarPulseBlinks = std::max(1, blinks);
+		lightbarPulseDuration = std::max(lightbarPulseDuration, durationSeconds);
+		lightbarPulseRemaining = std::max(lightbarPulseRemaining, durationSeconds);
+	}
+
 	void GamepadHaptics::PulseRightTriggerRecoil()
 	{
 		rightTriggerRecoilRemaining = RightTriggerRecoilDuration;
@@ -182,6 +205,53 @@ namespace Haptics
 
 		const float lowMotor = isVibrationEnabled ? pulseLowMotor * FallOff : 0.f;
 		const float highMotor = isVibrationEnabled ? pulseHighMotor * FallOff : 0.f;
+
+		// --- Lightbar ---
+
+		lightbarThrobTime += deltaTime;
+
+		if (lightbarPulseRemaining > 0.f)
+			lightbarPulseRemaining = std::max(0.f, lightbarPulseRemaining - deltaTime);
+
+		const float lightbarFallOff = (lightbarPulseDuration > 0.f && lightbarPulseRemaining > 0.f)
+			? lightbarPulseRemaining / lightbarPulseDuration
+			: 0.f;
+
+		if (lightbarFallOff <= 0.f)
+		{
+			lightbarPulseDuration = 0.f;
+			lightbarPulseColor = {};
+			lightbarPulseBlinks = 1;
+		}
+
+		if (!isLightbarEnabled)
+		{
+			currentLightbar = {};
+		}
+		else if (lightbarFallOff > 0.f)
+		{
+			float brightness = 0.f;
+
+			if (lightbarPulseBlinks <= 1)
+			{
+				// A held / single pulse: a faint throb, dimming as it fades.
+				const float throb = 0.6f + 0.4f * (std::sin(lightbarThrobTime * LightbarThrobSpeed) * 0.5f + 0.5f);
+				brightness = lightbarFallOff * throb;
+			}
+			else
+			{
+				// N clean on-off flashes spread across the duration.
+				constexpr float Pi = 3.14159265f;
+				const float progress = 1.f - lightbarFallOff;
+				brightness = std::abs(std::sin(progress * Pi * static_cast<float>(lightbarPulseBlinks)));
+			}
+
+			currentLightbar = { Scale(lightbarPulseColor.r, brightness), Scale(lightbarPulseColor.g, brightness), Scale(lightbarPulseColor.b, brightness) };
+		}
+		else
+		{
+			currentLightbar = lightbarColor;
+		}
 
 		ApplyVibration(lowMotor, highMotor);
 	}
@@ -252,8 +322,7 @@ namespace Haptics
 			outputState.leftRumble = ToByte(lowFrequencyMotor);
 			outputState.rightRumble = ToByte(highFrequencyMotor);
 
-			if (isLightbarEnabled)
-				outputState.lightbar = { lightbarColor.r, lightbarColor.g, lightbarColor.b };
+			outputState.lightbar = { currentLightbar.r, currentLightbar.g, currentLightbar.b };
 
 			outputState.rightTriggerEffect = BuildRightTriggerEffect();
 

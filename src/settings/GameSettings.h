@@ -33,13 +33,14 @@ struct GameSettings
 {
     // Bumped whenever the on-disk settings layout changes. A file written by a
     // different version is preserved as .corrupt and replaced with defaults.
-    static constexpr int FormatVersion = 1;
+    static constexpr int FormatVersion = 2;
 
     // --- Graphics:
 
     bool verticalSyncEnabled = true;
     unsigned int frameRateLimit = 0;
     BlockRenderStyle blockRenderStyle = BlockRenderStyle::WithOutline;
+    bool showFps = false;
 
 	// --- Audio:
 

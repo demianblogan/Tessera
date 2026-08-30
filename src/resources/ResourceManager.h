@@ -46,6 +46,11 @@ public:
 		}
 	}
 
+	[[nodiscard]] bool Contains(Identifier id) const
+	{
+		return resources.contains(id);
+	}
+
 	Resource& Get(Identifier id)
 	{
 		if (!resources.contains(id))

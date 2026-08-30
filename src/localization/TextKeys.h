@@ -11,9 +11,11 @@ namespace TextKey
 	{
 		inline constexpr std::string_view Title     = "main_menu.title";
 		inline constexpr std::string_view StartGame = "main_menu.start_game";
-		inline constexpr std::string_view Options   = "main_menu.options";
-		inline constexpr std::string_view Statistics = "main_menu.statistics";
-		inline constexpr std::string_view Exit      = "main_menu.exit";
+		inline constexpr std::string_view Options      = "main_menu.options";
+		inline constexpr std::string_view Records      = "main_menu.records";
+		inline constexpr std::string_view Achievements = "main_menu.achievements";
+		inline constexpr std::string_view Credits      = "main_menu.credits";
+		inline constexpr std::string_view Quit         = "main_menu.quit";
 	}
 
 	namespace Pause
@@ -43,6 +45,8 @@ namespace TextKey
 		inline constexpr std::string_view FooterReturn      = "settings.footer_return";
 		inline constexpr std::string_view VsyncOn           = "settings.vsync_on";
 		inline constexpr std::string_view VsyncOff          = "settings.vsync_off";
+		inline constexpr std::string_view ShowFpsOn         = "settings.show_fps_on";
+		inline constexpr std::string_view ShowFpsOff        = "settings.show_fps_off";
 		inline constexpr std::string_view FpsLimit          = "settings.fps_limit";
 		inline constexpr std::string_view FpsUnlimited      = "settings.fps_unlimited";
 		inline constexpr std::string_view BlockStyleOutline = "settings.block_style_outline";
@@ -58,6 +62,13 @@ namespace TextKey
 		inline constexpr std::string_view FooterDelete = "stats.footer_delete";
 		inline constexpr std::string_view Row          = "stats.row";           // {rank} {name} {score}
 		inline constexpr std::string_view RowEmpty     = "stats.row_empty";     // {rank}
+	}
+
+	namespace Loading
+	{
+		inline constexpr std::string_view Audio     = "loading.audio";
+		inline constexpr std::string_view Music     = "loading.music";
+		inline constexpr std::string_view Interface = "loading.interface";
 	}
 
 	namespace Hud

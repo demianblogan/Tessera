@@ -4,7 +4,9 @@ namespace Assets
 {
 	enum class FontID
 	{
-		Main
+		Main,
+		Loading,
+		Menu
 	};
 
 	enum class MusicID
@@ -16,6 +18,9 @@ namespace Assets
 
 	enum class SoundID
 	{
+		TitleButtonDrop,
+		MenuItemAppeared,
+
 		MenuItemSelected,
 		MenuItemPressed,
 
@@ -33,9 +38,11 @@ namespace Assets
 		BlockSpritesheetWithoutOutline,
 		ButtonBackground,
 		MenuBackground,
-		TitleBackground,
 		PanelBackground,
-		GameBackground
+		GameBackground,
+		CompanyLogo,
+		Cursor,
+		UiArrow
 	};
 
 	enum class ShaderID
@@ -44,7 +51,8 @@ namespace Assets
 		Blur,
 		GhostTetromino,
 		NeonDilate,
-		NeonBlur
+		NeonBlur,
+		MenuAurora
 	};
 
 	namespace Paths
@@ -52,26 +60,36 @@ namespace Assets
 		namespace Fonts
 		{
 			inline constexpr const char* Main = "assets/fonts/main.ttf";
+
+			// Used only by the loading screen for now; broad language coverage
+			// (Latin, Cyrillic, ...). Falls back to Main if the file is missing.
+			inline constexpr const char* Loading = "assets/fonts/chis-pix.ttf";
+
+			// Main-menu carousel entries. Pixel face with localisation coverage.
+			inline constexpr const char* Menu = "assets/fonts/pixel.ttf";
 		}
 
 		namespace Music
 		{
-			inline constexpr const char* MainMenu = "assets/music/main_menu_music.ogg";
-			inline constexpr const char* Gameplay = "assets/music/gameplay_music.ogg";
-			inline constexpr const char* GameOver = "assets/music/game_over_music.ogg";
+			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
+			inline constexpr const char* Gameplay = "assets/audio/music/gameplay_music.ogg";
+			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 		}
 
 		namespace Sounds
 		{
-			inline constexpr const char* MenuItemSelected = "assets/sounds/menu_item_selected.ogg";
-			inline constexpr const char* MenuItemPressed = "assets/sounds/menu_item_pressed.ogg";
+			inline constexpr const char* TitleButtonDrop = "assets/audio/sounds/title_button_drop.ogg";
+			inline constexpr const char* MenuItemAppeared = "assets/audio/sounds/menu_item_appeared.mp3";
 
-			inline constexpr const char* DropPiece = "assets/sounds/drop_piece.ogg";
-			inline constexpr const char* MovePiece = "assets/sounds/move_piece.ogg";
-			inline constexpr const char* NextLevel = "assets/sounds/next_level.ogg";
-			inline constexpr const char* PieceHitWall = "assets/sounds/piece_hit_wall.ogg";
-			inline constexpr const char* RotatePiece = "assets/sounds/rotate_piece.ogg";
-			inline constexpr const char* RowCleared = "assets/sounds/row_cleared.ogg";
+			inline constexpr const char* MenuItemSelected = "assets/audio/sounds/menu_item_selected.ogg";
+			inline constexpr const char* MenuItemPressed = "assets/audio/sounds/menu_item_pressed.ogg";
+
+			inline constexpr const char* DropPiece = "assets/audio/sounds/drop_piece.ogg";
+			inline constexpr const char* MovePiece = "assets/audio/sounds/move_piece.ogg";
+			inline constexpr const char* NextLevel = "assets/audio/sounds/next_level.ogg";
+			inline constexpr const char* PieceHitWall = "assets/audio/sounds/piece_hit_wall.ogg";
+			inline constexpr const char* RotatePiece = "assets/audio/sounds/rotate_piece.ogg";
+			inline constexpr const char* RowCleared = "assets/audio/sounds/row_cleared.ogg";
 		}
 
 		namespace Textures
@@ -80,9 +98,11 @@ namespace Assets
 			inline constexpr const char* BlockSpritesheetWithoutOutline = "assets/textures/block_spritesheet_without_outline.png";
 			inline constexpr const char* ButtonBackground = "assets/textures/button_background.png";
 			inline constexpr const char* MenuBackground = "assets/textures/menu_background.png";
-			inline constexpr const char* TitleBackground = "assets/textures/title_background.png";
 			inline constexpr const char* PanelBackground = "assets/textures/panel_background.png";
 			inline constexpr const char* GameBackground = "assets/textures/game_background.png";
+			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
+			inline constexpr const char* Cursor = "assets/textures/cursor.png";
+			inline constexpr const char* UiArrow = "assets/textures/ui/arrow.png";
 		}
 
 		namespace Data
@@ -97,6 +117,7 @@ namespace Assets
 			inline constexpr const char* GhostTetromino = "assets/shaders/ghost_tetromino.frag";
 			inline constexpr const char* NeonDilate = "assets/shaders/neon_dilate.frag";
 			inline constexpr const char* NeonBlur = "assets/shaders/neon_blur.frag";
+			inline constexpr const char* MenuAurora = "assets/shaders/menu_aurora.frag";
 		}
 	}
 }

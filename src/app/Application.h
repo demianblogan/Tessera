@@ -5,6 +5,7 @@
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 
+#include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
@@ -15,6 +16,10 @@
 #include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
 #include "../statistics/HighScoreManager.h"
+#include "../ui/FpsCounter.h"
+#include "../ui/GlowingCursor.h"
+
+#include <optional>
 
 namespace sf
 {
@@ -31,6 +36,10 @@ private:
 	// deliver one huge delta and make the piece "teleport" several rows or a
 	// timer expire instantly. Capping turns that frame into a brief hitch.
 	static constexpr float MaxFrameTime = 0.1f;
+
+	// How far a stick axis (SFML's -100..100 scale) must move to count as the
+	// player switching to the gamepad.
+	static constexpr float GamepadUsageThreshold = 40.f;
 
 	sf::RenderWindow window;
 
@@ -50,12 +59,21 @@ private:
 	SettingsManager settings;
 	HighScoreManager highScores;
 
+	AudioBalance balance;
 	AudioPlayer audioPlayer;
 	GamepadManager gamepad;
 	Haptics::GamepadHaptics gamepadHaptics;
 	LocalizationManager localization;
 
 	Context context;
+
+	// Both emplaced once loading finishes (they need loaded assets).
+	std::optional<UI::FpsCounter> fpsCounter;
+	std::optional<UI::GlowingCursor> cursor;
+
+	// The system cursor is always hidden; this tracks whether the mouse is the
+	// input device in use, i.e. whether to draw our own cursor sprite.
+	bool cursorVisible = true;
 
 	[[nodiscard]] bool IsWindowOpen() const;
 
@@ -65,6 +83,8 @@ private:
 	// is planned). Every other event is forwarded to the active state.
 	void ApplyWindowLifecycleEvent(const sf::Event& event);
 
+	void UpdateCursorVisibility(const sf::Event& event);
+	void DrawCursor(sf::RenderTarget& target);
 	void HandleInput();
 	void Update(float deltaTime);
 	void Render();

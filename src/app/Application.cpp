@@ -1,14 +1,18 @@
 #include "Application.h"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <iostream>
 #include <stdexcept>
 
 #include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
 
-#include <states/MainMenuState.h>
+#include <states/LoadingState.h>
 #include <utils/AppDataPath.h>
+
+#include <filesystem>
 
 bool Application::IsWindowOpen() const
 {
@@ -30,11 +34,38 @@ void Application::ApplyWindowLifecycleEvent(const sf::Event& event)
 	}
 }
 
+void Application::UpdateCursorVisibility(const sf::Event& event)
+{
+	// Our cursor sprite shows only while the mouse is the device in use.
+	// A key press or gamepad input hides it; moving the mouse brings it back.
+	// The system cursor stays hidden throughout.
+	bool showCursor = cursorVisible;
+
+	if (event.is<sf::Event::MouseMoved>() || event.is<sf::Event::MouseButtonPressed>())
+	{
+		showCursor = true;
+	}
+	else if (event.is<sf::Event::KeyPressed>() || event.is<sf::Event::JoystickButtonPressed>())
+	{
+		showCursor = false;
+	}
+	else if (const auto* moved = event.getIf<sf::Event::JoystickMoved>())
+	{
+		if (std::abs(moved->position) > GamepadUsageThreshold)
+		{
+			showCursor = false;
+		}
+	}
+
+	cursorVisible = showCursor;
+}
+
 void Application::HandleInput()
 {
 	while (const std::optional<sf::Event> event = window.pollEvent())
 	{
 		gamepad.HandleEvent(*event);
+		UpdateCursorVisibility(*event);
 		ApplyWindowLifecycleEvent(*event);
 		if (!window.isOpen())
 		{
@@ -66,10 +97,34 @@ void Application::Update(float deltaTime)
 	gamepad.Update();
 	gamepadHaptics.Update(deltaTime);
 
+	if (cursor)
+	{
+		cursor->Update(deltaTime);
+	}
+
 	if (State* currentState = stateMachine.GetCurrentState())
 	{
 		currentState->Update(deltaTime);
 	}
+}
+
+void Application::DrawCursor(sf::RenderTarget& target)
+{
+	if (!cursor || !cursorVisible)
+	{
+		return;
+	}
+
+	const State* currentState = stateMachine.GetCurrentState();
+	if (currentState != nullptr && !currentState->ShowsCursor())
+	{
+		return;
+	}
+
+	// Window pixel -> virtual (1920x1080) coordinates, so the cursor lands in
+	// the same space the states render in and picks up the CRT pass with them.
+	const sf::Vector2f position = window.mapPixelToCoords(sf::Mouse::getPosition(window), gameView);
+	cursor->Render(target, position);
 }
 
 void Application::Render()
@@ -86,51 +141,43 @@ void Application::Render()
 	// Opaque state: render the stack straight to the screen
 	// =====================================================
 
+	window.clear();
+	crtShader.setUniform("time", context.totalTime);
+
 	if (!blurBackdrop)
 	{
 		renderTexture.clear();
 		renderTexture.setView(gameView);
 		stateMachine.RenderStates(renderTexture);
+		DrawCursor(renderTexture);
 		renderTexture.display();
 
-		sf::Sprite screenSprite(renderTexture.getTexture());
+		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
+	}
+	else
+	{
+		// The states below, blurred, then the top state drawn crisp on top.
+		gameplayTexture.clear();
+		gameplayTexture.setView(gameView);
+		stateMachine.RenderStatesExceptTop(gameplayTexture);
+		gameplayTexture.display();
 
-		window.clear();
-		crtShader.setUniform("time", context.totalTime);
-		window.draw(screenSprite, &crtShader);
-		window.display();
+		finalTexture.clear();
+		finalTexture.draw(sf::Sprite(gameplayTexture.getTexture()), &blurShader);
+		stateMachine.RenderTopState(finalTexture);
+		DrawCursor(finalTexture);
+		finalTexture.display();
 
-		return;
+		window.draw(sf::Sprite(finalTexture.getTexture()), &crtShader);
 	}
 
-	// =====================================================
-	// Blurred backdrop: the states below, blurred, then the top state on top
-	// =====================================================
+	// A crisp overlay, drawn after the CRT pass so its scanlines / aberration
+	// don't touch the readout.
+	if (fpsCounter && context.settings.GetSettings().showFps)
+	{
+		fpsCounter->Render(window);
+	}
 
-	gameplayTexture.clear();
-	gameplayTexture.setView(gameView);
-	stateMachine.RenderStatesExceptTop(gameplayTexture);
-	gameplayTexture.display();
-
-	// =====================================================
-	// Compose final scene
-	// =====================================================
-
-	finalTexture.clear();
-
-	sf::Sprite gameplaySprite(gameplayTexture.getTexture());
-	finalTexture.draw(gameplaySprite, &blurShader);
-	stateMachine.RenderTopState(finalTexture);
-	finalTexture.display();
-
-	// =====================================================
-	// Final CRT pass
-	// =====================================================
-
-	sf::Sprite finalSprite(finalTexture.getTexture());
-	window.clear();
-	crtShader.setUniform("time", context.totalTime);
-	window.draw(finalSprite, &crtShader);
 	window.display();
 }
 
@@ -141,7 +188,8 @@ Application::Application()
 	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
-	, audioPlayer(soundBuffers)
+	, balance("assets/data/audio_balance.json")
+	, audioPlayer(soundBuffers, balance)
 	, context(
 		stateMachine,
 		window,
@@ -151,13 +199,15 @@ Application::Application()
 		textures,
 		shaders,
 		audioPlayer,
+		balance,
 		settings,
 		highScores,
 		gamepad,
 		gamepadHaptics,
 		localization)
 {
-	window.setMouseCursorVisible(true);
+	// The game draws its own cursor (UI::GlowingCursor); the OS one stays off.
+	window.setMouseCursorVisible(false);
 	window.setView(gameView);
 
 	// Menu navigation gets a faint haptic tick for free once this is wired.
@@ -176,34 +226,37 @@ Application::Application()
 		throw std::runtime_error("Failed to allocate render textures.");
 	}
 
-	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::GhostTetromino, Assets::Paths::Shaders::GhostTetromino, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::NeonDilate, Assets::Paths::Shaders::NeonDilate, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::NeonBlur, Assets::Paths::Shaders::NeonBlur, sf::Shader::Type::Fragment);
+	// Textures and shaders are loaded here, on the main thread: creating GPU
+	// objects on a background thread deadlocks some drivers. They are small;
+	// the loading screen then streams the audio and fonts in the background.
+	namespace TexturePaths = Assets::Paths::Textures;
+	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, TexturePaths::BlockSpritesheetWithOutline);
+	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, TexturePaths::BlockSpritesheetWithoutOutline);
+	textures.Load(Assets::TextureID::ButtonBackground, TexturePaths::ButtonBackground);
+	textures.Load(Assets::TextureID::MenuBackground, TexturePaths::MenuBackground);
+	textures.Load(Assets::TextureID::PanelBackground, TexturePaths::PanelBackground);
+	textures.Load(Assets::TextureID::GameBackground, TexturePaths::GameBackground);
+	textures.Load(Assets::TextureID::CompanyLogo, TexturePaths::CompanyLogo);
+	textures.Load(Assets::TextureID::Cursor, TexturePaths::Cursor);
+	textures.Load(Assets::TextureID::UiArrow, TexturePaths::UiArrow);
 
-	fonts.Load(Assets::FontID::Main, Assets::Paths::Fonts::Main);
+	namespace ShaderPaths = Assets::Paths::Shaders;
+	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::Blur, ShaderPaths::Blur, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::GhostTetromino, ShaderPaths::GhostTetromino, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonDilate, ShaderPaths::NeonDilate, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonBlur, ShaderPaths::NeonBlur, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::MenuAurora, ShaderPaths::MenuAurora, sf::Shader::Type::Fragment);
 
-	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, Assets::Paths::Textures::BlockSpritesheetWithOutline);
-	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, Assets::Paths::Textures::BlockSpritesheetWithoutOutline);
-	textures.Load(Assets::TextureID::ButtonBackground, Assets::Paths::Textures::ButtonBackground);
-	textures.Load(Assets::TextureID::MenuBackground, Assets::Paths::Textures::MenuBackground);
-	textures.Load(Assets::TextureID::TitleBackground, Assets::Paths::Textures::TitleBackground);
-	textures.Load(Assets::TextureID::PanelBackground, Assets::Paths::Textures::PanelBackground);
-	textures.Load(Assets::TextureID::GameBackground, Assets::Paths::Textures::GameBackground);
+	const std::filesystem::path loadingFontPath = Assets::Paths::Fonts::Loading;
+	fonts.Load(
+		Assets::FontID::Loading,
+		std::filesystem::exists(loadingFontPath) ? loadingFontPath : std::filesystem::path(Assets::Paths::Fonts::Main));
 
+	// The shell track (loading screen -> splash -> menu) is opened here so the
+	// loading screen can start it right away. openFromFile only reads the
+	// stream header; decoding streams on sf::Music's own thread during play.
 	music.Load(Assets::MusicID::MainMenu, Assets::Paths::Music::MainMenu);
-	music.Load(Assets::MusicID::Gameplay, Assets::Paths::Music::Gameplay);
-	music.Load(Assets::MusicID::GameOver, Assets::Paths::Music::GameOver);
-
-	soundBuffers.Load(Assets::SoundID::MenuItemSelected, Assets::Paths::Sounds::MenuItemSelected);
-	soundBuffers.Load(Assets::SoundID::MenuItemPressed, Assets::Paths::Sounds::MenuItemPressed);
-	soundBuffers.Load(Assets::SoundID::DropPiece, Assets::Paths::Sounds::DropPiece);
-	soundBuffers.Load(Assets::SoundID::MovePiece, Assets::Paths::Sounds::MovePiece);
-	soundBuffers.Load(Assets::SoundID::RotatePiece, Assets::Paths::Sounds::RotatePiece);
-	soundBuffers.Load(Assets::SoundID::PieceHitWall, Assets::Paths::Sounds::PieceHitWall);
-	soundBuffers.Load(Assets::SoundID::NextLevel, Assets::Paths::Sounds::NextLevel);
-	soundBuffers.Load(Assets::SoundID::RowCleared, Assets::Paths::Sounds::RowCleared);
 
 	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
 	{
@@ -216,7 +269,18 @@ Application::Application()
 
 	highScores.Load();
 
-	stateMachine.PushState(std::make_unique<MainMenuState>(context));
+	stateMachine.PushState(std::make_unique<LoadingState>(
+		context,
+		[this]
+		{
+			fpsCounter.emplace(fonts.Get(Assets::FontID::Main));
+			cursor.emplace(textures.Get(Assets::TextureID::Cursor));
+
+			// The music tracks are loaded on the background thread, i.e. after
+			// the first settings.Apply() ran with an empty music map -- so the
+			// audio settings have to be applied again now they exist.
+			settings.Apply(context);
+		}));
 	stateMachine.ApplyPendingChanges();
 }
 
@@ -226,7 +290,15 @@ void Application::Run()
 
 	while (IsWindowOpen())
 	{
-		const float deltaTime = std::min(deltaTimeClock.restart().asSeconds(), MaxFrameTime);
+		// The raw frame time drives the FPS readout; a clamped copy drives
+		// gameplay so one stall can't teleport a piece several rows.
+		const float frameSeconds = deltaTimeClock.restart().asSeconds();
+		const float deltaTime = std::min(frameSeconds, MaxFrameTime);
+
+		if (fpsCounter)
+		{
+			fpsCounter->Update(frameSeconds);
+		}
 
 		HandleInput();
 		stateMachine.ApplyPendingChanges();

@@ -6,6 +6,7 @@
 #include "../resources/ShaderManager.h"
 
 class AudioPlayer;
+class AudioBalance;
 class StateMachine;
 class SettingsManager;
 class HighScoreManager;
@@ -27,6 +28,7 @@ struct Context
     SettingsManager& settings;
     HighScoreManager& highScores;
     AudioPlayer& audioPlayer;
+    AudioBalance& audioBalance;
     ShaderManager& shaders;
     GamepadManager& gamepad;
     Haptics::GamepadHaptics& gamepadHaptics;
@@ -42,6 +44,7 @@ struct Context
         TextureManager& textures,
         ShaderManager& shaders,
         AudioPlayer& audioPlayer,
+        AudioBalance& audioBalance,
         SettingsManager& settings,
         HighScoreManager& highScores,
         GamepadManager& gamepad,
