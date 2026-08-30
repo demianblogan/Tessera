@@ -82,6 +82,7 @@ private:
 	void ApplyWindowLifecycleEvent(const sf::Event& event);
 
 	void UpdateCursorVisibility(const sf::Event& event);
+	void DrawCursor(sf::RenderTarget& target);
 	void HandleInput();
 	void Update(float deltaTime);
 	void Render();

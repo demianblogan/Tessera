@@ -10,9 +10,13 @@
 
 namespace
 {
-	// Where the click point sits inside the 32x32 image -- top-left for a
-	// classic pointer.
-	constexpr sf::Vector2f Hotspot{ 0.f, 0.f };
+	// On-screen size of the cursor, in the 1920x1080 virtual space. Fixed
+	// regardless of the source image's pixel dimensions.
+	constexpr float DisplaySize = 72.f;
+
+	// Where the click point sits inside the image, as a 0..1 fraction --
+	// top-left for a classic pointer.
+	constexpr sf::Vector2f HotspotFraction{ 0.f, 0.f };
 
 	// Neon cyan, matching the board / menu glow.
 	constexpr std::uint8_t GlowR = 120;
@@ -29,7 +33,12 @@ namespace UI
 	GlowingCursor::GlowingCursor(const sf::Texture& texture)
 		: sprite(texture)
 	{
-		sprite.setOrigin(Hotspot);
+		const sf::Vector2f textureSize(texture.getSize());
+		if (textureSize.x > 0.f && textureSize.y > 0.f)
+		{
+			sprite.setOrigin({ textureSize.x * HotspotFraction.x, textureSize.y * HotspotFraction.y });
+			sprite.setScale({ DisplaySize / textureSize.x, DisplaySize / textureSize.y });
+		}
 	}
 
 	void GlowingCursor::Update(float deltaTime)

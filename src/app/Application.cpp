@@ -108,6 +108,19 @@ void Application::Update(float deltaTime)
 	}
 }
 
+void Application::DrawCursor(sf::RenderTarget& target)
+{
+	if (!cursor || !cursorVisible)
+	{
+		return;
+	}
+
+	// Window pixel -> virtual (1920x1080) coordinates, so the cursor lands in
+	// the same space the states render in and picks up the CRT pass with them.
+	const sf::Vector2f position = window.mapPixelToCoords(sf::Mouse::getPosition(window), gameView);
+	cursor->Render(target, position);
+}
+
 void Application::Render()
 {
 	sf::Shader& crtShader = context.shaders.Get(Assets::ShaderID::CRT);
@@ -130,6 +143,7 @@ void Application::Render()
 		renderTexture.clear();
 		renderTexture.setView(gameView);
 		stateMachine.RenderStates(renderTexture);
+		DrawCursor(renderTexture);
 		renderTexture.display();
 
 		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
@@ -145,6 +159,7 @@ void Application::Render()
 		finalTexture.clear();
 		finalTexture.draw(sf::Sprite(gameplayTexture.getTexture()), &blurShader);
 		stateMachine.RenderTopState(finalTexture);
+		DrawCursor(finalTexture);
 		finalTexture.display();
 
 		window.draw(sf::Sprite(finalTexture.getTexture()), &crtShader);
@@ -154,11 +169,6 @@ void Application::Render()
 	if (fpsCounter && context.settings.GetSettings().showFps)
 	{
 		fpsCounter->Render(window);
-	}
-
-	if (cursor && cursorVisible)
-	{
-		cursor->Render(window, window.mapPixelToCoords(sf::Mouse::getPosition(window)));
 	}
 
 	window.display();
