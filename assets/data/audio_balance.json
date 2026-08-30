@@ -1,12 +1,12 @@
 {
     "music": {
-        "main_menu_music": 100.0,
+        "main_menu_music": 300.0,
         "gameplay_music": 100.0,
         "game_over_music": 100.0
     },
     "sounds": {
         "title_button_drop": 100.0,
-        "menu_item_appeared": 100.0,
+        "menu_item_appeared": 50.0,
         "menu_item_selected": 100.0,
         "menu_item_pressed": 100.0,
         "drop_piece": 100.0,
