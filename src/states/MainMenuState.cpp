@@ -2,44 +2,47 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Window/Event.hpp>
 
+#include "../audio/AudioPlayer.h"
+#include "../core/Context.h"
 #include "../core/GameVersion.h"
+#include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
-#include "../ui/Label.h"
-#include "../ui/Spacer.h"
+#include "GameplayState.h"
 #include "SettingsState.h"
 #include "StatisticsState.h"
-#include "GameplayState.h"
 
 namespace
 {
-	constexpr float TopSpacing = 100.f;
-	constexpr float TitleMenuSpacing = 90.f;
-	constexpr float MenuGap = 30.f;
-	constexpr unsigned int TitleSize = 300;
+	constexpr unsigned int TitleCharSize = 200;
+	constexpr sf::Vector2f TitleCenter{ 960.f, 430.f };
+
+	constexpr unsigned int EntryCharSize = 64;
+	constexpr float EntryTop = 700.f;
+	constexpr float EntryGap = 96.f;
+
+	constexpr sf::Color EntryNormal{ 150, 155, 165 };
+	constexpr sf::Color EntrySelected{ 255, 255, 255 };
 
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 }
 
 MainMenuState::MainMenuState(Context& context)
-	: MenuScreenState(context)
-	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
-	, titleBackgroundSprite(context.textures.Get(Assets::TextureID::TitleBackground))
+	: State(context.stateMachine)
+	, context(context)
+	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
-	backgroundSprite.setColor(sf::Color(255, 255, 255, 180));
+	title.SetCenter(TitleCenter);
 
-	titleBackgroundSprite.setScale({ 0.6f, 0.45f });
-	titleBackgroundSprite.setPosition({ 565.f, 30.f });
-
-	// Bottom-right corner: origin on the text's own bottom-right so the margin
-	// is measured from the screen edge regardless of the string's length.
 	versionText.setFillColor(sf::Color(150, 160, 170));
 	const sf::FloatRect versionBounds = versionText.getLocalBounds();
 	versionText.setOrigin(
@@ -48,62 +51,104 @@ MainMenuState::MainMenuState(Context& context)
 			versionBounds.position.y + versionBounds.size.y
 		});
 
-	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TopSpacing }));
-
-	{
-		auto title = std::make_unique<UI::Label>(
-			context.fonts.Get(Assets::FontID::Main),
-			context.localization.GetText(TextKey::MainMenu::Title),
-			TitleSize
-		);
-		title->SetFillColor(sf::Color::White);
-		rootLayout.Add(std::move(title));
-	}
-
-	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, TitleMenuSpacing }));
-
-	{
-		auto layout = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-		layout->SetGap(MenuGap);
-		layout->SetHorizontalAlignment(UI::Layout::Alignment::Center);
-		menuLayout = layout.get();
-		rootLayout.Add(std::move(layout));
-	}
-
-	AddMenuItem(context.localization.GetText(TextKey::MainMenu::StartGame),
+	AddEntry(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this] { RequestChange(std::make_unique<GameplayState>(this->context)); });
-	AddMenuItem(context.localization.GetText(TextKey::MainMenu::Options),
+	AddEntry(context.localization.GetText(TextKey::MainMenu::Options),
 		[this] { RequestChange(std::make_unique<SettingsState>(this->context)); });
-	AddMenuItem(context.localization.GetText(TextKey::MainMenu::Statistics),
+	AddEntry(context.localization.GetText(TextKey::MainMenu::Records),
 		[this] { RequestChange(std::make_unique<StatisticsState>(this->context)); });
-	AddMenuItem(context.localization.GetText(TextKey::MainMenu::Exit),
+	AddEntry(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { this->context.window.close(); });
-
-	RefreshLayout();
 
 	context.music.Get(Assets::MusicID::Gameplay).stop();
 	context.music.Get(Assets::MusicID::GameOver).stop();
 
-	sf::Music& music = context.music.Get(Assets::MusicID::MainMenu);
-	music.setLooping(true);
-
-	if (music.getStatus() != sf::Music::Status::Playing)
+	sf::Music& menuMusic = context.music.Get(Assets::MusicID::MainMenu);
+	menuMusic.setLooping(true);
+	if (menuMusic.getStatus() != sf::Music::Status::Playing)
 	{
-		music.play();
+		menuMusic.play();
 	}
 }
 
-void MainMenuState::OnBack()
+void MainMenuState::AddEntry(const sf::String& text, std::function<void()> activate)
 {
-	context.window.close();
+	sf::Text label(context.fonts.Get(Assets::FontID::Main), text, EntryCharSize);
+	const sf::FloatRect bounds = label.getLocalBounds();
+	label.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
+
+	entries.push_back({ std::move(label), std::move(activate) });
+}
+
+bool MainMenuState::MenuReady() const
+{
+	return title.IsFinished();
+}
+
+void MainMenuState::Select(std::size_t index)
+{
+	if (index == selected)
+	{
+		return;
+	}
+
+	selected = index;
+	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+}
+
+void MainMenuState::Activate()
+{
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+	entries[selected].activate();
+}
+
+void MainMenuState::HandleEvent(const sf::Event& event)
+{
+	if (!MenuReady())
+	{
+		return;
+	}
+
+	switch (MenuInput::Resolve(event, context.gamepad))
+	{
+	case MenuInput::Action::Up:
+		Select((selected + entries.size() - 1) % entries.size());
+		return;
+	case MenuInput::Action::Down:
+		Select((selected + 1) % entries.size());
+		return;
+	case MenuInput::Action::Confirm:
+		Activate();
+		return;
+	case MenuInput::Action::Back:
+		context.window.close();
+		return;
+	default:
+		break;
+	}
+}
+
+void MainMenuState::Update(float deltaTime)
+{
+	title.Update(deltaTime);
 }
 
 void MainMenuState::Render(sf::RenderTarget& target)
 {
-	target.draw(backgroundSprite);
-	target.draw(titleBackgroundSprite);
+	target.clear(sf::Color::Black);
 
-	RenderMenu(target);
+	title.Render(target);
+
+	if (MenuReady())
+	{
+		for (std::size_t i = 0; i < entries.size(); ++i)
+		{
+			sf::Text& label = entries[i].label;
+			label.setPosition({ TitleCenter.x, EntryTop + static_cast<float>(i) * EntryGap });
+			label.setFillColor(i == selected ? EntrySelected : EntryNormal);
+			target.draw(label);
+		}
+	}
 
 	versionText.setPosition(target.getView().getSize() - VersionMargin);
 	target.draw(versionText);

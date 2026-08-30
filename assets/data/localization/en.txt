@@ -4,8 +4,8 @@
 main_menu.title      = Tessera
 main_menu.start_game = Start Game
 main_menu.options    = Options
-main_menu.statistics = Statistics
-main_menu.exit       = Exit
+main_menu.records    = Records
+main_menu.quit       = Quit
 
 pause.title     = Pause
 pause.resume    = Resume Game

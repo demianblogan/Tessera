@@ -1,41 +1,11 @@
 #include "AssetLoadJob.h"
 
-#include <chrono>
-#include <thread>
-
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/Window/Context.hpp>
 
 #include "LoadingProgress.h"
 #include "../resources/Assets.h"
 #include "../resources/ShaderManager.h"
-
-namespace
-{
-	// TEMPORARY, development only: makes every stage linger long enough to
-	// eyeball the loading animation on a machine that would otherwise finish
-	// the whole load in a few frames. Set to zero before the branch ships.
-	constexpr std::chrono::milliseconds ArtificialStageDelay{ 500 };
-
-	// Sleeps the artificial delay in short slices so a close request during
-	// loading is still noticed promptly. Returns false if asked to stop.
-	[[nodiscard]] bool WaitOrStop(std::stop_token stopToken)
-	{
-		constexpr std::chrono::milliseconds slice{ 25 };
-
-		for (std::chrono::milliseconds waited{ 0 }; waited < ArtificialStageDelay; waited += slice)
-		{
-			if (stopToken.stop_requested())
-			{
-				return false;
-			}
-
-			std::this_thread::sleep_for(slice);
-		}
-
-		return !stopToken.stop_requested();
-	}
-}
 
 namespace Loading
 {
@@ -65,13 +35,12 @@ namespace Loading
 
 		const auto stage = [&](Stage which, auto&& work) -> bool
 		{
-			progress.SetStage(which);
-
-			if (!WaitOrStop(stopToken))
+			if (stopToken.stop_requested())
 			{
 				return false;
 			}
 
+			progress.SetStage(which);
 			work();
 			return !stopToken.stop_requested();
 		};
@@ -83,7 +52,6 @@ namespace Loading
 				textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, Paths::Textures::BlockSpritesheetWithoutOutline);
 				textures.Load(Assets::TextureID::ButtonBackground, Paths::Textures::ButtonBackground);
 				textures.Load(Assets::TextureID::MenuBackground, Paths::Textures::MenuBackground);
-				textures.Load(Assets::TextureID::TitleBackground, Paths::Textures::TitleBackground);
 				textures.Load(Assets::TextureID::PanelBackground, Paths::Textures::PanelBackground);
 				textures.Load(Assets::TextureID::GameBackground, Paths::Textures::GameBackground);
 				textures.Load(Assets::TextureID::CompanyLogo, Paths::Textures::CompanyLogo);

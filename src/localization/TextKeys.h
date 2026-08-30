@@ -12,8 +12,8 @@ namespace TextKey
 		inline constexpr std::string_view Title     = "main_menu.title";
 		inline constexpr std::string_view StartGame = "main_menu.start_game";
 		inline constexpr std::string_view Options   = "main_menu.options";
-		inline constexpr std::string_view Statistics = "main_menu.statistics";
-		inline constexpr std::string_view Exit      = "main_menu.exit";
+		inline constexpr std::string_view Records   = "main_menu.records";
+		inline constexpr std::string_view Quit      = "main_menu.quit";
 	}
 
 	namespace Pause
