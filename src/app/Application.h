@@ -35,6 +35,10 @@ private:
 	// timer expire instantly. Capping turns that frame into a brief hitch.
 	static constexpr float MaxFrameTime = 0.1f;
 
+	// How far a stick axis (SFML's -100..100 scale) must move to count as the
+	// player switching to the gamepad.
+	static constexpr float GamepadUsageThreshold = 40.f;
+
 	sf::RenderWindow window;
 
 	sf::RenderTexture renderTexture;
@@ -63,6 +67,8 @@ private:
 	// Emplaced once the font is loaded.
 	std::optional<UI::FpsCounter> fpsCounter;
 
+	bool cursorVisible = true;
+
 	[[nodiscard]] bool IsWindowOpen() const;
 
 	// The two event kinds that act on the window itself rather than on any
@@ -71,6 +77,7 @@ private:
 	// is planned). Every other event is forwarded to the active state.
 	void ApplyWindowLifecycleEvent(const sf::Event& event);
 
+	void UpdateCursorVisibility(const sf::Event& event);
 	void HandleInput();
 	void Update(float deltaTime);
 	void Render();

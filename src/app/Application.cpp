@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <iostream>
 #include <stdexcept>
@@ -30,11 +31,41 @@ void Application::ApplyWindowLifecycleEvent(const sf::Event& event)
 	}
 }
 
+void Application::UpdateCursorVisibility(const sf::Event& event)
+{
+	// The mouse cursor shows only while the mouse is the device in use.
+	// A key press or gamepad input hides it; moving the mouse brings it back.
+	bool showCursor = cursorVisible;
+
+	if (event.is<sf::Event::MouseMoved>() || event.is<sf::Event::MouseButtonPressed>())
+	{
+		showCursor = true;
+	}
+	else if (event.is<sf::Event::KeyPressed>() || event.is<sf::Event::JoystickButtonPressed>())
+	{
+		showCursor = false;
+	}
+	else if (const auto* moved = event.getIf<sf::Event::JoystickMoved>())
+	{
+		if (std::abs(moved->position) > GamepadUsageThreshold)
+		{
+			showCursor = false;
+		}
+	}
+
+	if (showCursor != cursorVisible)
+	{
+		window.setMouseCursorVisible(showCursor);
+		cursorVisible = showCursor;
+	}
+}
+
 void Application::HandleInput()
 {
 	while (const std::optional<sf::Event> event = window.pollEvent())
 	{
 		gamepad.HandleEvent(*event);
+		UpdateCursorVisibility(*event);
 		ApplyWindowLifecycleEvent(*event);
 		if (!window.isOpen())
 		{
