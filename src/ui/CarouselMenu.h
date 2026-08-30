@@ -85,6 +85,7 @@ namespace UI
 		void DrawEntry(sf::RenderTarget& target, std::size_t index, const Placement& placement) const;
 		void DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const;
 		[[nodiscard]] float ArrivalFlash(std::size_t index) const;
+		[[nodiscard]] float BreathScale() const;   // front-entry idle pulse, else 1
 		[[nodiscard]] std::size_t FrontItem() const;
 
 		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;

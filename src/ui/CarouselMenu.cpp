@@ -481,9 +481,9 @@ namespace UI
 
 		// The front entry breathes very slightly.
 		float scale = placement.scale;
-		if (index == FrontItem() && IsReady())
+		if (index == FrontItem())
 		{
-			scale *= 1.f + EntryBreathAmplitude * std::sin(breathTime * EntryBreathSpeed);
+			scale *= BreathScale();
 		}
 
 		sf::Transform transform;
@@ -547,6 +547,15 @@ namespace UI
 		}
 	}
 
+	float CarouselMenu::BreathScale() const
+	{
+		if (!IsReady())
+		{
+			return 1.f;
+		}
+		return 1.f + EntryBreathAmplitude * std::sin(breathTime * EntryBreathSpeed);
+	}
+
 	float CarouselMenu::ArrivalFlash(std::size_t index) const
 	{
 		if (index != FrontItem())
@@ -580,9 +589,11 @@ namespace UI
 		const sf::FloatRect area{
 			{ placement.position.x - box.x * 0.5f, placement.position.y - box.y * 0.5f }, box };
 
+		const float scale = placement.scale * BreathScale();
+
 		sf::Transform transform;
 		transform.translate(placement.position);
-		transform.scale({ placement.scale, placement.scale });
+		transform.scale({ scale, scale });
 		transform.translate({ 0.f, -item.inkCentreY });
 
 		float strength = EntryGlowIntensity * std::clamp(placement.depth, 0.f, 1.f);
