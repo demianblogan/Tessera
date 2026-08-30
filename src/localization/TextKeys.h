@@ -66,10 +66,8 @@ namespace TextKey
 
 	namespace Loading
 	{
-		inline constexpr std::string_view Textures  = "loading.textures";
 		inline constexpr std::string_view Audio     = "loading.audio";
 		inline constexpr std::string_view Music     = "loading.music";
-		inline constexpr std::string_view Shaders   = "loading.shaders";
 		inline constexpr std::string_view Interface = "loading.interface";
 	}
 

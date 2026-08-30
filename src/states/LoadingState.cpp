@@ -55,10 +55,8 @@ namespace
 	{
 		switch (stage)
 		{
-		case Loading::Stage::Textures:  return TextKey::Loading::Textures;
 		case Loading::Stage::Audio:     return TextKey::Loading::Audio;
 		case Loading::Stage::Music:     return TextKey::Loading::Music;
-		case Loading::Stage::Shaders:   return TextKey::Loading::Shaders;
 		case Loading::Stage::Interface:
 		case Loading::Stage::Count:     return TextKey::Loading::Interface;
 		}
@@ -76,7 +74,7 @@ namespace
 LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 	: State(context.stateMachine)
 	, context(context)
-	, job(context.textures, context.soundBuffers, context.music, context.shaders, context.fonts)
+	, job(context.soundBuffers, context.music, context.fonts)
 	, onLoaded(std::move(onLoaded))
 	, stageLabel(context.fonts.Get(Assets::FontID::Loading), "", LabelSize)
 {
@@ -116,11 +114,6 @@ void LoadingState::RefreshStageLabel()
 		bounds.position.y + bounds.size.y });
 
 	labelledStage = stage;
-}
-
-bool LoadingState::TexturesReady() const
-{
-	return progress.IsDone() || progress.GetStage() != Loading::Stage::Textures;
 }
 
 void LoadingState::Update(float deltaTime)
@@ -193,7 +186,6 @@ void LoadingState::Render(sf::RenderTarget& target)
 	frame.setOutlineColor(BarFrame);
 	target.draw(frame);
 
-	if (TexturesReady())
 	{
 		const float innerLeft = barTopLeft.x + BarInnerPadding;
 		const float innerTop = barTopLeft.y + BarInnerPadding;

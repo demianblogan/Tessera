@@ -4,40 +4,28 @@
 
 #include "../resources/ResourceManager.h"
 
-class ShaderManager;
-
 namespace Loading
 {
 	class Progress;
 
-	// Loads every heavyweight game asset (textures, sounds, music, shaders,
-	// fonts) on a background thread while the loading screen animates on the
-	// main one. Holds references to the resource managers it fills; those
-	// managers must outlive the job.
+	// Loads the non-GPU game assets (sounds, music, fonts) on a background
+	// thread while the loading screen animates on the main one. Textures and
+	// shaders are deliberately NOT here -- creating GPU objects off the main
+	// thread deadlocks some drivers -- Application loads those synchronously.
 	//
-	// SFML's GPU resources need an active OpenGL context on whatever thread
-	// touches them, so Run() spins up its own sf::Context for its lifetime.
+	// Holds references to the resource managers it fills; they must outlive it.
 	class AssetLoadJob
 	{
 	public:
-		AssetLoadJob(
-			TextureManager& textures,
-			SoundBufferManager& soundBuffers,
-			MusicManager& music,
-			ShaderManager& shaders,
-			FontManager& fonts) noexcept;
+		AssetLoadJob(SoundBufferManager& soundBuffers, MusicManager& music, FontManager& fonts) noexcept;
 
-		// Runs all stages start to finish, updating `progress` as it goes and
-		// calling progress.MarkDone() at the end. Bails early (leaving assets
-		// half-loaded) if `stopToken` is triggered -- only happens when the
-		// window is closed mid-load.
+		// Runs all stages, updating `progress` and calling progress.MarkDone()
+		// at the end. Bails early if `stopToken` fires (window closed mid-load).
 		void Run(std::stop_token stopToken, Progress& progress) const;
 
 	private:
-		TextureManager& textures;
 		SoundBufferManager& soundBuffers;
 		MusicManager& music;
-		ShaderManager& shaders;
 		FontManager& fonts;
 	};
 }

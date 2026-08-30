@@ -37,10 +37,6 @@ private:
 
 	void RefreshStageLabel();
 
-	// The block spritesheet is loaded by the first stage, so its texture is
-	// only safe to sample once that stage is behind us.
-	[[nodiscard]] bool TexturesReady() const;
-
 	Context& context;
 
 	Loading::Progress progress;

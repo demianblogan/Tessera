@@ -233,11 +233,27 @@ Application::Application()
 		throw std::runtime_error("Failed to allocate render textures.");
 	}
 
-	// Only what the loading screen itself needs before the first frame: the
-	// CRT/Blur compositing shaders and the pixel font for its label. Every
-	// other asset is loaded on a background thread by LoadingState.
-	shaders.Load(Assets::ShaderID::CRT, Assets::Paths::Shaders::CRT, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::Blur, Assets::Paths::Shaders::Blur, sf::Shader::Type::Fragment);
+	// Textures and shaders are loaded here, on the main thread: creating GPU
+	// objects on a background thread deadlocks some drivers. They are small;
+	// the loading screen then streams the audio and fonts in the background.
+	namespace TexturePaths = Assets::Paths::Textures;
+	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, TexturePaths::BlockSpritesheetWithOutline);
+	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, TexturePaths::BlockSpritesheetWithoutOutline);
+	textures.Load(Assets::TextureID::ButtonBackground, TexturePaths::ButtonBackground);
+	textures.Load(Assets::TextureID::MenuBackground, TexturePaths::MenuBackground);
+	textures.Load(Assets::TextureID::PanelBackground, TexturePaths::PanelBackground);
+	textures.Load(Assets::TextureID::GameBackground, TexturePaths::GameBackground);
+	textures.Load(Assets::TextureID::CompanyLogo, TexturePaths::CompanyLogo);
+	textures.Load(Assets::TextureID::Cursor, TexturePaths::Cursor);
+	textures.Load(Assets::TextureID::UiArrow, TexturePaths::UiArrow);
+
+	namespace ShaderPaths = Assets::Paths::Shaders;
+	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::Blur, ShaderPaths::Blur, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::GhostTetromino, ShaderPaths::GhostTetromino, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonDilate, ShaderPaths::NeonDilate, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::NeonBlur, ShaderPaths::NeonBlur, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::MenuAurora, ShaderPaths::MenuAurora, sf::Shader::Type::Fragment);
 
 	const std::filesystem::path loadingFontPath = Assets::Paths::Fonts::Loading;
 	fonts.Load(

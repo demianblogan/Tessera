@@ -7,12 +7,13 @@ namespace Loading
 	// The asset groups loaded on the background thread, in the order they run.
 	// Count is a sentinel: it is also the value GetStage() reports once every
 	// real stage has finished.
+	// Textures and shaders are loaded synchronously before this screen (GPU
+	// uploads on a background thread deadlock some drivers), so the background
+	// job only handles these.
 	enum class Stage
 	{
-		Textures,
 		Audio,
 		Music,
-		Shaders,
 		Interface,
 
 		Count
@@ -28,10 +29,6 @@ namespace Loading
 	public:
 		void SetStage(Stage stage) noexcept
 		{
-			// Release / acquire: whatever assets the worker finished before
-			// advancing the stage are guaranteed visible to the main thread
-			// once it observes the new stage (the loading screen reads the
-			// block spritesheet as soon as the Textures stage is behind it).
 			currentStage.store(stage, std::memory_order_release);
 		}
 
@@ -63,7 +60,7 @@ namespace Loading
 		}
 
 	private:
-		std::atomic<Stage> currentStage{ Stage::Textures };
+		std::atomic<Stage> currentStage{ Stage::Audio };
 		std::atomic<bool> finished{ false };
 	};
 }

@@ -21,8 +21,8 @@
 
 namespace
 {
-	constexpr float StaggerDelay = 0.09f;    // gap between successive letters starting
-	constexpr float FallDuration = 0.32f;
+	constexpr float StaggerDelay = 0.14f;    // gap between successive letters starting
+	constexpr float FallDuration = 0.40f;
 	constexpr float SettleDuration = 0.55f;
 	constexpr float DropDistance = 750.f;    // how far above the resting spot a letter starts
 	constexpr float SquashY = 0.60f;         // vertical scale at the moment of impact

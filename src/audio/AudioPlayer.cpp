@@ -5,7 +5,9 @@
 AudioPlayer::AudioPlayer(SoundBufferManager& soundBuffers)
 	: soundBuffers(soundBuffers)
 {
-	// No code
+	// Never reallocate: moving a playing sf::Sound mid-vector-grow can cut it
+	// short, which is why a fast burst (the title letters) dropped voices.
+	activeSounds.reserve(MaxActiveSounds);
 }
 
 void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
