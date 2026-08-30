@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/System/Angle.hpp>
 
 namespace
 {
@@ -14,6 +16,14 @@ namespace
 	constexpr float DropDistance = 750.f;    // how far above the resting spot a letter starts
 	constexpr float SquashY = 0.60f;         // vertical scale at the moment of impact
 	constexpr float StretchX = 1.35f;        // horizontal scale at the moment of impact
+
+	// Gentle idle motion once a letter has settled: a travelling vertical
+	// bob with a touch of sway, easing in so there is no jump.
+	constexpr float WaveAmplitude = 7.f;
+	constexpr float WaveSpeed = 2.3f;
+	constexpr float WavePhaseStep = 0.7f;    // radians of offset between neighbouring letters
+	constexpr float WaveSwayDegrees = 1.6f;
+	constexpr float WaveRampDuration = 0.7f;
 
 	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
 	{
@@ -35,24 +45,37 @@ namespace
 		float y = 0.f;
 		float scaleX = 1.f;
 		float scaleY = 1.f;
+		float rotationDegrees = 0.f;
 	};
 
-	[[nodiscard]] GlyphPose PoseAt(float local) noexcept
+	[[nodiscard]] GlyphPose PoseAt(float local, std::size_t index) noexcept
 	{
 		if (local <= 0.f)
 		{
-			return { -DropDistance, 1.f, 1.f };
+			return { -DropDistance, 1.f, 1.f, 0.f };
 		}
 
 		if (local < FallDuration)
 		{
 			const float p = local / FallDuration;
-			return { -DropDistance * (1.f - p * p), 1.f, 1.f };
+			return { -DropDistance * (1.f - p * p), 1.f, 1.f, 0.f };
 		}
 
 		const float settle = std::clamp((local - FallDuration) / SettleDuration, 0.f, 1.f);
 		const float e = EaseOutElastic(settle);
-		return { 0.f, Lerp(StretchX, 1.f, e), Lerp(SquashY, 1.f, e) };
+
+		GlyphPose pose{ 0.f, Lerp(StretchX, 1.f, e), Lerp(SquashY, 1.f, e), 0.f };
+
+		const float sinceSettled = local - FallDuration - SettleDuration;
+		if (sinceSettled > 0.f)
+		{
+			const float ramp = std::clamp(sinceSettled / WaveRampDuration, 0.f, 1.f);
+			const float phase = local * WaveSpeed + static_cast<float>(index) * WavePhaseStep;
+			pose.y += ramp * WaveAmplitude * std::sin(phase);
+			pose.rotationDegrees += ramp * WaveSwayDegrees * std::sin(phase * 0.5f);
+		}
+
+		return pose;
 	}
 }
 
@@ -122,13 +145,15 @@ namespace UI
 
 	void DropInTitle::Render(sf::RenderTarget& target) const
 	{
-		for (const Glyph& glyph : glyphs)
+		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
-			const GlyphPose pose = PoseAt(glyph.elapsed - glyph.startDelay);
+			const Glyph& glyph = glyphs[i];
+			const GlyphPose pose = PoseAt(glyph.elapsed - glyph.startDelay, i);
 
 			sf::Text drawn = glyph.text;
 			drawn.setPosition({ center.x + glyph.offsetX, center.y + glyph.offsetY + pose.y });
 			drawn.setScale({ pose.scaleX, pose.scaleY });
+			drawn.setRotation(sf::degrees(pose.rotationDegrees));
 			target.draw(drawn);
 		}
 	}
