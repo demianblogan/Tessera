@@ -1,10 +1,14 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <vector>
 
 #include <SFML/Audio/Sound.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
+#include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
 
 #include "../resources/ResourceManager.h"
 
@@ -12,9 +16,13 @@ struct ActiveSound
 {
 	Assets::SoundID id;
 	sf::Sound sound;
+	sf::Clock age;
+	sf::Time lifespan;   // how long this instance will play for (buffer / pitch)
 
-	ActiveSound(Assets::SoundID id, const sf::SoundBuffer& buffer)
-		: id(id), sound(buffer)
+	ActiveSound(Assets::SoundID id, const sf::SoundBuffer& buffer, float pitch)
+		: id(id)
+		, sound(buffer)
+		, lifespan(buffer.getDuration() / std::max(pitch, 0.01f))
 	{
 		// No code
 	}
