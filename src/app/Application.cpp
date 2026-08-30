@@ -115,6 +115,12 @@ void Application::DrawCursor(sf::RenderTarget& target)
 		return;
 	}
 
+	const State* currentState = stateMachine.GetCurrentState();
+	if (currentState != nullptr && !currentState->ShowsCursor())
+	{
+		return;
+	}
+
 	// Window pixel -> virtual (1920x1080) coordinates, so the cursor lands in
 	// the same space the states render in and picks up the CRT pass with them.
 	const sf::Vector2f position = window.mapPixelToCoords(sf::Mouse::getPosition(window), gameView);
