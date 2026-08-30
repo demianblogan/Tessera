@@ -87,6 +87,7 @@ namespace Loading
 				textures.Load(Assets::TextureID::PanelBackground, Paths::Textures::PanelBackground);
 				textures.Load(Assets::TextureID::GameBackground, Paths::Textures::GameBackground);
 				textures.Load(Assets::TextureID::CompanyLogo, Paths::Textures::CompanyLogo);
+				textures.Load(Assets::TextureID::Cursor, Paths::Textures::Cursor);
 			})
 			&& stage(Stage::Audio, [&]
 			{

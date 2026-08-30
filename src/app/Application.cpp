@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
 
 #include <states/LoadingState.h>
 #include <utils/AppDataPath.h>
@@ -35,8 +36,9 @@ void Application::ApplyWindowLifecycleEvent(const sf::Event& event)
 
 void Application::UpdateCursorVisibility(const sf::Event& event)
 {
-	// The mouse cursor shows only while the mouse is the device in use.
+	// Our cursor sprite shows only while the mouse is the device in use.
 	// A key press or gamepad input hides it; moving the mouse brings it back.
+	// The system cursor stays hidden throughout.
 	bool showCursor = cursorVisible;
 
 	if (event.is<sf::Event::MouseMoved>() || event.is<sf::Event::MouseButtonPressed>())
@@ -55,11 +57,7 @@ void Application::UpdateCursorVisibility(const sf::Event& event)
 		}
 	}
 
-	if (showCursor != cursorVisible)
-	{
-		window.setMouseCursorVisible(showCursor);
-		cursorVisible = showCursor;
-	}
+	cursorVisible = showCursor;
 }
 
 void Application::HandleInput()
@@ -98,6 +96,11 @@ void Application::Update(float deltaTime)
 	context.totalTime += deltaTime;
 	gamepad.Update();
 	gamepadHaptics.Update(deltaTime);
+
+	if (cursor)
+	{
+		cursor->Update(deltaTime);
+	}
 
 	if (State* currentState = stateMachine.GetCurrentState())
 	{
@@ -153,6 +156,11 @@ void Application::Render()
 		fpsCounter->Render(window);
 	}
 
+	if (cursor && cursorVisible)
+	{
+		cursor->Render(window, window.mapPixelToCoords(sf::Mouse::getPosition(window)));
+	}
+
 	window.display();
 }
 
@@ -179,7 +187,8 @@ Application::Application()
 		gamepadHaptics,
 		localization)
 {
-	window.setMouseCursorVisible(true);
+	// The game draws its own cursor (UI::GlowingCursor); the OS one stays off.
+	window.setMouseCursorVisible(false);
 	window.setView(gameView);
 
 	// Menu navigation gets a faint haptic tick for free once this is wired.
@@ -222,7 +231,11 @@ Application::Application()
 
 	stateMachine.PushState(std::make_unique<LoadingState>(
 		context,
-		[this] { fpsCounter.emplace(fonts.Get(Assets::FontID::Main)); }));
+		[this]
+		{
+			fpsCounter.emplace(fonts.Get(Assets::FontID::Main));
+			cursor.emplace(textures.Get(Assets::TextureID::Cursor));
+		}));
 	stateMachine.ApplyPendingChanges();
 }
 

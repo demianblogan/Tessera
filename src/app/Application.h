@@ -16,6 +16,7 @@
 #include "../settings/SettingsManager.h"
 #include "../statistics/HighScoreManager.h"
 #include "../ui/FpsCounter.h"
+#include "../ui/GlowingCursor.h"
 
 #include <optional>
 
@@ -64,9 +65,12 @@ private:
 
 	Context context;
 
-	// Emplaced once the font is loaded.
+	// Both emplaced once loading finishes (they need loaded assets).
 	std::optional<UI::FpsCounter> fpsCounter;
+	std::optional<UI::GlowingCursor> cursor;
 
+	// The system cursor is always hidden; this tracks whether the mouse is the
+	// input device in use, i.e. whether to draw our own cursor sprite.
 	bool cursorVisible = true;
 
 	[[nodiscard]] bool IsWindowOpen() const;

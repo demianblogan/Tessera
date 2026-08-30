@@ -39,7 +39,8 @@ namespace Assets
 		TitleBackground,
 		PanelBackground,
 		GameBackground,
-		CompanyLogo
+		CompanyLogo,
+		Cursor
 	};
 
 	enum class ShaderID
@@ -94,6 +95,7 @@ namespace Assets
 			inline constexpr const char* PanelBackground = "assets/textures/panel_background.png";
 			inline constexpr const char* GameBackground = "assets/textures/game_background.png";
 			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
+			inline constexpr const char* Cursor = "assets/textures/cursor.png";
 		}
 
 		namespace Data
