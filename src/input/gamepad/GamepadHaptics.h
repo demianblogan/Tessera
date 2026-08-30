@@ -70,12 +70,13 @@ namespace Haptics
 		// frame with the same color.
 		void SetLightbarColor(RGBColor color) noexcept;
 
-		// DualSense/DualShock only. Flashes `color` on the lightbar and fades
-		// it back to the resting color over durationSeconds, with a faint
-		// throb. Re-arming before it fades (calling every frame) holds it lit,
-		// so a sustained effect reads as one continuous glow. Merges toward
-		// the stronger/longer request, like PulseVibration.
-		void PulseLightbar(RGBColor color, float durationSeconds) noexcept;
+		// DualSense/DualShock only. Flashes `color` on the lightbar over
+		// durationSeconds. With blinks == 1 it fades back to the resting
+		// color with a faint throb, and re-arming every frame holds it lit
+		// (a sustained glow). With blinks > 1 it does that many clean
+		// on-off flashes across the duration instead. Merges toward the
+		// stronger / longer request, like PulseVibration.
+		void PulseLightbar(RGBColor color, float durationSeconds, int blinks = 1) noexcept;
 
 		// DualSense/DualShock only -- no-op on Xbox (that hardware has no
 		// adaptive triggers). A brief, sharp vibration burst under the
@@ -143,6 +144,7 @@ namespace Haptics
 		RGBColor lightbarPulseColor{};
 		float lightbarPulseRemaining = 0.f;
 		float lightbarPulseDuration = 0.f;
+		int lightbarPulseBlinks = 1;
 		float lightbarThrobTime = 0.f;
 		RGBColor currentLightbar{};
 

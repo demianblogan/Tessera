@@ -28,10 +28,13 @@ namespace
 	// How far an analog trigger has to be pulled to count as pressed.
 	constexpr float TriggerThreshold = 40.f;
 
-	// Face and shoulder button indices. Face buttons are consistent enough
-	// across Xbox / DualShock via SFML for this game's needs; the analog
-	// triggers on DualShock also show up as buttons 6 / 7.
-	constexpr unsigned int HardDropButton = 0u;              // A / Cross
+	// The bottom face button: A on an Xbox pad (button 0), Cross on a
+	// DualShock / DualSense (button 1 -- button 0 there is Square). SFML
+	// exposes raw indices whose meaning depends on the controller.
+	constexpr unsigned int XboxHardDropButton = 0u;
+	constexpr unsigned int PlayStationHardDropButton = 1u;
+
+	// The analog triggers on a DualShock / DualSense also show up as buttons 6 / 7.
 	constexpr unsigned int PlayStationLeftTriggerButton = 6u;
 	constexpr unsigned int PlayStationRightTriggerButton = 7u;
 }
@@ -80,7 +83,8 @@ void GamepadManager::HandleEvent(const sf::Event& event)
 
 void GamepadManager::Update()
 {
-	const bool hardDropDown = IsButtonPressed(HardDropButton);
+	const unsigned int hardDropButton = (layout == Layout::PlayStation) ? PlayStationHardDropButton : XboxHardDropButton;
+	const bool hardDropDown = IsButtonPressed(hardDropButton);
 	hardDropEdge = hardDropDown && !wasHardDropDown;
 	wasHardDropDown = hardDropDown;
 

@@ -411,7 +411,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.gameOver)
 	{
 		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::GameOver);
-		context.gamepadHaptics.PulseLightbar(HapticProfiles::GameOverLightbar, 0.5f);
+		context.gamepadHaptics.PulseLightbar(HapticProfiles::GameOverLightbar, 0.9f, 3);
 		RequestChange(std::make_unique<GameOverState>(context, session.GetScore()));
 	}
 }

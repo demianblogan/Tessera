@@ -154,7 +154,7 @@ namespace Haptics
 		lightbarColor = color;
 	}
 
-	void GamepadHaptics::PulseLightbar(RGBColor color, float durationSeconds) noexcept
+	void GamepadHaptics::PulseLightbar(RGBColor color, float durationSeconds, int blinks) noexcept
 	{
 		if (durationSeconds <= 0.f)
 			return;
@@ -163,6 +163,7 @@ namespace Haptics
 			lightbarThrobTime = 0.f;
 
 		lightbarPulseColor = color;
+		lightbarPulseBlinks = std::max(1, blinks);
 		lightbarPulseDuration = std::max(lightbarPulseDuration, durationSeconds);
 		lightbarPulseRemaining = std::max(lightbarPulseRemaining, durationSeconds);
 	}
@@ -220,6 +221,7 @@ namespace Haptics
 		{
 			lightbarPulseDuration = 0.f;
 			lightbarPulseColor = {};
+			lightbarPulseBlinks = 1;
 		}
 
 		if (!isLightbarEnabled)
@@ -228,8 +230,22 @@ namespace Haptics
 		}
 		else if (lightbarFallOff > 0.f)
 		{
-			const float throb = 0.6f + 0.4f * (std::sin(lightbarThrobTime * LightbarThrobSpeed) * 0.5f + 0.5f);
-			const float brightness = lightbarFallOff * throb;
+			float brightness = 0.f;
+
+			if (lightbarPulseBlinks <= 1)
+			{
+				// A held / single pulse: a faint throb, dimming as it fades.
+				const float throb = 0.6f + 0.4f * (std::sin(lightbarThrobTime * LightbarThrobSpeed) * 0.5f + 0.5f);
+				brightness = lightbarFallOff * throb;
+			}
+			else
+			{
+				// N clean on-off flashes spread across the duration.
+				constexpr float Pi = 3.14159265f;
+				const float progress = 1.f - lightbarFallOff;
+				brightness = std::abs(std::sin(progress * Pi * static_cast<float>(lightbarPulseBlinks)));
+			}
+
 			currentLightbar = { Scale(lightbarPulseColor.r, brightness), Scale(lightbarPulseColor.g, brightness), Scale(lightbarPulseColor.b, brightness) };
 		}
 		else

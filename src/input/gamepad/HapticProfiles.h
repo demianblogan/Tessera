@@ -28,10 +28,11 @@ namespace HapticProfiles
 	inline constexpr Rumble LevelUp{ 0.30f, 0.45f, 0.10f };
 	inline constexpr Rumble GameOver{ 0.90f, 0.90f, 0.50f };
 
-	// --- Lightbar (DualSense only) ---
-	inline constexpr Haptics::RGBColor MenuLightbar{ 255, 200, 0 };     // yellow
-	inline constexpr Haptics::RGBColor RowClearLightbar{ 0, 220, 60 };  // green
-	inline constexpr Haptics::RGBColor GameOverLightbar{ 255, 30, 20 }; // red
+	// --- Lightbar (DualSense only). Pure primaries -- the diffuser tints
+	//     anything off-axis, so e.g. a green with any blue reads as cyan. ---
+	inline constexpr Haptics::RGBColor MenuLightbar{ 255, 255, 0 };     // yellow
+	inline constexpr Haptics::RGBColor RowClearLightbar{ 0, 255, 0 };   // green
+	inline constexpr Haptics::RGBColor GameOverLightbar{ 255, 0, 0 };   // red
 
 	inline void Play(Haptics::GamepadHaptics& haptics, const Rumble& rumble)
 	{
