@@ -2,9 +2,12 @@
 
 #include <vector>
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
+
+class NeonGlow;
 
 namespace sf
 {
@@ -26,7 +29,10 @@ namespace UI
 		void SetCenter(sf::Vector2f center);
 
 		void Update(float deltaTime);
-		void Render(sf::RenderTarget& target) const;
+
+		// If `glow` is given, each letter gets a pulsing neon bloom in its own
+		// colour, drawn behind the crisp text.
+		void Render(sf::RenderTarget& target, NeonGlow* glow = nullptr) const;
 
 		[[nodiscard]] bool IsFinished() const;
 
@@ -34,6 +40,7 @@ namespace UI
 		struct Glyph
 		{
 			sf::Text text;
+			sf::Color colour;      // resting fill colour
 			float offsetX = 0.f;   // resting position, relative to the word centre
 			float offsetY = 0.f;
 			float startDelay = 0.f;

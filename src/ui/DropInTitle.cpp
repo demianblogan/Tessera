@@ -1,12 +1,17 @@
 #include "DropInTitle.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/System/Angle.hpp>
+
+#include "../rendering/NeonGlow.h"
 
 namespace
 {
@@ -16,6 +21,39 @@ namespace
 	constexpr float DropDistance = 750.f;    // how far above the resting spot a letter starts
 	constexpr float SquashY = 0.60f;         // vertical scale at the moment of impact
 	constexpr float StretchX = 1.35f;        // horizontal scale at the moment of impact
+
+	// White-hot flash on impact, decaying back to the letter's colour.
+	constexpr float FlashDuration = 0.16f;
+
+	constexpr float OutlineThickness = 4.f;
+
+	// One per letter, cycled: the seven classic tetromino colours, matching
+	// the loading-bar blocks.
+	constexpr std::array<sf::Color, 7> LetterPalette{
+		sf::Color{ 0, 240, 240 },    // I - cyan
+		sf::Color{ 245, 220, 40 },   // O - yellow
+		sf::Color{ 180, 60, 240 },   // T - purple
+		sf::Color{ 60, 230, 90 },    // S - green
+		sf::Color{ 240, 60, 70 },    // Z - red
+		sf::Color{ 70, 110, 240 },   // J - blue
+		sf::Color{ 245, 160, 40 },   // L - orange
+	};
+
+	[[nodiscard]] sf::Color Darken(sf::Color colour, float factor) noexcept
+	{
+		return sf::Color{
+			static_cast<std::uint8_t>(static_cast<float>(colour.r) * factor),
+			static_cast<std::uint8_t>(static_cast<float>(colour.g) * factor),
+			static_cast<std::uint8_t>(static_cast<float>(colour.b) * factor) };
+	}
+
+	[[nodiscard]] sf::Color MixToWhite(sf::Color colour, float t) noexcept
+	{
+		return sf::Color{
+			static_cast<std::uint8_t>(colour.r + (255 - colour.r) * t),
+			static_cast<std::uint8_t>(colour.g + (255 - colour.g) * t),
+			static_cast<std::uint8_t>(colour.b + (255 - colour.b) * t) };
+	}
 
 	// Gentle idle motion once a letter has settled: a travelling vertical
 	// bob with a touch of sway, easing in so there is no jump.
@@ -116,9 +154,14 @@ namespace UI
 
 		for (std::size_t i = 0; i < placed.size(); ++i)
 		{
-			Glyph glyph{ sf::Text(font, sf::String(placed[i].codepoint), characterSize), 0.f, 0.f, 0.f, 0.f };
+			const sf::Color colour = LetterPalette[i % LetterPalette.size()];
+
+			Glyph glyph{ sf::Text(font, sf::String(placed[i].codepoint), characterSize), colour, 0.f, 0.f, 0.f, 0.f };
 			const sf::FloatRect gb = glyph.text.getLocalBounds();
 			glyph.text.setOrigin({ gb.position.x + gb.size.x * 0.5f, gb.position.y + gb.size.y * 0.5f });
+			glyph.text.setFillColor(colour);
+			glyph.text.setOutlineColor(Darken(colour, 0.28f));
+			glyph.text.setOutlineThickness(OutlineThickness);
 
 			glyph.offsetX = placed[i].centreX - wordCentreX;
 			// The glyph's own ink centre, measured against the whole word's, keeps
@@ -143,18 +186,65 @@ namespace UI
 		}
 	}
 
-	void DropInTitle::Render(sf::RenderTarget& target) const
+	void DropInTitle::Render(sf::RenderTarget& target, NeonGlow* glow) const
 	{
+		// Each letter as it looks right now (transform + flash colour).
+		std::vector<sf::Text> shaped;
+		shaped.reserve(glyphs.size());
+
 		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
 			const Glyph& glyph = glyphs[i];
-			const GlyphPose pose = PoseAt(glyph.elapsed - glyph.startDelay, i);
+			const float local = glyph.elapsed - glyph.startDelay;
+			const GlyphPose pose = PoseAt(local, i);
+
+			sf::Color fill = glyph.colour;
+			const float impact = local - FallDuration;
+			if (impact >= 0.f && impact < FlashDuration)
+			{
+				const float f = 1.f - impact / FlashDuration;
+				fill = MixToWhite(glyph.colour, f * f);
+			}
 
 			sf::Text drawn = glyph.text;
 			drawn.setPosition({ center.x + glyph.offsetX, center.y + glyph.offsetY + pose.y });
 			drawn.setScale({ pose.scaleX, pose.scaleY });
 			drawn.setRotation(sf::degrees(pose.rotationDegrees));
-			target.draw(drawn);
+			drawn.setFillColor(fill);
+			shaped.push_back(std::move(drawn));
+		}
+
+		if (glow != nullptr)
+		{
+			for (std::size_t i = 0; i < shaped.size(); ++i)
+			{
+				if (glyphs[i].elapsed - glyphs[i].startDelay <= 0.f)
+				{
+					continue;
+				}
+
+				const sf::FloatRect bounds = shaped[i].getGlobalBounds();
+				const float slack = 14.f;
+				const sf::FloatRect area{
+					{ bounds.position.x - slack, bounds.position.y - slack },
+					{ bounds.size.x + slack * 2.f, bounds.size.y + slack * 2.f } };
+
+				const sf::Text& letter = shaped[i];
+				glow->Draw(target, area,
+					[&letter](sf::RenderTarget& buffer, const sf::RenderStates& states)
+					{
+						sf::Text silhouette = letter;
+						silhouette.setFillColor(sf::Color::White);
+						silhouette.setOutlineColor(sf::Color::White);
+						buffer.draw(silhouette, states);
+					},
+					shaped[i].getFillColor());
+			}
+		}
+
+		for (const sf::Text& letter : shaped)
+		{
+			target.draw(letter);
 		}
 	}
 

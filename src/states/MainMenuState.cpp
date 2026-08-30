@@ -39,6 +39,7 @@ MainMenuState::MainMenuState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
+	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
 	title.SetCenter(TitleCenter);
@@ -131,13 +132,14 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 void MainMenuState::Update(float deltaTime)
 {
 	title.Update(deltaTime);
+	titleGlow.Update(deltaTime);
 }
 
 void MainMenuState::Render(sf::RenderTarget& target)
 {
 	target.clear(sf::Color::Black);
 
-	title.Render(target);
+	title.Render(target, &titleGlow);
 
 	if (MenuReady())
 	{

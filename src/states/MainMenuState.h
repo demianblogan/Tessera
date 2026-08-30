@@ -8,6 +8,7 @@
 #include <SFML/System/String.hpp>
 
 #include "../core/State.h"
+#include "../rendering/NeonGlow.h"
 #include "../ui/DropInTitle.h"
 
 struct Context;
@@ -38,6 +39,7 @@ private:
 	Context& context;
 
 	UI::DropInTitle title;
+	NeonGlow titleGlow;
 	std::vector<Entry> entries;
 	std::size_t selected = 0;
 
