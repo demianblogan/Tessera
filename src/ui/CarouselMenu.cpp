@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <utility>
 
+#include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -45,13 +47,19 @@ namespace
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
 	// nudge, a warm tint, and a quick orange ring).
-	constexpr float ArrowPressDuration = 0.20f;
+	constexpr float ArrowPressDuration = 0.22f;
 	constexpr float ArrowPressDip = 0.22f;       // scale reduction at the peak
 	constexpr float ArrowPressShift = 8.f;       // px pushed inward at the peak
 	constexpr sf::Color ArrowPressTint{ 255, 150, 60 };
-	constexpr sf::Color ArrowPulseColour{ 255, 140, 40 };
-	constexpr float ArrowPulseRadiusStart = 8.f;
-	constexpr float ArrowPulseRadiusEnd = 44.f;
+
+	// The press ring is a soft, dense orange haze -- many overlapping additive
+	// bands rather than one thin outline.
+	constexpr sf::Color ArrowPulseColour{ 255, 138, 46 };
+	constexpr float ArrowPulseRadiusStart = 10.f;
+	constexpr float ArrowPulseRadiusEnd = 40.f;
+	constexpr int ArrowPulseBands = 9;
+	constexpr float ArrowPulseBandSpread = 22.f;  // total radial thickness of the haze
+	constexpr float ArrowPulseBandWidth = 9.f;
 
 	struct ArrowGeom
 	{
@@ -368,20 +376,33 @@ namespace UI
 		const std::size_t idx = side < 0 ? 0u : 1u;
 		const float press = std::clamp(1.f - arrowPressTime[idx] / ArrowPressDuration, 0.f, 1.f);
 
-		// Orange ring, expanding and fading as the press settles.
+		// A soft, dense orange haze ring, expanding and fading as it settles.
 		if (press > 0.f)
 		{
 			const float spread = EaseOutCubic(1.f - press);
 			const float radius = Lerp(ArrowPulseRadiusStart, ArrowPulseRadiusEnd, spread);
+			const float coreAlpha = press * press;   // fades a touch faster than linear
 
-			sf::CircleShape ring(radius);
-			ring.setOrigin({ radius, radius });
-			ring.setPosition(g.centre);
-			ring.setFillColor(sf::Color::Transparent);
-			ring.setOutlineThickness(Lerp(3.f, 1.f, spread));
-			ring.setOutlineColor(sf::Color(ArrowPulseColour.r, ArrowPulseColour.g, ArrowPulseColour.b,
-				static_cast<std::uint8_t>(press * 200.f)));
-			target.draw(ring);
+			sf::RenderStates additive;
+			additive.blendMode = sf::BlendAdd;
+
+			for (int band = 0; band < ArrowPulseBands; ++band)
+			{
+				const float t = static_cast<float>(band) / static_cast<float>(ArrowPulseBands - 1);   // 0..1
+				const float offset = (t - 0.5f) * ArrowPulseBandSpread;
+				const float bandRadius = std::max(1.f, radius + offset);
+				// Brightest in the middle of the band, faint at the edges.
+				const float weight = 1.f - std::abs(t - 0.5f) * 2.f;
+
+				sf::CircleShape ring(bandRadius);
+				ring.setOrigin({ bandRadius, bandRadius });
+				ring.setPosition(g.centre);
+				ring.setFillColor(sf::Color::Transparent);
+				ring.setOutlineThickness(ArrowPulseBandWidth);
+				ring.setOutlineColor(sf::Color(ArrowPulseColour.r, ArrowPulseColour.g, ArrowPulseColour.b,
+					static_cast<std::uint8_t>(coreAlpha * weight * weight * 90.f)));
+				target.draw(ring, additive);
+			}
 		}
 
 		// The arrow itself: squashed and nudged inward while pressed, tinted warm.
