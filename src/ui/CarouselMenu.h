@@ -34,7 +34,9 @@ namespace UI
 	public:
 		CarouselMenu(const sf::Font& font, unsigned int characterSize, const sf::Texture& arrowTexture);
 
-		void AddItem(const sf::String& text, std::function<void()> onActivate);
+		// A disabled entry (enabled == false) is greyed, has no glow, and cannot
+		// be activated -- but the ring still rotates through it.
+		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true);
 		void SetCenter(sf::Vector2f center);
 
 		// Kick off the fly-in. Until it finishes IsReady() is false and the
@@ -69,7 +71,8 @@ namespace UI
 			std::function<void()> activate;
 			std::vector<Glyph> glyphs;
 			float inkCentreY = 0.f;        // vertical ink centre of the string
-			sf::Color colour;              // this entry's tetromino hue
+			sf::Color colour;              // this entry's hue (grey if disabled)
+			bool enabled = true;
 		};
 
 		struct Placement
@@ -86,6 +89,7 @@ namespace UI
 		void DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const;
 		[[nodiscard]] float ArrivalFlash(std::size_t index) const;
 		[[nodiscard]] float BreathScale() const;   // front-entry idle pulse, else 1
+		[[nodiscard]] float SlotStep() const;      // angle between adjacent entries
 		[[nodiscard]] std::size_t FrontItem() const;
 
 		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;

@@ -11,9 +11,11 @@ namespace TextKey
 	{
 		inline constexpr std::string_view Title     = "main_menu.title";
 		inline constexpr std::string_view StartGame = "main_menu.start_game";
-		inline constexpr std::string_view Options   = "main_menu.options";
-		inline constexpr std::string_view Records   = "main_menu.records";
-		inline constexpr std::string_view Quit      = "main_menu.quit";
+		inline constexpr std::string_view Options      = "main_menu.options";
+		inline constexpr std::string_view Records      = "main_menu.records";
+		inline constexpr std::string_view Achievements = "main_menu.achievements";
+		inline constexpr std::string_view Credits      = "main_menu.credits";
+		inline constexpr std::string_view Quit         = "main_menu.quit";
 	}
 
 	namespace Pause

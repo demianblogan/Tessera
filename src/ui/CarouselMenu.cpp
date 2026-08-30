@@ -22,6 +22,7 @@
 namespace
 {
 	constexpr float Pi = 3.14159265f;
+	constexpr float TwoPi = 2.f * Pi;
 	constexpr float QuarterTurn = Pi * 0.5f;
 
 	constexpr float RadiusX = 540.f;      // horizontal spread of the side entries
@@ -39,8 +40,8 @@ namespace
 	// the one ahead. The whole thing is parameterised by an "unrolled angle":
 	// a <= 0 is a point on the ring, a > 0 is the straight tangent continuing
 	// off to the right (lifting up to title level as it goes).
-	constexpr float IntroDuration = 1.5f;
-	constexpr float IntroWindup = 7.2f;       // radians the lead entry travels in from
+	constexpr float IntroDuration = 1.6f;
+	constexpr float IntroWindup = 8.6f;       // radians the lead entry travels in from
 	constexpr float RowScale = 0.8f;
 	constexpr float RowAlpha = 0.75f;
 	constexpr float LiftSpan = QuarterTurn;   // over how much of the tangent the row rises to title level
@@ -74,6 +75,8 @@ namespace
 	// Idle "breath" of the front entry.
 	constexpr float EntryBreathAmplitude = 0.018f;
 	constexpr float EntryBreathSpeed = 2.1f;
+
+	constexpr sf::Color EntryDisabledColour{ 146, 150, 158 };
 
 	// One per entry index: the classic tetromino colours.
 	constexpr std::array<sf::Color, 7> EntryPalette{
@@ -149,13 +152,6 @@ namespace
 		const float x = frontSlot.x + static_cast<float>(side) * (maxHalfWidth + ArrowGap + halfExtent.x);
 		return { { x, frontSlot.y }, scale, halfExtent };
 	}
-
-	// Where each entry (by index) ends up, as an unrolled angle. The row winds
-	// on through negative angles, so the lead entry -- the one bound for the
-	// slot furthest around -- has the most negative target.
-	//                                    Start   Options  Quit    Records
-	constexpr float IntroTarget[4] = { 0.f, -3.f * QuarterTurn, -2.f * QuarterTurn, -1.f * QuarterTurn };
-	constexpr float IntroLeadTarget = -3.f * QuarterTurn;
 
 	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
 	{
@@ -235,7 +231,7 @@ namespace UI
 	{
 	}
 
-	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate)
+	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled)
 	{
 		sf::Text label(font, text, characterSize);
 		const sf::FloatRect bounds = label.getLocalBounds();
@@ -244,7 +240,8 @@ namespace UI
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
 		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
-			EntryPalette[items.size() % EntryPalette.size()] };
+			enabled ? EntryPalette[items.size() % EntryPalette.size()] : EntryDisabledColour,
+			enabled };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
@@ -314,6 +311,11 @@ namespace UI
 		return items.empty() ? 0 : PositiveMod(frontIndex, items.size());
 	}
 
+	float CarouselMenu::SlotStep() const
+	{
+		return items.empty() ? QuarterTurn : TwoPi / static_cast<float>(items.size());
+	}
+
 	void CarouselMenu::RotateLeft()
 	{
 		if (!IsReady())
@@ -323,7 +325,7 @@ namespace UI
 
 		--frontIndex;
 		rotateFrom = angle;
-		rotateTo = static_cast<float>(frontIndex) * QuarterTurn;
+		rotateTo = static_cast<float>(frontIndex) * SlotStep();
 		rotateTimer = 0.f;
 		arrowPressTime[0] = 0.f;
 	}
@@ -337,7 +339,7 @@ namespace UI
 
 		++frontIndex;
 		rotateFrom = angle;
-		rotateTo = static_cast<float>(frontIndex) * QuarterTurn;
+		rotateTo = static_cast<float>(frontIndex) * SlotStep();
 		rotateTimer = 0.f;
 		arrowPressTime[1] = 0.f;
 	}
@@ -349,7 +351,11 @@ namespace UI
 			return;
 		}
 
-		items[FrontItem()].activate();
+		const Item& front = items[FrontItem()];
+		if (front.enabled && front.activate)
+		{
+			front.activate();
+		}
 	}
 
 	void CarouselMenu::Update(float deltaTime)
@@ -392,7 +398,7 @@ namespace UI
 	CarouselMenu::Placement CarouselMenu::PlacementOf(std::size_t index) const
 	{
 		// Resting place on the ring.
-		const float a = static_cast<float>(index) * QuarterTurn - angle;
+		const float a = static_cast<float>(index) * SlotStep() - angle;
 		const float ringDepth = std::cos(a);
 		const float t = (ringDepth + 1.f) * 0.5f;   // 0 at the back, 1 at the front
 
@@ -408,16 +414,25 @@ namespace UI
 		placement.scale = ringScale;
 		placement.alpha = ringAlpha;
 
-		if (introTimer >= 1.f || items.size() != 4)
+		if (introTimer >= 1.f || items.size() < 2)
 		{
 			return placement;
 		}
 
 		// Fly-in. Every entry rides the same path at the same rate; the lead
 		// entry's unrolled angle sweeps linearly from off-screen right down to
-		// its target, and each other entry sits a fixed offset behind it.
-		const float head = Lerp(IntroLeadTarget + IntroWindup, IntroLeadTarget, introTimer);
-		const float pathAngle = head + (IntroTarget[index] - IntroLeadTarget);
+		// its target, and each other entry sits a fixed offset behind it. The
+		// row winds on through negative angles; entry 0 is the tail (barely
+		// moves), entry 1 the lead (winds furthest).
+		const float step = SlotStep();
+		const float count = static_cast<float>(items.size());
+		const float introLead = -(count - 1.f) * step;
+		const float introTargetI = index == 0
+			? 0.f
+			: -(count - static_cast<float>(index)) * step;
+
+		const float head = Lerp(introLead + IntroWindup, introLead, introTimer);
+		const float pathAngle = head + (introTargetI - introLead);
 
 		placement.position = PathPos(center, pathAngle);
 
@@ -558,7 +573,7 @@ namespace UI
 
 	float CarouselMenu::ArrivalFlash(std::size_t index) const
 	{
-		if (index != FrontItem())
+		if (index != FrontItem() || !items[index].enabled)
 		{
 			return 0.f;
 		}
@@ -572,7 +587,7 @@ namespace UI
 
 	void CarouselMenu::DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const
 	{
-		if (items.empty())
+		if (items.empty() || !items[FrontItem()].enabled)
 		{
 			return;
 		}
@@ -759,7 +774,7 @@ namespace UI
 			RotateRight();
 			return PointerHit::RotatedRight;
 		}
-		if (FrontItemBounds().contains(point))
+		if (!items.empty() && items[FrontItem()].enabled && FrontItemBounds().contains(point))
 		{
 			Activate();
 			return PointerHit::Activated;

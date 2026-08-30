@@ -52,16 +52,18 @@ MainMenuState::MainMenuState(Context& context)
 			versionBounds.position.y + versionBounds.size.y
 		});
 
-	// Order around the ring: front, right, back, left.
+	// Ring order; Achievements and Credits are placeholders for now (disabled).
 	carousel.SetCenter(TitleCenter);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this] { RequestChange(std::make_unique<GameplayState>(this->context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
 		[this] { RequestChange(std::make_unique<SettingsState>(this->context)); });
-	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
-		[this] { this->context.window.close(); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
 		[this] { RequestChange(std::make_unique<StatisticsState>(this->context)); });
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Achievements), nullptr, false);
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Credits), nullptr, false);
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
+		[this] { this->context.window.close(); });
 
 	context.music.Get(Assets::MusicID::Gameplay).stop();
 	context.music.Get(Assets::MusicID::GameOver).stop();
