@@ -194,8 +194,15 @@ namespace UI
 			glyph.offsetY = (gb.position.y + gb.size.y * 0.5f) - wordCentreY;
 			glyph.startDelay = static_cast<float>(i) * StaggerDelay;
 
+			glowBoxSize.y = std::max(glowBoxSize.y, gb.size.y);
+
 			glyphs.push_back(std::move(glyph));
 		}
+
+		// A single box around the whole word, with slack for the impact stretch
+		// and the idle wave. NeonGlow adds its own padding for the bloom spread.
+		glowBoxSize.x = penX * 1.1f + 60.f;
+		glowBoxSize.y = glowBoxSize.y * 1.25f + 2.f * WaveAmplitude + 40.f;
 	}
 
 	void DropInTitle::SetCenter(sf::Vector2f newCenter)
@@ -370,32 +377,47 @@ namespace UI
 		}
 	}
 
-	void DropInTitle::DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
-		sf::Vector2f position, float scaleSignY, float intensityScale) const
+	void DropInTitle::DrawWordGlow(sf::RenderTarget& target, NeonGlow& glow, const std::vector<Pose>& poses,
+		bool mirrored, float intensityScale) const
 	{
-		sf::Text silhouette = glyphs[index].text;
-		silhouette.setPosition(position);
-		silhouette.setRotation(sf::degrees(pose.rotationDegrees));
-		silhouette.setScale({ pose.scaleX, pose.scaleY * scaleSignY });
+		const float scaleSignY = mirrored ? -1.f : 1.f;
+		const float mirrorY = center.y + kickOffset + MirrorDistance;
+		const float uprightCentreY = center.y + kickOffset;
+		const float centreY = mirrored ? (2.f * mirrorY - uprightCentreY) : uprightCentreY;
 
-		const sf::FloatRect bounds = silhouette.getGlobalBounds();
-		const float slack = 18.f;
 		const sf::FloatRect area{
-			{ bounds.position.x - slack, bounds.position.y - slack },
-			{ bounds.size.x + slack * 2.f, bounds.size.y + slack * 2.f } };
-
-		const float strength = std::max(pose.glowStrength, 0.6f + 0.4f * pose.flash);
-		const sf::Color tint = Scale(glyphs[index].colour, strength * intensityScale);
+			{ center.x - glowBoxSize.x * 0.5f, centreY - glowBoxSize.y * 0.5f },
+			glowBoxSize };
 
 		glow.Draw(target, area,
-			[&silhouette](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
 			{
-				sf::Text white = silhouette;
-				white.setFillColor(sf::Color::White);
-				white.setOutlineColor(sf::Color::White);
-				buffer.draw(white, states);
+				for (std::size_t i = 0; i < glyphs.size(); ++i)
+				{
+					if (!poses[i].visible)
+					{
+						continue;
+					}
+
+					sf::Vector2f position = RestingPosition(i, poses[i]);
+					if (mirrored)
+					{
+						position.y = 2.f * mirrorY - position.y;
+					}
+
+					const float strength = std::max(poses[i].glowStrength, 0.6f + 0.4f * poses[i].flash);
+					const sf::Color tint = Scale(glyphs[i].colour, strength * intensityScale);
+
+					sf::Text silhouette = glyphs[i].text;
+					silhouette.setPosition(position);
+					silhouette.setRotation(sf::degrees(poses[i].rotationDegrees));
+					silhouette.setScale({ poses[i].scaleX, poses[i].scaleY * scaleSignY });
+					silhouette.setFillColor(tint);
+					silhouette.setOutlineColor(tint);
+					buffer.draw(silhouette, states);
+				}
 			},
-			tint, false);
+			sf::Color::White, false);
 	}
 
 	void DropInTitle::Render(sf::RenderTarget& target, NeonGlow* glow) const
@@ -435,31 +457,14 @@ namespace UI
 			}
 		}
 
-		// -- Per-letter neon bloom (word, then its reflection) --------------
+		// -- Neon bloom: one pass for the word, one for its reflection -----
 		if (glow != nullptr)
 		{
-			for (std::size_t i = 0; i < glyphs.size(); ++i)
-			{
-				if (poses[i].visible)
-				{
-					DrawLetterGlow(target, *glow, i, poses[i], RestingPosition(i, poses[i]), 1.f, 1.f);
-				}
-			}
+			DrawWordGlow(target, *glow, poses, false, 1.f);
 
 			if (reflectionEnabled)
 			{
-				const float mirrorY = center.y + kickOffset + MirrorDistance;
-				for (std::size_t i = 0; i < glyphs.size(); ++i)
-				{
-					if (!poses[i].visible)
-					{
-						continue;
-					}
-
-					const sf::Vector2f upright = RestingPosition(i, poses[i]);
-					const sf::Vector2f mirrored{ upright.x, 2.f * mirrorY - upright.y };
-					DrawLetterGlow(target, *glow, i, poses[i], mirrored, -1.f, ReflectionGlowScale);
-				}
+				DrawWordGlow(target, *glow, poses, true, ReflectionGlowScale);
 			}
 		}
 
