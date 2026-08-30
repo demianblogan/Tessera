@@ -25,6 +25,7 @@ class MainMenuState final : public State
 {
 public:
 	explicit MainMenuState(Context& context);
+	~MainMenuState() override;
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;

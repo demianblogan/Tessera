@@ -49,6 +49,9 @@ namespace UI
 		void Skip();                       // jump straight to the settled ring
 		[[nodiscard]] bool IsReady() const;
 
+		// The front entry's hue (grey while the ring is empty).
+		[[nodiscard]] sf::Color FrontColour() const;
+
 		void RotateLeft();
 		void RotateRight();
 		void Activate();

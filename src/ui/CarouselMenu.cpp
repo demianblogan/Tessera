@@ -337,6 +337,11 @@ namespace UI
 		return items.empty() ? QuarterTurn : TwoPi / static_cast<float>(items.size());
 	}
 
+	sf::Color CarouselMenu::FrontColour() const
+	{
+		return items.empty() ? sf::Color(146, 150, 158) : items[FrontItem()].colour;
+	}
+
 	void CarouselMenu::RotateLeft()
 	{
 		if (!IsReady())
