@@ -19,9 +19,19 @@ namespace
 	constexpr float ScaleBack = 0.5f;
 	constexpr float ScaleFront = 1.f;
 
-	constexpr float IntroDuration = 0.55f;
 	constexpr float RotateDuration = 0.26f;
-	constexpr float EntryOffsetX = 1150.f; // how far right the ring starts before flying in
+
+	// Fly-in: the entries start as a straight horizontal row off to the right,
+	// slide left behind the title, and each one curls onto its ring slot once
+	// it clears the title's left edge.
+	constexpr float IntroDuration = 0.9f;
+	constexpr float RowHeadStartX = 880.f;   // leftmost entry starts this far right of centre
+	constexpr float RowSpacing = 300.f;      // gap between entries in the row
+	constexpr float WrapEdgeX = -380.f;      // x (relative to centre) where an entry starts curling
+	constexpr float WrapSpan = 320.f;        // how much further it travels while curling
+	constexpr float RowScale = 0.8f;
+	constexpr float RowAlpha = 0.75f;
+	constexpr float FrontThreshold = 0.55f;  // wrap progress past which a front entry draws in front
 
 	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
 	{
@@ -135,24 +145,52 @@ namespace UI
 
 	CarouselMenu::Placement CarouselMenu::PlacementOf(std::size_t index) const
 	{
+		// Resting place on the ring.
 		const float a = static_cast<float>(index) * QuarterTurn - angle;
-		const float depth = std::cos(a);
-		const float t = (depth + 1.f) * 0.5f;   // 0 at the back, 1 at the front
+		const float ringDepth = std::cos(a);
+		const float t = (ringDepth + 1.f) * 0.5f;   // 0 at the back, 1 at the front
+
+		const sf::Vector2f ringPos{
+			center.x + std::sin(a) * RadiusX,
+			center.y + SideBaseY + ringDepth * DepthDropY };
+		const float ringScale = Lerp(ScaleBack, ScaleFront, t);
+		const float ringAlpha = 0.10f + 0.90f * std::pow(t, 1.6f);
 
 		Placement placement;
-		placement.depth = depth;
-		placement.position = {
-			center.x + std::sin(a) * RadiusX,
-			center.y + SideBaseY + depth * DepthDropY };
-		placement.scale = Lerp(ScaleBack, ScaleFront, t);
-		placement.alpha = 0.10f + 0.90f * std::pow(t, 1.6f);
+		placement.depth = ringDepth;
+		placement.position = ringPos;
+		placement.scale = ringScale;
+		placement.alpha = ringAlpha;
 
-		if (introTimer < 1.f)
+		if (introTimer >= 1.f)
 		{
-			const float e = EaseOutCubic(introTimer);
-			placement.position.x += (1.f - e) * EntryOffsetX;
-			placement.alpha *= e;
+			return placement;
 		}
+
+		// The straight row, sliding left. Entry 0 leads; the rest trail to its
+		// right. Total travel is set so the last entry finishes curling exactly
+		// as introTimer reaches 1.
+		const float lastLineX = center.x + RowHeadStartX + static_cast<float>(items.size() - 1) * RowSpacing;
+		const float totalTravel = (lastLineX - (center.x + WrapEdgeX)) + WrapSpan;
+		const float travel = introTimer * totalTravel;
+
+		const float lineX = center.x + RowHeadStartX + static_cast<float>(index) * RowSpacing - travel;
+		const sf::Vector2f linePos{ lineX, center.y };
+
+		// 0 while still a straight row, 1 once fully curled onto the ring.
+		const float wrap = std::clamp(((center.x + WrapEdgeX) - lineX) / WrapSpan, 0.f, 1.f);
+		const float w = EaseOutCubic(wrap);
+
+		// Quadratic curve bowed toward the title centre -- the "curl".
+		const sf::Vector2f mid{ (linePos.x + ringPos.x) * 0.5f, (linePos.y + ringPos.y) * 0.5f };
+		const sf::Vector2f ctrl{ Lerp(mid.x, center.x, 0.45f), Lerp(mid.y, center.y, 0.45f) };
+		const float inv = 1.f - w;
+		placement.position = {
+			inv * inv * linePos.x + 2.f * inv * w * ctrl.x + w * w * ringPos.x,
+			inv * inv * linePos.y + 2.f * inv * w * ctrl.y + w * w * ringPos.y };
+		placement.scale = Lerp(RowScale, ringScale, w);
+		placement.alpha = Lerp(RowAlpha, ringAlpha, w);
+		placement.depth = w >= FrontThreshold ? Lerp(-1.f, ringDepth, w) : -1.f;
 
 		return placement;
 	}
@@ -166,8 +204,9 @@ namespace UI
 		{
 			const Placement placement = PlacementOf(i);
 
-			// Everything passes behind the title during the fly-in.
-			const bool isFront = introTimer >= 1.f && placement.depth >= 0.f;
+			// PlacementOf reports depth < 0 for anything still behind the title
+			// (including entries mid-curl during the fly-in).
+			const bool isFront = placement.depth >= 0.f;
 			if (isFront == frontHalf)
 			{
 				drawList.push_back({ i, placement });
