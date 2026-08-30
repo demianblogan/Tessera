@@ -10,6 +10,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Audio/Music.hpp>
 #include <SFML/Window/Event.hpp>
 
 #include "../core/Context.h"
@@ -80,6 +81,15 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 	, stageLabel(context.fonts.Get(Assets::FontID::Loading), "", LabelSize)
 {
 	stageLabel.setFillColor(sf::Color::White);
+
+	// The shell music runs from here through the splash and into the menu.
+	// (Loaded synchronously by Application so it is ready this early.)
+	sf::Music& music = context.music.Get(Assets::MusicID::MainMenu);
+	music.setLooping(true);
+	if (music.getStatus() != sf::Music::Status::Playing)
+	{
+		music.play();
+	}
 
 	worker = std::jthread(
 		[this](std::stop_token stopToken)

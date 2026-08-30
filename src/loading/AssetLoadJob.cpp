@@ -72,7 +72,8 @@ namespace Loading
 			})
 			&& stage(Stage::Music, [&]
 			{
-				music.Load(Assets::MusicID::MainMenu, Paths::Music::MainMenu);
+				// MainMenu (the shell track) is loaded synchronously by
+				// Application so the loading screen can start it immediately.
 				music.Load(Assets::MusicID::Gameplay, Paths::Music::Gameplay);
 				music.Load(Assets::MusicID::GameOver, Paths::Music::GameOver);
 			})

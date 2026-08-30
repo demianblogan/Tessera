@@ -244,6 +244,11 @@ Application::Application()
 		Assets::FontID::Loading,
 		std::filesystem::exists(loadingFontPath) ? loadingFontPath : std::filesystem::path(Assets::Paths::Fonts::Main));
 
+	// The shell track (loading screen -> splash -> menu) is opened here so the
+	// loading screen can start it right away. openFromFile only reads the
+	// stream header; decoding streams on sf::Music's own thread during play.
+	music.Load(Assets::MusicID::MainMenu, Assets::Paths::Music::MainMenu);
+
 	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
 	{
 		std::cerr << "WARNING: localization catalog not found at \""
