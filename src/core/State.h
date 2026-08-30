@@ -39,6 +39,14 @@ public:
         return Backdrop::Opaque;
     }
 
+    // Whether the full-screen CRT post-process pass is applied over this
+    // state. The company splash opts out so its logo isn't visibly bowed
+    // and cropped by the screen-curvature warp.
+    [[nodiscard]] virtual bool UsesCrtEffect() const
+    {
+        return true;
+    }
+
 protected:
     // Queue a stack transition. All four are applied together, after the
     // current input / update phase, so a state may call them from inside its

@@ -23,6 +23,8 @@ public:
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 
+	[[nodiscard]] bool UsesCrtEffect() const override { return false; }
+
 private:
 	static constexpr float FadeInDuration = 0.5f;
 	static constexpr float HoldDuration = 2.f;
