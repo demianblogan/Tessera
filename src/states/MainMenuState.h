@@ -45,6 +45,7 @@ private:
 	UI::MenuSparks sparks;
 	UI::DropInTitle title;
 	NeonGlow titleGlow;
+	NeonGlow entryGlow;
 	UI::CarouselMenu carousel;
 	bool carouselStarted = false;
 

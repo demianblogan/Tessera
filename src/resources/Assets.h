@@ -65,7 +65,7 @@ namespace Assets
 			inline constexpr const char* Loading = "assets/fonts/chis-pix.ttf";
 
 			// Main-menu carousel entries. Pixel face with localisation coverage.
-			inline constexpr const char* Menu = "assets/fonts/BarNewRomanPixBold.ttf";
+			inline constexpr const char* Menu = "assets/fonts/pixel.ttf";
 		}
 
 		namespace Music

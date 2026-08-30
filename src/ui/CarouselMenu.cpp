@@ -1,6 +1,7 @@
 #include "CarouselMenu.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -15,6 +16,8 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
+
+#include "../rendering/NeonGlow.h"
 
 namespace
 {
@@ -48,13 +51,49 @@ namespace
 	constexpr float ArrowHeightFraction = 0.85f; // arrow on-screen height vs the front entry's text height
 	constexpr float ArrowHitPadding = 4.f;
 
-	// Entry text styling: dark rim, vertical gradient fill, soft drop shadow.
+	// Entry text styling: dark rim, vertical gradient fill in the entry's own
+	// hue, soft drop shadow.
 	constexpr float EntryOutlineThickness = 3.f;
-	constexpr sf::Color EntryOutlineColour{ 10, 10, 16 };
 	constexpr sf::Vector2f EntryShadowOffset{ 5.f, 7.f };   // local units, before the entry scale
 	constexpr float EntryShadowAlpha = 0.5f;
-	constexpr sf::Color EntryFillTop{ 255, 255, 255 };
-	constexpr sf::Color EntryFillBottom{ 150, 158, 176 };
+	constexpr float EntryGradientTopMix = 0.42f;    // toward white at the top edge
+	constexpr float EntryGradientBottom = 0.5f;     // darken at the bottom edge
+	constexpr float EntryOutlineDarken = 0.18f;
+
+	constexpr float EntryGlowIntensity = 0.55f;
+	constexpr float EntryArrivalFlashDuration = 0.24f;
+
+	// One per entry index: the classic tetromino colours.
+	constexpr std::array<sf::Color, 7> EntryPalette{
+		sf::Color{ 0, 240, 240 },    // I
+		sf::Color{ 245, 220, 40 },   // O
+		sf::Color{ 180, 60, 240 },   // T
+		sf::Color{ 60, 230, 90 },    // S
+		sf::Color{ 240, 60, 70 },    // Z
+		sf::Color{ 70, 110, 240 },   // J
+		sf::Color{ 245, 160, 40 },   // L
+	};
+
+	[[nodiscard]] std::uint8_t ToByte(float v) noexcept
+	{
+		return static_cast<std::uint8_t>(std::clamp(v, 0.f, 255.f));
+	}
+
+	[[nodiscard]] sf::Color Darken(sf::Color c, float f) noexcept
+	{
+		return { ToByte(c.r * f), ToByte(c.g * f), ToByte(c.b * f), c.a };
+	}
+
+	[[nodiscard]] sf::Color MixToWhite(sf::Color c, float t) noexcept
+	{
+		return { ToByte(c.r + (255.f - c.r) * t), ToByte(c.g + (255.f - c.g) * t),
+			ToByte(c.b + (255.f - c.b) * t), c.a };
+	}
+
+	[[nodiscard]] sf::Color ScaleRgb(sf::Color c, float f) noexcept
+	{
+		return { ToByte(c.r * f), ToByte(c.g * f), ToByte(c.b * f), c.a };
+	}
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
 	// nudge, a warm tint, and a quick orange ring).
@@ -186,7 +225,8 @@ namespace UI
 		maxItemHalfWidth = std::max(maxItemHalfWidth, bounds.size.x * 0.5f);
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		Item item{ std::move(label), std::move(onActivate), {}, 0.f };
+		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
+			EntryPalette[items.size() % EntryPalette.size()] };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
@@ -298,6 +338,7 @@ namespace UI
 			return;
 		}
 
+		const bool wasIntro = introTimer < 1.f;
 		if (introTimer < 1.f)
 		{
 			introTimer = std::min(1.f, introTimer + deltaTime / IntroDuration);
@@ -307,7 +348,18 @@ namespace UI
 		{
 			rotateTimer = std::min(1.f, rotateTimer + deltaTime / RotateDuration);
 			angle = Lerp(rotateFrom, rotateTo, EaseOutCubic(rotateTimer));
+			if (rotateTimer >= 1.f)
+			{
+				arrivalFlashTime = 0.f;   // an entry just locked to the front
+			}
 		}
+
+		if (wasIntro && introTimer >= 1.f)
+		{
+			arrivalFlashTime = 0.f;
+		}
+
+		arrivalFlashTime += deltaTime;
 
 		for (float& pressTime : arrowPressTime)
 		{
@@ -407,10 +459,17 @@ namespace UI
 		transform.scale({ placement.scale, placement.scale });
 		transform.translate({ 0.f, -item.inkCentreY });
 
-		sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
-		sf::Color outlineColour = EntryOutlineColour;   outlineColour.a = alpha;
-		sf::Color fillTop = EntryFillTop;               fillTop.a = alpha;
-		sf::Color fillBottom = EntryFillBottom;         fillBottom.a = alpha;
+		sf::Color base = item.colour;
+		const float flash = ArrivalFlash(index);
+		if (flash > 0.f)
+		{
+			base = MixToWhite(base, flash);
+		}
+
+		const sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
+		sf::Color outlineColour = Darken(base, EntryOutlineDarken);   outlineColour.a = alpha;
+		sf::Color fillTop = MixToWhite(base, EntryGradientTopMix);     fillTop.a = alpha;
+		sf::Color fillBottom = Darken(base, EntryGradientBottom);      fillBottom.a = alpha;
 
 		sf::VertexArray shadow(sf::PrimitiveType::Triangles);
 		sf::VertexArray outline(sf::PrimitiveType::Triangles);
@@ -435,13 +494,74 @@ namespace UI
 		target.draw(fill, states);
 	}
 
+	float CarouselMenu::ArrivalFlash(std::size_t index) const
+	{
+		if (index != FrontItem())
+		{
+			return 0.f;
+		}
+		return std::clamp(1.f - arrivalFlashTime / EntryArrivalFlashDuration, 0.f, 1.f);
+	}
+
 	void CarouselMenu::RenderBack(sf::RenderTarget& target) const
 	{
 		Render(target, false);
 	}
 
-	void CarouselMenu::RenderFront(sf::RenderTarget& target) const
+	void CarouselMenu::DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const
 	{
+		if (items.empty())
+		{
+			return;
+		}
+
+		const std::size_t index = FrontItem();
+		const Placement placement = PlacementOf(index);
+		if (placement.depth < 0.15f)
+		{
+			return;
+		}
+
+		const Item& item = items[index];
+		const sf::Vector2f box{ maxItemHalfWidth * 2.6f + 60.f, maxItemHeight * 2.f };
+		const sf::FloatRect area{
+			{ placement.position.x - box.x * 0.5f, placement.position.y - box.y * 0.5f }, box };
+
+		sf::Transform transform;
+		transform.translate(placement.position);
+		transform.scale({ placement.scale, placement.scale });
+		transform.translate({ 0.f, -item.inkCentreY });
+
+		float strength = EntryGlowIntensity * std::clamp(placement.depth, 0.f, 1.f);
+		strength = std::max(strength, 0.7f * ArrivalFlash(index));
+		const sf::Color tint = ScaleRgb(item.colour, strength);
+
+		glow.Draw(target, area,
+			[this, &item, &transform](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			{
+				sf::VertexArray white(sf::PrimitiveType::Triangles);
+				for (const Item::Glyph& glyph : item.glyphs)
+				{
+					AppendGlyphQuad(white, glyph.penX,
+						font.getGlyph(glyph.codepoint, characterSize, false),
+						sf::Color::White, sf::Color::White);
+				}
+
+				sf::RenderStates s = states;
+				s.transform *= transform;
+				s.texture = &font.getTexture(characterSize);
+				buffer.draw(white, s);
+			},
+			tint, false);
+	}
+
+	void CarouselMenu::RenderFront(sf::RenderTarget& target, NeonGlow* glow) const
+	{
+		if (glow != nullptr && IsReady())
+		{
+			DrawFrontGlow(target, *glow);
+		}
+
 		Render(target, true);
 
 		if (IsReady())

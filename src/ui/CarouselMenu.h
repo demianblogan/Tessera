@@ -4,10 +4,13 @@
 #include <functional>
 #include <vector>
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
+
+class NeonGlow;
 
 namespace sf
 {
@@ -51,7 +54,7 @@ namespace UI
 
 		void Update(float deltaTime);
 		void RenderBack(sf::RenderTarget& target) const;
-		void RenderFront(sf::RenderTarget& target) const;
+		void RenderFront(sf::RenderTarget& target, NeonGlow* glow = nullptr) const;
 
 	private:
 		struct Item
@@ -66,6 +69,7 @@ namespace UI
 			std::function<void()> activate;
 			std::vector<Glyph> glyphs;
 			float inkCentreY = 0.f;        // vertical ink centre of the string
+			sf::Color colour;              // this entry's tetromino hue
 		};
 
 		struct Placement
@@ -79,6 +83,8 @@ namespace UI
 		[[nodiscard]] Placement PlacementOf(std::size_t index) const;
 		void Render(sf::RenderTarget& target, bool frontHalf) const;
 		void DrawEntry(sf::RenderTarget& target, std::size_t index, const Placement& placement) const;
+		void DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const;
+		[[nodiscard]] float ArrivalFlash(std::size_t index) const;
 		[[nodiscard]] std::size_t FrontItem() const;
 
 		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;
@@ -103,6 +109,8 @@ namespace UI
 
 		bool started = false;
 		float introTimer = 0.f;      // 0..1 across the fly-in
+
+		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front
 
 		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
 

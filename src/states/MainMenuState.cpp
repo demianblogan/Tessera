@@ -38,6 +38,7 @@ MainMenuState::MainMenuState(Context& context)
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, entryGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, carousel(context.fonts.Get(Assets::FontID::Menu), MenuCharSize, context.textures.Get(Assets::TextureID::UiArrow))
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
 {
@@ -154,6 +155,7 @@ void MainMenuState::Update(float deltaTime)
 	sparks.Update(deltaTime);
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
+	entryGlow.Update(deltaTime);
 
 	if (!carouselStarted && title.IsFinished())
 	{
@@ -174,7 +176,7 @@ void MainMenuState::Render(sf::RenderTarget& target)
 
 	carousel.RenderBack(target);
 	title.Render(target, &titleGlow);
-	carousel.RenderFront(target);
+	carousel.RenderFront(target, &entryGlow);
 
 	versionText.setPosition(target.getView().getSize() - VersionMargin);
 	target.draw(versionText);
