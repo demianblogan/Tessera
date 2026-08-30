@@ -8,7 +8,7 @@
 
 #include <SFML/Window/Event.hpp>
 
-#include <states/MainMenuState.h>
+#include <states/CompanySplashState.h>
 #include <utils/AppDataPath.h>
 
 bool Application::IsWindowOpen() const
@@ -212,11 +212,13 @@ Application::Application()
 	textures.Load(Assets::TextureID::TitleBackground, Assets::Paths::Textures::TitleBackground);
 	textures.Load(Assets::TextureID::PanelBackground, Assets::Paths::Textures::PanelBackground);
 	textures.Load(Assets::TextureID::GameBackground, Assets::Paths::Textures::GameBackground);
+	textures.Load(Assets::TextureID::CompanyLogo, Assets::Paths::Textures::CompanyLogo);
 
 	music.Load(Assets::MusicID::MainMenu, Assets::Paths::Music::MainMenu);
 	music.Load(Assets::MusicID::Gameplay, Assets::Paths::Music::Gameplay);
 	music.Load(Assets::MusicID::GameOver, Assets::Paths::Music::GameOver);
 
+	soundBuffers.Load(Assets::SoundID::CompanySplash, Assets::Paths::Sounds::CompanySplash);
 	soundBuffers.Load(Assets::SoundID::MenuItemSelected, Assets::Paths::Sounds::MenuItemSelected);
 	soundBuffers.Load(Assets::SoundID::MenuItemPressed, Assets::Paths::Sounds::MenuItemPressed);
 	soundBuffers.Load(Assets::SoundID::DropPiece, Assets::Paths::Sounds::DropPiece);
@@ -237,7 +239,7 @@ Application::Application()
 
 	highScores.Load();
 
-	stateMachine.PushState(std::make_unique<MainMenuState>(context));
+	stateMachine.PushState(std::make_unique<CompanySplashState>(context));
 	stateMachine.ApplyPendingChanges();
 }
 

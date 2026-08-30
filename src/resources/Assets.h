@@ -16,6 +16,8 @@ namespace Assets
 
 	enum class SoundID
 	{
+		CompanySplash,
+
 		MenuItemSelected,
 		MenuItemPressed,
 
@@ -35,7 +37,8 @@ namespace Assets
 		MenuBackground,
 		TitleBackground,
 		PanelBackground,
-		GameBackground
+		GameBackground,
+		CompanyLogo
 	};
 
 	enum class ShaderID
@@ -63,6 +66,8 @@ namespace Assets
 
 		namespace Sounds
 		{
+			inline constexpr const char* CompanySplash = "assets/sounds/company_splash.ogg";
+
 			inline constexpr const char* MenuItemSelected = "assets/sounds/menu_item_selected.ogg";
 			inline constexpr const char* MenuItemPressed = "assets/sounds/menu_item_pressed.ogg";
 
@@ -83,6 +88,7 @@ namespace Assets
 			inline constexpr const char* TitleBackground = "assets/textures/title_background.png";
 			inline constexpr const char* PanelBackground = "assets/textures/panel_background.png";
 			inline constexpr const char* GameBackground = "assets/textures/game_background.png";
+			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
 		}
 
 		namespace Data
