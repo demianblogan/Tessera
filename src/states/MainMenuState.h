@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Text.hpp>
 
 #include "../core/State.h"
@@ -29,9 +30,13 @@ public:
 	// No cursor while the title / ring build animation is still playing.
 	[[nodiscard]] bool ShowsCursor() const override { return carousel.IsReady(); }
 
+	// TEMP: CRT off on the menu while the background is being designed.
+	[[nodiscard]] bool UsesCrtEffect() const override { return false; }
+
 private:
 	Context& context;
 
+	sf::Sprite backgroundSprite;
 	UI::DropInTitle title;
 	NeonGlow titleGlow;
 	UI::CarouselMenu carousel;

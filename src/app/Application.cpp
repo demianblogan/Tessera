@@ -137,6 +137,8 @@ void Application::Render()
 	const bool blurBackdrop = currentState != nullptr
 		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
 
+	const bool applyCrt = currentState == nullptr || currentState->UsesCrtEffect();
+
 	// =====================================================
 	// Opaque state: render the stack straight to the screen
 	// =====================================================
@@ -152,7 +154,15 @@ void Application::Render()
 		DrawCursor(renderTexture);
 		renderTexture.display();
 
-		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
+		const sf::Sprite composited(renderTexture.getTexture());
+		if (applyCrt)
+		{
+			window.draw(composited, &crtShader);
+		}
+		else
+		{
+			window.draw(composited);
+		}
 	}
 	else
 	{
