@@ -28,8 +28,8 @@ namespace
 	constexpr float SideBaseY = 150.f;    // a side entry sits this far below the centre
 	constexpr float DepthDropY = 145.f;   // front drops this much more, back rises this much (back tucks behind the title)
 
-	constexpr float ScaleBack = 0.5f;
-	constexpr float ScaleFront = 1.f;
+	constexpr float ScaleBack = 0.42f;
+	constexpr float ScaleFront = 1.12f;
 
 	constexpr float RotateDuration = 0.26f;
 
@@ -53,12 +53,18 @@ namespace
 
 	// Entry text styling: dark rim, vertical gradient fill in the entry's own
 	// hue, soft drop shadow.
-	constexpr float EntryOutlineThickness = 3.f;
+	constexpr float EntryOutlineThickness = 5.f;
 	constexpr sf::Vector2f EntryShadowOffset{ 5.f, 7.f };   // local units, before the entry scale
 	constexpr float EntryShadowAlpha = 0.5f;
 	constexpr float EntryGradientTopMix = 0.42f;    // toward white at the top edge
 	constexpr float EntryGradientBottom = 0.5f;     // darken at the bottom edge
 	constexpr float EntryOutlineDarken = 0.18f;
+
+	// Depth cues for the side / back entries: they desaturate and go soft
+	// (drawn as a smear of offset copies) the further round the ring they are.
+	constexpr float EntryMaxDesaturate = 0.62f;
+	constexpr float EntryMaxBlur = 16.f;   // local units at the very back
+	constexpr int EntryBlurTaps = 6;
 
 	constexpr float EntryGlowIntensity = 0.55f;
 	constexpr float EntryArrivalFlashDuration = 0.24f;
@@ -93,6 +99,13 @@ namespace
 	[[nodiscard]] sf::Color ScaleRgb(sf::Color c, float f) noexcept
 	{
 		return { ToByte(c.r * f), ToByte(c.g * f), ToByte(c.b * f), c.a };
+	}
+
+	[[nodiscard]] sf::Color Desaturate(sf::Color c, float amount) noexcept
+	{
+		const float grey = 0.30f * c.r + 0.59f * c.g + 0.11f * c.b;
+		return { ToByte(c.r + (grey - c.r) * amount), ToByte(c.g + (grey - c.g) * amount),
+			ToByte(c.b + (grey - c.b) * amount), c.a };
 	}
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
@@ -459,17 +472,27 @@ namespace UI
 		transform.scale({ placement.scale, placement.scale });
 		transform.translate({ 0.f, -item.inkCentreY });
 
-		sf::Color base = item.colour;
+		// 0 at the back of the ring, 1 at the front.
+		const float depthT = std::clamp((placement.depth + 1.f) * 0.5f, 0.f, 1.f);
+
+		sf::Color base = Desaturate(item.colour, (1.f - depthT) * EntryMaxDesaturate);
 		const float flash = ArrivalFlash(index);
 		if (flash > 0.f)
 		{
 			base = MixToWhite(base, flash);
 		}
 
+		// Side / back entries are drawn as a smear of offset copies (a cheap
+		// depth-of-field blur); the alpha is split across the taps.
+		const float blur = (1.f - depthT) * EntryMaxBlur;
+		const int taps = blur > 0.6f ? EntryBlurTaps : 0;
+		const float tapFraction = taps == 0 ? 1.f : 1.f / (static_cast<float>(taps) * 0.55f + 1.f);
+		const auto tapAlpha = static_cast<std::uint8_t>(alphaFraction * tapFraction * 255.f);
+
 		const sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
-		sf::Color outlineColour = Darken(base, EntryOutlineDarken);   outlineColour.a = alpha;
-		sf::Color fillTop = MixToWhite(base, EntryGradientTopMix);     fillTop.a = alpha;
-		sf::Color fillBottom = Darken(base, EntryGradientBottom);      fillBottom.a = alpha;
+		sf::Color outlineColour = Darken(base, EntryOutlineDarken);   outlineColour.a = tapAlpha;
+		sf::Color fillTop = MixToWhite(base, EntryGradientTopMix);     fillTop.a = tapAlpha;
+		sf::Color fillBottom = Darken(base, EntryGradientBottom);      fillBottom.a = tapAlpha;
 
 		sf::VertexArray shadow(sf::PrimitiveType::Triangles);
 		sf::VertexArray outline(sf::PrimitiveType::Triangles);
@@ -490,8 +513,22 @@ namespace UI
 		states.texture = &font.getTexture(characterSize);
 
 		target.draw(shadow, states);
-		target.draw(outline, states);
-		target.draw(fill, states);
+
+		constexpr float Tau = 6.2831853f;
+		for (int k = 0; k <= taps; ++k)
+		{
+			sf::Vector2f offset;
+			if (k > 0)
+			{
+				const float a = static_cast<float>(k - 1) / static_cast<float>(taps) * Tau;
+				offset = { std::cos(a) * blur, std::sin(a) * blur };
+			}
+
+			sf::RenderStates tapStates = states;
+			tapStates.transform.translate(offset);
+			target.draw(outline, tapStates);
+			target.draw(fill, tapStates);
+		}
 	}
 
 	float CarouselMenu::ArrivalFlash(std::size_t index) const
