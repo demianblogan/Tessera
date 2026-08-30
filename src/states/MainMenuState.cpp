@@ -21,8 +21,8 @@
 
 namespace
 {
-	constexpr unsigned int TitleCharSize = 200;
-	constexpr sf::Vector2f TitleCenter{ 960.f, 540.f };
+	constexpr unsigned int TitleCharSize = 240;
+	constexpr sf::Vector2f TitleCenter{ 960.f, 420.f };
 
 	constexpr unsigned int MenuCharSize = 58;
 

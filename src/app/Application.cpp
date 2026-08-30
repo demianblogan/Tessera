@@ -261,6 +261,11 @@ Application::Application()
 		{
 			fpsCounter.emplace(fonts.Get(Assets::FontID::Main));
 			cursor.emplace(textures.Get(Assets::TextureID::Cursor));
+
+			// The music tracks are loaded on the background thread, i.e. after
+			// the first settings.Apply() ran with an empty music map -- so the
+			// audio settings have to be applied again now they exist.
+			settings.Apply(context);
 		}));
 	stateMachine.ApplyPendingChanges();
 }

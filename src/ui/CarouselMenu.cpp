@@ -15,9 +15,9 @@ namespace
 	constexpr float Pi = 3.14159265f;
 	constexpr float QuarterTurn = Pi * 0.5f;
 
-	constexpr float RadiusX = 520.f;      // horizontal spread of the side entries
-	constexpr float SideBaseY = 235.f;    // a side entry sits this far below the centre
-	constexpr float DepthDropY = 110.f;   // front drops this much more, back rises this much
+	constexpr float RadiusX = 540.f;      // horizontal spread of the side entries
+	constexpr float SideBaseY = 150.f;    // a side entry sits this far below the centre
+	constexpr float DepthDropY = 145.f;   // front drops this much more, back rises this much (back tucks behind the title)
 
 	constexpr float ScaleBack = 0.5f;
 	constexpr float ScaleFront = 1.f;
