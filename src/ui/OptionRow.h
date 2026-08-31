@@ -123,5 +123,6 @@ namespace UI
 		bool on = false;
 		const sf::Texture& checkboxTexture;
 		std::function<void(bool)> onChange;
+		mutable sf::Text symbolText;
 	};
 }

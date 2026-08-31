@@ -18,7 +18,11 @@ namespace
 
 	constexpr float ControlFraction = 0.46f;   // right part of the row for the control
 	constexpr float ArrowScreenSize = 30.f;    // on-screen size of the carousel arrow sprite
-	constexpr float CheckboxSize = 44.f;       // on-screen size of the toggle checkbox
+	constexpr float CheckboxSize = 46.f;       // on-screen height of the toggle checkbox
+	constexpr sf::IntRect CheckboxOn{ { 0, 0 }, { 28, 27 } };
+	constexpr sf::IntRect CheckboxOff{ { 28, 0 }, { 28, 27 } };
+	const sf::Color TickColour{ 110, 235, 145 };
+	const sf::Color CrossColour{ 235, 120, 120 };
 
 	// Arrow press feedback, matching the main-menu ring arrows.
 	constexpr float ArrowPressDuration = 0.22f;
@@ -305,6 +309,7 @@ namespace UI
 		, on(on)
 		, checkboxTexture(checkboxTexture)
 		, onChange(std::move(onChange))
+		, symbolText(fontRef, "", static_cast<unsigned int>(CheckboxSize * 0.7f))
 	{
 	}
 
@@ -369,15 +374,24 @@ namespace UI
 		const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
 
 		const bool live = selected && enabled;
-		const float scale = CheckboxSize / 26.f * (live ? 1.1f : 1.f);
+		const float scale = CheckboxSize / static_cast<float>(CheckboxOn.size.y) * (live ? 1.08f : 1.f);
 
 		sf::Sprite box(checkboxTexture);
-		box.setTextureRect(on ? sf::IntRect{ { 0, 0 }, { 26, 26 } } : sf::IntRect{ { 28, 0 }, { 26, 26 } });
-		box.setOrigin({ 13.f, 13.f });
+		box.setTextureRect(on ? CheckboxOn : CheckboxOff);
+		box.setOrigin(sf::Vector2f(CheckboxOn.size) * 0.5f);
 		box.setScale({ scale, scale });
 		box.setPosition(centre);
 		box.setColor(WithAlpha(enabled ? (live ? sf::Color::White : sf::Color(210, 216, 224))
 			: sf::Color(120, 124, 132), Alpha(panelAlpha)));
 		target.draw(box);
+
+		// The tick / cross itself, drawn as text over the empty frame.
+		symbolText.setString(sf::String(static_cast<char32_t>(on ? 0x2713 : 0x2717)));   // tick / cross
+		const sf::FloatRect bounds = symbolText.getLocalBounds();
+		symbolText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
+		symbolText.setPosition(centre);
+		const sf::Color symbolColour = enabled ? (on ? TickColour : CrossColour) : sf::Color(120, 124, 132);
+		symbolText.setFillColor(WithAlpha(symbolColour, Alpha(panelAlpha)));
+		target.draw(symbolText);
 	}
 }
