@@ -36,7 +36,6 @@ namespace
 	const sf::Color IdleLabel{ 210, 216, 226 };
 	const sf::Color DisabledLabel{ 120, 124, 132 };
 	const sf::Color ValueColour{ 236, 242, 250 };
-	const sf::Color AccentColour{ 120, 210, 255 };
 	const sf::Color ArrowLive{ 210, 216, 224 };
 	const sf::Color ArrowDead{ 96, 102, 110 };
 	const sf::Color TickColour{ 110, 235, 145 };
@@ -169,7 +168,7 @@ namespace UI
 
 			sf::RectangleShape bar({ 5.f, height });
 			bar.setPosition(left);
-			bar.setFillColor(WithAlpha(AccentColour, Alpha(panelAlpha, highlight)));
+			bar.setFillColor(WithAlpha(accent, Alpha(panelAlpha, highlight)));
 			target.draw(bar);
 		}
 
@@ -364,7 +363,7 @@ namespace UI
 		, steps(std::max(1, steps))
 		, current(std::clamp(current, 0, std::max(1, steps)))
 		, onChange(std::move(onChange))
-		, percentText(fontRef, "", 30u)
+		, percentText(fontRef, "", 42u)
 	{
 		UseArrows(arrowTexture);
 	}
@@ -401,7 +400,7 @@ namespace UI
 	{
 		const sf::FloatRect area = ControlArea();
 		const float inset = area.size.x * 0.20f;   // clear of the arrows
-		const float barHeight = 16.f;
+		const float barHeight = 36.f;
 		return { { area.position.x + inset, area.position.y + area.size.y * 0.5f - barHeight * 0.5f },
 			{ area.size.x - 2.f * inset, barHeight } };
 	}
@@ -445,7 +444,7 @@ namespace UI
 
 		const std::uint8_t a = Alpha(panelAlpha);
 		const sf::Color track = enabled ? sf::Color(48, 54, 64) : sf::Color(40, 44, 50);
-		const sf::Color fillColour = enabled ? AccentColour : sf::Color(90, 110, 124);
+		const sf::Color fillColour = enabled ? accent : sf::Color(90, 100, 108);
 
 		sf::RectangleShape trackShape(bar.size);
 		trackShape.setPosition(bar.position);

@@ -31,6 +31,7 @@ namespace UI
 		void SetLayout(sf::Vector2f left, float width, float height);
 		void SetEnabled(bool enabled) { this->enabled = enabled; }
 		void SetSelected(bool selected) { this->selected = selected; }
+		void SetAccent(sf::Color colour) { accent = colour; }
 
 		[[nodiscard]] bool IsEnabled() const { return enabled; }
 		[[nodiscard]] sf::FloatRect Bounds() const;
@@ -73,6 +74,7 @@ namespace UI
 		bool enabled = true;
 		bool selected = false;
 		float highlight = 0.f;
+		sf::Color accent{ 120, 210, 255 };
 
 	private:
 		const sf::Texture* arrowTexture = nullptr;

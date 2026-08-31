@@ -228,6 +228,7 @@ void GraphicsCategoryPanel::BuildRows()
 		rows[i]->SetLayout(
 			{ PanelBounds.position.x + RowMargin, RowsTop + static_cast<float>(i) * (RowHeight + RowGap) },
 			PanelBounds.size.x - 2.f * RowMargin, RowHeight);
+		rows[i]->SetAccent(accent);
 	}
 
 	selectedRow = 0;
