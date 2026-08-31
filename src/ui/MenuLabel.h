@@ -30,6 +30,10 @@ namespace UI
 		void SetText(const sf::String& text);
 		void Update(float deltaTime);   // advances the idle-wave phase
 
+		// When false, the per-letter idle wave is suppressed and the label draws
+		// flat (used for the unselected buttons in a column).
+		void SetWaveEnabled(bool enabled) { waveEnabled = enabled; }
+
 		// Pin the glow box to a fixed size (e.g. the widest button in a column),
 		// so NeonGlow does not re-size its buffers when the glow moves between
 		// labels of different widths. Zero restores the per-label size.
@@ -75,5 +79,6 @@ namespace UI
 		sf::Vector2f fixedGlowBoxSize;    // {0,0} => use autoGlowBoxSize
 
 		float waveTime = 0.f;
+		bool waveEnabled = true;
 	};
 }

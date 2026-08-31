@@ -22,19 +22,17 @@ class PlaceholderCategoryPanel final : public OptionsCategoryPanel
 public:
 	PlaceholderCategoryPanel(Context& context, const sf::String& title, sf::Color accent);
 
-	void Open() override;
+	void SetVisibility(Visibility visibility, float previewFade) override;
 	void Update(float deltaTime) override;
-	void RenderPreview(sf::RenderTarget& target, float alpha) override;
-	void RenderContent(sf::RenderTarget& target) override;
+	void Render(sf::RenderTarget& target) override;
 	bool HandleEvent(const sf::Event& event) override;
 
 private:
-	void Draw(sf::RenderTarget& target, float alpha);
-
 	sf::Color accent;
 	UI::NineSliceFrame frame;
 	sf::Text titleText;
 	sf::Text bodyText;
 
-	float contentFade = 0.f;
+	float alpha = 0.f;
+	float targetAlpha = 0.f;
 };

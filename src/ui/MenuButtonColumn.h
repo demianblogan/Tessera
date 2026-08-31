@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -33,7 +34,9 @@ namespace UI
 		MenuButtonColumn(const sf::Font& font, unsigned int characterSize,
 			sf::Shader& dilateShader, sf::Shader& blurShader);
 
-		void AddButton(const sf::String& text, std::function<void()> onActivate, bool enabled = true);
+		// `colour` overrides the default hue of an enabled button (white).
+		void AddButton(const sf::String& text, std::function<void()> onActivate, bool enabled = true,
+			std::optional<sf::Color> colour = std::nullopt);
 		void SetLayout(sf::Vector2f topLeft, float rowGap);
 
 		// Fired with the new index whenever the selection moves (keyboard, pad or
@@ -66,6 +69,7 @@ namespace UI
 			MenuLabel label;
 			std::function<void()> activate;
 			bool enabled = true;
+			sf::Color colour{ sf::Color::White };   // used only when enabled
 			sf::Vector2f restCentre;
 		};
 

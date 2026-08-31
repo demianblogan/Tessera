@@ -7,25 +7,32 @@ namespace sf
 }
 
 // One category's right-hand panel inside OptionsScreen (Graphics, Audio, ...).
-// It is shown dimmed as a preview while its category is merely selected, and
-// full and interactive once the category is opened.
+// The screen tells it what it should be each frame; the panel eases its own
+// opacity toward that so switching categories or opening one cross-fades
+// instead of popping.
 class OptionsCategoryPanel
 {
 public:
 	virtual ~OptionsCategoryPanel() = default;
+
+	enum class Visibility
+	{
+		Hidden,    // not the selected category, and not open
+		Preview,   // selected but not open: dimmed, non-interactive
+		Open       // opened: full and interactive
+	};
 
 	// Called when the category is opened / closed, so a panel can snapshot the
 	// current settings or drop transient state.
 	virtual void Open() {}
 	virtual void Close() {}
 
+	// Called every frame with what the screen wants this panel to be and the
+	// screen's 0..1 preview cross-fade.
+	virtual void SetVisibility(Visibility visibility, float previewFade) = 0;
+
 	virtual void Update(float deltaTime) = 0;
-
-	// Dimmed, non-interactive; `alpha` (0..1) is the screen's preview fade.
-	virtual void RenderPreview(sf::RenderTarget& target, float alpha) = 0;
-
-	// Full and interactive.
-	virtual void RenderContent(sf::RenderTarget& target) = 0;
+	virtual void Render(sf::RenderTarget& target) = 0;   // at the panel's own opacity
 
 	// While open. Return true if the event was consumed. A Back action that is
 	// not consumed tells the screen to close the category.

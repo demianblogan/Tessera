@@ -104,6 +104,10 @@ namespace UI
 
 	float MenuLabel::WaveOffset(std::size_t index) const
 	{
+		if (!waveEnabled)
+		{
+			return 0.f;
+		}
 		return WaveAmplitude * std::sin(waveTime * WaveSpeed + static_cast<float>(index) * WavePhaseStep);
 	}
 

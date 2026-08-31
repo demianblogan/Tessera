@@ -21,7 +21,9 @@ namespace
 	constexpr unsigned int BodySize = 34;
 
 	constexpr float CentreX = PanelBounds.position.x + PanelBounds.size.x * 0.5f;
-	constexpr float ContentFadeDuration = 0.2f;
+
+	constexpr float PreviewOpacity = 0.55f;
+	constexpr float FadeSpeed = 9.f;   // 1 / seconds toward the target
 }
 
 PlaceholderCategoryPanel::PlaceholderCategoryPanel(Context& context, const sf::String& title, sf::Color accent)
@@ -37,39 +39,38 @@ PlaceholderCategoryPanel::PlaceholderCategoryPanel(Context& context, const sf::S
 	bodyText.setPosition({ CentreX, PanelBounds.position.y + PanelBounds.size.y * 0.5f });
 }
 
-void PlaceholderCategoryPanel::Open()
+void PlaceholderCategoryPanel::SetVisibility(Visibility visibility, float previewFade)
 {
-	contentFade = 0.f;
+	switch (visibility)
+	{
+	case Visibility::Open:    targetAlpha = 1.f; break;
+	case Visibility::Preview: targetAlpha = PreviewOpacity * std::clamp(previewFade, 0.f, 1.f); break;
+	case Visibility::Hidden:  targetAlpha = 0.f; break;
+	}
 }
 
 void PlaceholderCategoryPanel::Update(float deltaTime)
 {
-	contentFade = std::min(1.f, contentFade + deltaTime / ContentFadeDuration);
+	alpha += (targetAlpha - alpha) * std::min(1.f, deltaTime * FadeSpeed);
 }
 
-void PlaceholderCategoryPanel::Draw(sf::RenderTarget& target, float alphaFraction)
+void PlaceholderCategoryPanel::Render(sf::RenderTarget& target)
 {
-	alphaFraction = std::clamp(alphaFraction, 0.f, 1.f);
-	const auto alpha = static_cast<std::uint8_t>(alphaFraction * 255.f);
+	if (alpha <= 0.01f)
+	{
+		return;
+	}
 
-	frame.SetColor(sf::Color(255, 255, 255, alpha));
+	const auto a = static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f);
+
+	frame.SetColor(sf::Color(255, 255, 255, a));
 	frame.Draw(target);
 
-	titleText.setFillColor(sf::Color(accent.r, accent.g, accent.b, alpha));
+	titleText.setFillColor(sf::Color(accent.r, accent.g, accent.b, a));
 	target.draw(titleText);
 
-	bodyText.setFillColor(sf::Color(210, 216, 224, alpha));
+	bodyText.setFillColor(sf::Color(210, 216, 224, a));
 	target.draw(bodyText);
-}
-
-void PlaceholderCategoryPanel::RenderPreview(sf::RenderTarget& target, float alpha)
-{
-	Draw(target, alpha * 0.55f);
-}
-
-void PlaceholderCategoryPanel::RenderContent(sf::RenderTarget& target)
-{
-	Draw(target, contentFade);
 }
 
 bool PlaceholderCategoryPanel::HandleEvent(const sf::Event& /*event*/)

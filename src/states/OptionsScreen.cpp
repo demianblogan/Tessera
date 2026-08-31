@@ -25,6 +25,9 @@ namespace
 
 	// Row order in the column.
 	enum Row : std::size_t { Gameplay = 0, Graphics = 1, Audio = 2, Controls = 3, Language = 4, Back = 5 };
+
+	constexpr sf::Color GraphicsColour{ 90, 200, 255 };   // sky blue
+	constexpr sf::Color AudioColour{ 120, 220, 130 };     // green
 }
 
 OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
@@ -36,11 +39,11 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 	const LocalizationManager& text = context.localization;
 
 	column.AddButton(text.GetText(TextKey::Options::Gameplay), nullptr, false);
-	column.AddButton(text.GetText(TextKey::Options::Graphics), [this] { OpenCategory(Row::Graphics); }, true);
-	column.AddButton(text.GetText(TextKey::Options::Audio), [this] { OpenCategory(Row::Audio); }, true);
+	column.AddButton(text.GetText(TextKey::Options::Graphics), [this] { OpenCategory(Row::Graphics); }, true, GraphicsColour);
+	column.AddButton(text.GetText(TextKey::Options::Audio), [this] { OpenCategory(Row::Audio); }, true, AudioColour);
 	column.AddButton(text.GetText(TextKey::Options::Controls), nullptr, false);
 	column.AddButton(text.GetText(TextKey::Options::Language), nullptr, false);
-	column.AddButton(text.GetText(TextKey::Options::Back), [this] { Leave(); }, true);
+	column.AddButton(text.GetText(TextKey::Options::Back), [this] { Leave(); }, true);   // white
 
 	column.SetLayout(ColumnTopLeft, RowGap);
 	column.SetSelectionChangedCallback([this](std::size_t)
@@ -164,13 +167,25 @@ void OptionsScreen::Update(float deltaTime)
 
 	previewFade = std::min(1.f, previewFade + deltaTime / PreviewFadeDuration);
 
-	if (openIndex && panels[*openIndex])
+	for (std::size_t i = 0; i < RowCount; ++i)
 	{
-		panels[*openIndex]->Update(deltaTime);
-	}
-	else if (previewIndex < RowCount && panels[previewIndex])
-	{
-		panels[previewIndex]->Update(deltaTime);
+		if (!panels[i])
+		{
+			continue;
+		}
+
+		OptionsCategoryPanel::Visibility visibility = OptionsCategoryPanel::Visibility::Hidden;
+		if (openIndex && *openIndex == i)
+		{
+			visibility = OptionsCategoryPanel::Visibility::Open;
+		}
+		else if (!openIndex && previewIndex == i)
+		{
+			visibility = OptionsCategoryPanel::Visibility::Preview;
+		}
+
+		panels[i]->SetVisibility(visibility, previewFade);
+		panels[i]->Update(deltaTime);
 	}
 }
 
@@ -178,12 +193,11 @@ void OptionsScreen::Render(sf::RenderTarget& target)
 {
 	column.Render(target);
 
-	if (openIndex && panels[*openIndex])
+	for (const std::unique_ptr<OptionsCategoryPanel>& panel : panels)
 	{
-		panels[*openIndex]->RenderContent(target);
-	}
-	else if (previewIndex < RowCount && panels[previewIndex])
-	{
-		panels[previewIndex]->RenderPreview(target, previewFade);
+		if (panel)
+		{
+			panel->Render(target);
+		}
 	}
 }

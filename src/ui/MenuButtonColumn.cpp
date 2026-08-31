@@ -36,8 +36,7 @@ namespace
 	constexpr float CompactAlpha = 0.32f;
 	constexpr float CompactSpeed = 5.f;   // 1 / seconds to reach the compact state
 
-	const sf::Color EnabledIdleColour{ 184, 190, 200 };
-	const sf::Color EnabledSelectedColour{ 255, 255, 255 };
+	constexpr float IdleDim = 0.6f;   // an unselected enabled button, vs the selected one
 
 	[[nodiscard]] float EaseOutCubic(float t) noexcept
 	{
@@ -78,11 +77,13 @@ namespace UI
 	{
 	}
 
-	void MenuButtonColumn::AddButton(const sf::String& text, std::function<void()> onActivate, bool enabled)
+	void MenuButtonColumn::AddButton(const sf::String& text, std::function<void()> onActivate, bool enabled,
+		std::optional<sf::Color> colour)
 	{
 		MenuLabel label(font, characterSize);
 		label.SetText(text);
-		buttons.push_back(Button{ std::move(label), std::move(onActivate), enabled, {} });
+		buttons.push_back(Button{
+			std::move(label), std::move(onActivate), enabled, colour.value_or(sf::Color::White), {} });
 	}
 
 	void MenuButtonColumn::SetLayout(sf::Vector2f newTopLeft, float newRowGap)
@@ -254,7 +255,13 @@ namespace UI
 	void MenuButtonColumn::SetCompact(bool nowCompact, std::size_t activeIndex)
 	{
 		compact = nowCompact;
-		compactActive = activeIndex;
+		// Keep the active index while un-compacting, so the closing category
+		// stays full-size for the whole transition instead of another button
+		// jumping to full when the index is reset.
+		if (nowCompact)
+		{
+			compactActive = activeIndex;
+		}
 	}
 
 	void MenuButtonColumn::Update(float deltaTime)
@@ -263,9 +270,12 @@ namespace UI
 		pressTime += deltaTime;
 		glow.Update(deltaTime);
 
-		for (Button& button : buttons)
+		const bool settled = IsIntroDone() && exitTime < 0.f;
+		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			button.label.Update(deltaTime);
+			buttons[i].label.Update(deltaTime);
+			// Only the selected, settled button carries the idle wave.
+			buttons[i].label.SetWaveEnabled(settled && buttons[i].enabled && i == selectedIndex);
 		}
 
 		if (started && introTime < 1e6f)
@@ -347,14 +357,10 @@ namespace UI
 
 			const bool isSelected = settled && button.enabled && i == selectedIndex;
 
-			sf::Color colour = EnabledIdleColour;
-			if (!button.enabled)
+			sf::Color colour = UI::DisabledEntryColour;
+			if (button.enabled)
 			{
-				colour = UI::DisabledEntryColour;
-			}
-			else if (isSelected)
-			{
-				colour = EnabledSelectedColour;
+				colour = isSelected ? button.colour : UI::ScaleRgb(button.colour, IdleDim);
 			}
 
 			float scale = pose.scale;
@@ -364,7 +370,7 @@ namespace UI
 				scale *= 1.f + PressPunch * press;
 				whiten = PressFlash * press;
 
-				const sf::Color tint = UI::ScaleRgb(sf::Color::White, GlowIntensity * breath * pose.alpha);
+				const sf::Color tint = UI::ScaleRgb(button.colour, GlowIntensity * breath * pose.alpha);
 				button.label.DrawGlow(target, glow, pose.centre, scale, tint);
 			}
 
