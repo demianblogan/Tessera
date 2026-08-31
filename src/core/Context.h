@@ -7,6 +7,7 @@
 
 class AudioPlayer;
 class AudioBalance;
+class HapticSettings;
 class StateMachine;
 class SettingsManager;
 class HighScoreManager;
@@ -29,6 +30,7 @@ struct Context
     HighScoreManager& highScores;
     AudioPlayer& audioPlayer;
     AudioBalance& audioBalance;
+    HapticSettings& hapticSettings;
     ShaderManager& shaders;
     GamepadManager& gamepad;
     Haptics::GamepadHaptics& gamepadHaptics;
@@ -45,6 +47,7 @@ struct Context
         ShaderManager& shaders,
         AudioPlayer& audioPlayer,
         AudioBalance& audioBalance,
+        HapticSettings& hapticSettings,
         SettingsManager& settings,
         HighScoreManager& highScores,
         GamepadManager& gamepad,

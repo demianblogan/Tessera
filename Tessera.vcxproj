@@ -130,6 +130,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\utils\SafeFileWrite.cpp" />
     <ClCompile Include="src\audio\AudioBalance.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
+    <ClCompile Include="src\config\HapticSettings.cpp" />
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
@@ -218,7 +219,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h" />
-    <ClInclude Include="src\input\gamepad\HapticProfiles.h" />
+    <ClInclude Include="src\input\gamepad\HapticPulse.h" />
+    <ClInclude Include="src\config\HapticSettings.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DS5State.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DSW_Api.h" />
@@ -287,6 +289,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
     <None Include="assets\data\audio_balance.json" />
+    <None Include="assets\data\haptics.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

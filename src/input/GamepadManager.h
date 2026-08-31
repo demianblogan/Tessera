@@ -6,6 +6,7 @@
 
 namespace sf { class Event; }
 namespace Haptics { class GamepadHaptics; }
+class HapticSettings;
 
 // Xbox / PlayStation controller support. Deliberately self-contained -- it does
 // not go through ActionMap / InputBinding / InputHandler, which are built for
@@ -42,6 +43,11 @@ public:
 	// on every menu move / press it reports, so every menu gets the same
 	// tactile feedback for free. Not owned; must outlive this object.
 	void SetHaptics(Haptics::GamepadHaptics* haptics) noexcept;
+
+	// Optional. Supplies the menu-navigation rumble/lightbar values used with the
+	// haptics above. Not owned; must outlive this object. When unset, built-in
+	// fallback values are used so the class still works standalone.
+	void SetHapticSettings(const HapticSettings* hapticSettings) noexcept;
 
 	// Feed every polled sf::Event so connection changes and "is the player
 	// using the gamepad right now" tracking stay current.
@@ -82,6 +88,7 @@ private:
 	bool isInUse = false;
 
 	Haptics::GamepadHaptics* haptics = nullptr;
+	const HapticSettings* hapticSettings = nullptr;
 
 	bool wasHardDropDown = false;
 	bool wasRightTriggerDown = false;

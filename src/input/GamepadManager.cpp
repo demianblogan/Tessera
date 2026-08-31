@@ -6,7 +6,7 @@
 #include <SFML/Window/Joystick.hpp>
 
 #include "gamepad/GamepadHaptics.h"
-#include "gamepad/HapticProfiles.h"
+#include "gamepad/HapticPulse.h"
 
 namespace
 {
@@ -41,8 +41,13 @@ namespace
 
 namespace
 {
-	// A quick yellow flash on the lightbar for every menu move.
+	// A quick flash on the lightbar for every menu move.
 	constexpr float MenuNavigationLightbarDuration = 0.14f;
+
+	// Used when no HapticSettings has been supplied, so the class still gives
+	// feedback standalone.
+	constexpr HapticSettings::Rumble FallbackMenuRumble{ 0.05f, 0.12f, 0.05f };
+	constexpr HapticSettings::Colour FallbackMenuLightbar{ 255, 255, 0 };
 }
 
 GamepadManager::GamepadManager()
@@ -53,6 +58,11 @@ GamepadManager::GamepadManager()
 void GamepadManager::SetHaptics(Haptics::GamepadHaptics* newHaptics) noexcept
 {
 	haptics = newHaptics;
+}
+
+void GamepadManager::SetHapticSettings(const HapticSettings* newHapticSettings) noexcept
+{
+	hapticSettings = newHapticSettings;
 }
 
 void GamepadManager::HandleEvent(const sf::Event& event)
@@ -103,8 +113,11 @@ GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::E
 
 	if (action != NavigationAction::None && haptics != nullptr)
 	{
-		HapticProfiles::Play(*haptics, HapticProfiles::MenuNavigation);
-		haptics->PulseLightbar(HapticProfiles::MenuLightbar, MenuNavigationLightbarDuration);
+		const HapticSettings::Rumble& rumble = hapticSettings != nullptr ? hapticSettings->menuNavigation : FallbackMenuRumble;
+		const HapticSettings::Colour lightbar = hapticSettings != nullptr ? hapticSettings->menuLightbar : FallbackMenuLightbar;
+
+		Haptics::Pulse(*haptics, rumble);
+		Haptics::FlashLightbar(*haptics, lightbar, MenuNavigationLightbarDuration);
 	}
 
 	return action;

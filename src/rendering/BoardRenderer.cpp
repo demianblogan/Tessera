@@ -8,6 +8,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 
+#include "../config/HapticSettings.h"
 #include "../core/Context.h"
 #include "../gameplay/Board.h"
 #include "../gameplay/GameplaySession.h"
@@ -17,12 +18,6 @@
 #include "../settings/SettingsManager.h"
 #include "EffectsController.h"
 #include "NeonGlow.h"
-
-namespace
-{
-	// The neon halo colour for the active piece; matches the game's cyan accent.
-	const sf::Color NeonTint(120, 210, 255);
-}
 
 BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
@@ -284,6 +279,10 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 			{ (maxX - minX + 1) * BlockSize, (maxY - minY + 1) * BlockSize }
 		};
 
+		// The neon halo colour for the active piece; matches the game's cyan accent.
+		const HapticSettings::Colour& glowColour = context.hapticSettings.activePieceGlow;
+		const sf::Color neonTint(glowColour.r, glowColour.g, glowColour.b);
+
 		glow.Draw(target, pieceArea,
 			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
 			{
@@ -303,7 +302,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 					buffer.draw(pieceSprite, states);
 				}
 			},
-			NeonTint);
+			neonTint);
 
 		blockSprite.setTextureRect(pieceTextureRect);
 		blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });

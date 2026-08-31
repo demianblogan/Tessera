@@ -51,6 +51,9 @@
     <ClCompile Include="src\audio\AudioBalance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\config\HapticSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\audio\AudioPlayer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -350,7 +353,10 @@
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\input\gamepad\HapticProfiles.h">
+    <ClInclude Include="src\input\gamepad\HapticPulse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\config\HapticSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h">
@@ -435,5 +441,6 @@
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
     <None Include="assets\data\audio_balance.json" />
+    <None Include="assets\data\haptics.json" />
   </ItemGroup>
 </Project>

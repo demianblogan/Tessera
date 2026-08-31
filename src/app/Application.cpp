@@ -189,6 +189,7 @@ Application::Application()
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 	, balance("assets/data/audio_balance.json")
+	, hapticSettings("assets/data/haptics.json")
 	, audioPlayer(soundBuffers, balance)
 	, context(
 		stateMachine,
@@ -200,6 +201,7 @@ Application::Application()
 		shaders,
 		audioPlayer,
 		balance,
+		hapticSettings,
 		settings,
 		highScores,
 		gamepad,
@@ -212,6 +214,7 @@ Application::Application()
 
 	// Menu navigation gets a faint haptic tick for free once this is wired.
 	gamepad.SetHaptics(&gamepadHaptics);
+	gamepad.SetHapticSettings(&hapticSettings);
 
 	const sf::Vector2u renderTextureSize
 	{
