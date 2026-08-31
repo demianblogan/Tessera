@@ -37,6 +37,20 @@ settings.block_style_no_outline = Block style: Without outline
 settings.sounds                 = Sounds:
 settings.music                  = Music:
 
+credits.title      = CREDITS
+credits.line_1     = This game was developed by me, Demian Blogan.
+credits.line_2     = It was my second portfolio project in the world of IT.
+credits.line_3     = Version 1.0 began as a simple game with a lot of bugs and weird music.
+credits.line_4     = Over time, through many updates, I improved it into Version 2.0,
+credits.line_5     = adding more mechanics, modes, polish, and content.
+credits.line_6     = What you see now is the fully finished game.
+credits.contact    = If you would like to contact me:
+credits.email      = demianblogan@gmail.com
+credits.youtube    = My YouTube Channel: https://www.youtube.com/@BloganProgrammer
+credits.source     = Source code:
+credits.repository = github.com/demianblogan/Tessera
+credits.back       = Back to Main Menu
+
 stats.title         = TOP-{count} BEST PLAYERS
 stats.footer_return = ESC - RETURN TO MAIN MENU
 stats.footer_delete = DEL - DELETE ALL RECORDS

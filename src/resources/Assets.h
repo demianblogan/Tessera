@@ -42,7 +42,8 @@ namespace Assets
 		GameBackground,
 		CompanyLogo,
 		Cursor,
-		UiArrow
+		UiArrow,
+		UiFrame
 	};
 
 	enum class ShaderID
@@ -103,6 +104,9 @@ namespace Assets
 			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
 			inline constexpr const char* Cursor = "assets/textures/cursor.png";
 			inline constexpr const char* UiArrow = "assets/textures/ui/arrow.png";
+
+			// Ornate 9-slice panel border (corners stay crisp, edges tile).
+			inline constexpr const char* UiFrame = "assets/textures/ui/frame.png";
 		}
 
 		namespace Data

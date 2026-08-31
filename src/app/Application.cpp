@@ -242,6 +242,7 @@ Application::Application()
 	textures.Load(Assets::TextureID::CompanyLogo, TexturePaths::CompanyLogo);
 	textures.Load(Assets::TextureID::Cursor, TexturePaths::Cursor);
 	textures.Load(Assets::TextureID::UiArrow, TexturePaths::UiArrow);
+	textures.Load(Assets::TextureID::UiFrame, TexturePaths::UiFrame);
 
 	namespace ShaderPaths = Assets::Paths::Shaders;
 	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);
