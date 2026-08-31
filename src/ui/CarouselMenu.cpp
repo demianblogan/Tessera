@@ -180,7 +180,8 @@ namespace UI
 	{
 	}
 
-	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled)
+	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled,
+		std::optional<sf::Color> colour)
 	{
 		sf::Text label(font, text, characterSize);
 		const sf::FloatRect bounds = label.getLocalBounds();
@@ -188,9 +189,11 @@ namespace UI
 
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
-			enabled ? UI::TetrominoColours[items.size() % UI::TetrominoColours.size()] : UI::DisabledEntryColour,
-			enabled };
+		const sf::Color entryColour = !enabled
+			? UI::DisabledEntryColour
+			: colour.value_or(UI::TetrominoColours[items.size() % UI::TetrominoColours.size()]);
+
+		Item item{ std::move(label), std::move(onActivate), {}, 0.f, entryColour, enabled };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated

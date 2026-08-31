@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -37,8 +38,10 @@ namespace UI
 		CarouselMenu(const sf::Font& font, unsigned int characterSize, const sf::Texture& arrowTexture);
 
 		// A disabled entry (enabled == false) is greyed, has no glow, and cannot
-		// be activated -- but the ring still rotates through it.
-		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true);
+		// be activated -- but the ring still rotates through it. `colour`
+		// overrides the default per-slot tetromino hue.
+		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true,
+			std::optional<sf::Color> colour = std::nullopt);
 		void SetCenter(sf::Vector2f center);
 
 		// Put `index` at the front with no rotation animation. For rebuilding the

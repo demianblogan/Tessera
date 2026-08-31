@@ -16,9 +16,9 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "CreditsScreen.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
-#include "PlaceholderScreen.h"
 #include "SettingsState.h"
 #include "StatisticsState.h"
 
@@ -43,6 +43,11 @@ namespace
 
 	// How long the exit animation runs before the shell swaps this screen out.
 	constexpr float ExitDuration = 0.40f;
+
+	// A couple of ring entries pin their own hue rather than taking the
+	// per-slot tetromino colour.
+	constexpr sf::Color OptionsColour{ 240, 60, 70 };    // red
+	constexpr sf::Color CreditsColour{ 255, 194, 92 };   // warm gold
 }
 
 MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t frontEntry)
@@ -75,22 +80,24 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 			Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.menuEntryFlyIn);
 		});
 
-	// Ring order; Achievements and Credits are placeholders for now (disabled).
+	// Ring order; Achievements is still a disabled placeholder.
 	carousel.SetCenter(TitleCenter);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this] { this->shell.ExitTo(std::make_unique<GameplayState>(context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
-		[this] { this->shell.ExitTo(std::make_unique<SettingsState>(context)); });
+		[this] { this->shell.ExitTo(std::make_unique<SettingsState>(context)); },
+		true, OptionsColour);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
 		[this] { this->shell.ExitTo(std::make_unique<StatisticsState>(context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Achievements), nullptr, false);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Credits),
 		[this]
 		{
-			this->shell.BeginForward(std::make_unique<PlaceholderScreen>(this->shell),
-				context.localization.GetText(TextKey::Credits::Title), carousel.FrontColour(),
+			this->shell.BeginForward(std::make_unique<CreditsScreen>(this->shell, CreditsColour),
+				context.localization.GetText(TextKey::Credits::Title), CreditsColour,
 				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
-		});
+		},
+		true, CreditsColour);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { context.window.close(); });
 

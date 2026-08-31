@@ -1,12 +1,10 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
-
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
 
+#include "MenuLabel.h"
 #include "../rendering/NeonGlow.h"
 
 namespace sf
@@ -22,8 +20,7 @@ namespace UI
 	// activated menu entry appears to become: RiseFrom() starts it at that
 	// entry's place and size and floats it up to the header slot, growing;
 	// SinkTo() drops it back toward a menu entry and fades it out. It carries the
-	// carousel entry's full look -- dark outline, vertical gradient fill, drop
-	// shadow, a neon bloom, and a gentle per-letter idle wave.
+	// carousel entry's full look through a shared MenuLabel plus a neon bloom.
 	class MenuHeader
 	{
 	public:
@@ -41,32 +38,17 @@ namespace UI
 	private:
 		enum class Mode { Hidden, Rising, Shown, Sinking };
 
-		struct Glyph
-		{
-			char32_t codepoint = 0;
-			float penX = 0.f;   // pen origin, relative to the string centre
-		};
-
-		void SetLabel(const sf::String& label);
-
-		// The interpolated pose for the current frame.
 		struct Pose { sf::Vector2f position; float scale = 1.f; float alpha = 1.f; };
 		[[nodiscard]] Pose CurrentPose() const;
 
-		const sf::Font& font;
-		unsigned int characterSize;
+		MenuLabel label;
 		mutable NeonGlow glow;
-
-		std::vector<Glyph> glyphs;
-		sf::Vector2f inkSize;
-		float inkCentreY = 0.f;
-		sf::Vector2f glowBoxSize;   // fixed per label, so NeonGlow never re-sizes mid-animation
 
 		sf::Color colour{ sf::Color::White };
 
 		Mode mode = Mode::Hidden;
 		float timer = 0.f;
-		float waveTime = 0.f;
+		float animTime = 0.f;   // drives the glow breath
 
 		sf::Vector2f fromPosition;
 		sf::Vector2f toPosition;
