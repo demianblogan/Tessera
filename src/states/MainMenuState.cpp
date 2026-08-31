@@ -148,11 +148,8 @@ void MainMenuState::HandleEvent(const sf::Event& event)
 
 	const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad);
 
-	if (action == MenuInput::Action::Back)
-	{
-		context.window.close();
-		return;
-	}
+	// Back (Escape / gamepad circle / B) is deliberately ignored here: the only
+	// way out of the game is the "Quit" ring entry.
 
 	switch (action)
 	{
