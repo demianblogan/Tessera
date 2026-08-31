@@ -18,7 +18,7 @@ namespace
 
 	constexpr float ControlFraction = 0.46f;   // right part of the row for the control
 	constexpr float ArrowScreenSize = 30.f;    // on-screen size of the carousel arrow sprite
-	constexpr float TogglePadding = 20.f;
+	constexpr float CheckboxSize = 44.f;       // on-screen size of the toggle checkbox
 
 	// Arrow press feedback, matching the main-menu ring arrows.
 	constexpr float ArrowPressDuration = 0.22f;
@@ -300,15 +300,11 @@ namespace UI
 	// =====================================================================
 
 	ToggleRow::ToggleRow(const sf::Font& fontRef, const sf::String& label,
-		const sf::String& onLabelRef, const sf::String& offLabelRef, bool on,
-		std::function<void(bool)> onChange)
+		const sf::Texture& checkboxTexture, bool on, std::function<void(bool)> onChange)
 		: OptionRow(fontRef, label)
 		, on(on)
-		, onLabel(onLabelRef)
-		, offLabel(offLabelRef)
+		, checkboxTexture(checkboxTexture)
 		, onChange(std::move(onChange))
-		, onText(fontRef, "", ValueSize)
-		, offText(fontRef, "", ValueSize)
 	{
 	}
 
@@ -345,63 +341,43 @@ namespace UI
 		}
 	}
 
-	sf::FloatRect ToggleRow::OptionBox(bool onSide) const
+	sf::FloatRect ToggleRow::CheckboxBounds() const
 	{
 		const sf::FloatRect area = ControlArea();
-		const float half = area.size.x * 0.5f;
-		const float x = onSide ? area.position.x + half : area.position.x;
-		return { { x, area.position.y }, { half, area.size.y } };
+		const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
+		return { { centre.x - CheckboxSize * 0.7f, centre.y - CheckboxSize * 0.7f },
+			{ CheckboxSize * 1.4f, CheckboxSize * 1.4f } };
 	}
 
 	bool ToggleRow::HandlePointer(sf::Vector2f point, bool clicked)
 	{
-		if (!enabled)
+		if (!enabled || !CheckboxBounds().contains(point))
 		{
 			return false;
 		}
 
-		if (OptionBox(true).contains(point))
+		if (clicked)
 		{
-			if (clicked) { Set(true); }
-			return true;
+			Set(!on);
 		}
-		if (OptionBox(false).contains(point))
-		{
-			if (clicked) { Set(false); }
-			return true;
-		}
-		return false;
+		return true;
 	}
 
 	void ToggleRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
 	{
-		const auto drawOption = [&](sf::Text& text, const sf::String& label, bool active, bool onSide)
-		{
-			text.setString(label);
-			const sf::FloatRect bounds = text.getLocalBounds();
-			text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
+		const sf::FloatRect area = ControlArea();
+		const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
 
-			const sf::FloatRect box = OptionBox(onSide);
-			const sf::Vector2f centre{ box.position.x + box.size.x * 0.5f, box.position.y + box.size.y * 0.5f };
-			text.setPosition(centre);
+		const bool live = selected && enabled;
+		const float scale = CheckboxSize / 26.f * (live ? 1.1f : 1.f);
 
-			if (active && enabled)
-			{
-				sf::RectangleShape pill({ bounds.size.x + 2.f * TogglePadding, box.size.y * 0.66f });
-				pill.setOrigin(pill.getSize() * 0.5f);
-				pill.setPosition(centre);
-				pill.setFillColor(WithAlpha(AccentColour, Alpha(panelAlpha, 0.22f)));
-				pill.setOutlineThickness(2.f);
-				pill.setOutlineColor(WithAlpha(AccentColour, Alpha(panelAlpha)));
-				target.draw(pill);
-			}
-
-			const sf::Color c = !enabled ? DisabledLabel : (active ? sf::Color::White : sf::Color(140, 146, 156));
-			text.setFillColor(WithAlpha(c, Alpha(panelAlpha)));
-			target.draw(text);
-		};
-
-		drawOption(offText, offLabel, !on, false);
-		drawOption(onText, onLabel, on, true);
+		sf::Sprite box(checkboxTexture);
+		box.setTextureRect(on ? sf::IntRect{ { 0, 0 }, { 26, 26 } } : sf::IntRect{ { 28, 0 }, { 26, 26 } });
+		box.setOrigin({ 13.f, 13.f });
+		box.setScale({ scale, scale });
+		box.setPosition(centre);
+		box.setColor(WithAlpha(enabled ? (live ? sf::Color::White : sf::Color(210, 216, 224))
+			: sf::Color(120, 124, 132), Alpha(panelAlpha)));
+		target.draw(box);
 	}
 }

@@ -11,21 +11,19 @@ namespace sf
 {
 	class Font;
 	class RenderTarget;
-	class Texture;
 }
 
 namespace UI
 {
 	// A modal yes / no dialog: dims the screen and shows a centred box with a
-	// message and two buttons -- a tick and a cross, each on a checkbox sprite.
-	// Drive it with Navigate(); poll TakeResult() for the answer (nullopt while
-	// still open).
+	// message and two framed text buttons. Drive it with Navigate(); poll
+	// TakeResult() for the answer (nullopt while still open).
 	class ConfirmDialog
 	{
 	public:
-		ConfirmDialog(const sf::Font& messageFont, const sf::Texture& checkboxTexture);
+		explicit ConfirmDialog(const sf::Font& font);
 
-		void Show(const sf::String& message);
+		void Show(const sf::String& message, const sf::String& yesLabel, const sf::String& noLabel);
 
 		[[nodiscard]] bool IsOpen() const { return open; }
 		[[nodiscard]] std::optional<bool> TakeResult();
@@ -37,11 +35,11 @@ namespace UI
 
 	private:
 		void Resolve(bool answer);
-		void DrawButton(sf::RenderTarget& target, bool yesSide, bool chosen) const;
+		void DrawButton(sf::RenderTarget& target, sf::Text& text, sf::Vector2f centre, bool chosen) const;
 
-		const sf::Texture& checkboxTexture;
-
-		sf::Text messageText;
+		mutable sf::Text messageText;
+		mutable sf::Text yesText;
+		mutable sf::Text noText;
 
 		bool open = false;
 		bool yesSelected = false;

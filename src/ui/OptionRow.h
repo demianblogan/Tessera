@@ -98,13 +98,13 @@ namespace UI
 		int hoveredArrow = 0;   // -1 left, +1 right, 0 none
 	};
 
-	// Label + [ On | Off ].
+	// Label + a checkbox (a tick sprite when on, a cross sprite when off,
+	// drawn from a two-frame texture).
 	class ToggleRow final : public OptionRow
 	{
 	public:
 		ToggleRow(const sf::Font& font, const sf::String& label,
-			const sf::String& onLabel, const sf::String& offLabel, bool on,
-			std::function<void(bool)> onChange);
+			const sf::Texture& checkboxTexture, bool on, std::function<void(bool)> onChange);
 
 		void Adjust(int direction) override;
 		void Activate() override;
@@ -118,13 +118,10 @@ namespace UI
 
 	private:
 		void Set(bool value);
-		[[nodiscard]] sf::FloatRect OptionBox(bool onSide) const;
+		[[nodiscard]] sf::FloatRect CheckboxBounds() const;
 
 		bool on = false;
-		sf::String onLabel;
-		sf::String offLabel;
+		const sf::Texture& checkboxTexture;
 		std::function<void(bool)> onChange;
-		mutable sf::Text onText;
-		mutable sf::Text offText;
 	};
 }

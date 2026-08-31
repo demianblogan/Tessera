@@ -59,7 +59,7 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 		{ context.fonts.Get(Assets::FontID::Main), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Main), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Main), ButtonSize } } }
-	, dialog(context.fonts.Get(Assets::FontID::Main), context.textures.Get(Assets::TextureID::Checkbox))
+	, dialog(context.fonts.Get(Assets::FontID::Main))
 	, resolutions(context.display.AvailableResolutions())
 {
 	const LocalizationManager& text = context.localization;
@@ -163,6 +163,7 @@ void GraphicsCategoryPanel::BuildRows()
 	const LocalizationManager& text = context.localization;
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 	const sf::Texture& arrow = context.textures.Get(Assets::TextureID::CarouselArrow);
+	const sf::Texture& checkbox = context.textures.Get(Assets::TextureID::Checkbox);
 
 	rows.clear();
 
@@ -201,20 +202,17 @@ void GraphicsCategoryPanel::BuildRows()
 	windowModeRowPtr = windowModeRow.get();
 	rows.push_back(std::move(windowModeRow));
 
-	const sf::String on = text.GetText(TextKey::Options::On);
-	const sf::String off = text.GetText(TextKey::Options::Off);
-
-	auto vsyncRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::Vsync), on, off,
+	auto vsyncRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::Vsync), checkbox,
 		working.verticalSyncEnabled, [this](bool value) { working.verticalSyncEnabled = value; });
 	vsyncRowPtr = vsyncRow.get();
 	rows.push_back(std::move(vsyncRow));
 
-	auto showFpsRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::ShowFps), on, off,
+	auto showFpsRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::ShowFps), checkbox,
 		working.showFps, [this](bool value) { working.showFps = value; });
 	showFpsRowPtr = showFpsRow.get();
 	rows.push_back(std::move(showFpsRow));
 
-	auto crtRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::CrtFilter), on, off,
+	auto crtRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::CrtFilter), checkbox,
 		working.crtFilterEnabled, [this](bool value) { working.crtFilterEnabled = value; });
 	crtRowPtr = crtRow.get();
 	rows.push_back(std::move(crtRow));
@@ -368,7 +366,9 @@ void GraphicsCategoryPanel::BackPressed()
 {
 	if (IsDirty())
 	{
-		dialog.Show(context.localization.GetText(TextKey::Options::Unsaved));
+		const LocalizationManager& text = context.localization;
+		dialog.Show(text.GetText(TextKey::Options::Unsaved),
+			text.GetText(TextKey::Common::Yes), text.GetText(TextKey::Common::No));
 	}
 	else
 	{

@@ -56,8 +56,6 @@ namespace TextKey
 		inline constexpr std::string_view ModeFullscreen = "options.mode_fullscreen";
 		inline constexpr std::string_view ModeBorderless = "options.mode_borderless";
 		inline constexpr std::string_view ModeWindow     = "options.mode_window";
-		inline constexpr std::string_view On             = "options.on";
-		inline constexpr std::string_view Off            = "options.off";
 		inline constexpr std::string_view Apply          = "options.apply";
 		inline constexpr std::string_view Reset          = "options.reset";
 		inline constexpr std::string_view BackButton     = "options.back_button";
