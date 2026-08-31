@@ -14,8 +14,6 @@
 #include "../gameplay/GameplaySession.h"
 #include "../gameplay/Tetromino.h"
 #include "../gameplay/TetrominoShapes.h"
-#include "../settings/GameSettings.h"
-#include "../settings/SettingsManager.h"
 #include "EffectsController.h"
 #include "NeonGlow.h"
 
@@ -25,24 +23,10 @@ BoardRenderer::BoardRenderer(Context& context)
 	// No code
 }
 
-Assets::TextureID BoardRenderer::ResolveBlockTexture() const
-{
-	switch (context.settings.GetSettings().blockRenderStyle)
-	{
-	case BlockRenderStyle::WithOutline:
-		return Assets::TextureID::BlockSpritesheetWithOutline;
-
-	case BlockRenderStyle::WithoutOutline:
-		return Assets::TextureID::BlockSpritesheetWithoutOutline;
-	}
-
-	std::unreachable();
-}
-
 void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
 	NeonGlow& glow) const
 {
-	sf::Sprite blockSprite(context.textures.Get(ResolveBlockTexture()));
+	sf::Sprite blockSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
 
 	blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
 
@@ -286,7 +270,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		glow.Draw(target, pieceArea,
 			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
 			{
-				sf::Sprite pieceSprite(context.textures.Get(ResolveBlockTexture()));
+				sf::Sprite pieceSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
 				pieceSprite.setTextureRect(pieceTextureRect);
 				pieceSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
 
@@ -324,7 +308,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::Vector2f centre) const
 {
-	sf::Sprite blockSprite(context.textures.Get(ResolveBlockTexture()));
+	sf::Sprite blockSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
 
 	const auto previewBlockPositions = session.GetNextTetromino().GetBlockPositions();
 

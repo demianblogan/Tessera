@@ -27,10 +27,8 @@ void Application::ApplyWindowLifecycleEvent(const sf::Event& event)
 	}
 	else if (event.is<sf::Event::Resized>())
 	{
-		// Keep rendering in the fixed 1920x1080 virtual space; SFML stretches
-		// it to whatever size the window now is. Proper letterboxing arrives
-		// with the DisplayManager port.
-		window.setView(gameView);
+		// Refit the 1920x1080 render into the new window size (letterboxed).
+		displayManager.FitView(window);
 	}
 }
 
@@ -123,7 +121,7 @@ void Application::DrawCursor(sf::RenderTarget& target)
 
 	// Window pixel -> virtual (1920x1080) coordinates, so the cursor lands in
 	// the same space the states render in and picks up the CRT pass with them.
-	const sf::Vector2f position = window.mapPixelToCoords(sf::Mouse::getPosition(window), gameView);
+	const sf::Vector2f position = window.mapPixelToCoords(sf::Mouse::getPosition(window), window.getView());
 	cursor->Render(target, position);
 }
 
@@ -144,21 +142,24 @@ void Application::Render()
 	window.clear();
 	crtShader.setUniform("time", context.totalTime);
 
+	const bool applyCrt = context.settings.GetSettings().crtFilterEnabled;
+
 	if (!blurBackdrop)
 	{
 		renderTexture.clear();
-		renderTexture.setView(gameView);
+		renderTexture.setView(renderView);
 		stateMachine.RenderStates(renderTexture);
 		DrawCursor(renderTexture);
 		renderTexture.display();
 
-		window.draw(sf::Sprite(renderTexture.getTexture()), &crtShader);
+		const sf::Sprite frame(renderTexture.getTexture());
+		if (applyCrt) { window.draw(frame, &crtShader); } else { window.draw(frame); }
 	}
 	else
 	{
 		// The states below, blurred, then the top state drawn crisp on top.
 		gameplayTexture.clear();
-		gameplayTexture.setView(gameView);
+		gameplayTexture.setView(renderView);
 		stateMachine.RenderStatesExceptTop(gameplayTexture);
 		gameplayTexture.display();
 
@@ -168,7 +169,8 @@ void Application::Render()
 		DrawCursor(finalTexture);
 		finalTexture.display();
 
-		window.draw(sf::Sprite(finalTexture.getTexture()), &crtShader);
+		const sf::Sprite frame(finalTexture.getTexture());
+		if (applyCrt) { window.draw(frame, &crtShader); } else { window.draw(frame); }
 	}
 
 	// A crisp overlay, drawn after the CRT pass so its scanlines / aberration
@@ -184,8 +186,7 @@ void Application::Render()
 Application::Application()
 	// Members are listed in declaration order so the initialisation order is
 	// obvious; `context` is last because it binds references to the rest.
-	: window(sf::VideoMode::getDesktopMode(), "Tessera", sf::Style::None, sf::State::Windowed)
-	, gameView({ VIRTUAL_RESOLUTION / 2.f, VIRTUAL_RESOLUTION })
+	: renderView(sf::FloatRect({ 0.f, 0.f }, VIRTUAL_RESOLUTION))
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
 	, balance("assets/data/audio_balance.json")
@@ -202,15 +203,23 @@ Application::Application()
 		audioPlayer,
 		balance,
 		hapticSettings,
+		displayManager,
 		settings,
 		highScores,
 		gamepad,
 		gamepadHaptics,
 		localization)
 {
-	// The game draws its own cursor (UI::GlowingCursor); the OS one stays off.
-	window.setMouseCursorVisible(false);
-	window.setView(gameView);
+	// The window is created here from the saved display settings (mode +
+	// resolution). A fresh install has no resolution yet -- fill in the native
+	// one. The window draws its own cursor (UI::GlowingCursor); the OS one
+	// stays off.
+	settings.Load();
+	if (settings.GetSettings().display.resolution.x == 0u)
+	{
+		settings.GetSettings().display.resolution = displayManager.DesktopResolution();
+	}
+	displayManager.Apply(window, settings.GetSettings().display);
 
 	// Menu navigation gets a faint haptic tick for free once this is wired.
 	gamepad.SetHaptics(&gamepadHaptics);
@@ -234,7 +243,6 @@ Application::Application()
 	// the loading screen then streams the audio and fonts in the background.
 	namespace TexturePaths = Assets::Paths::Textures;
 	textures.Load(Assets::TextureID::BlockSpritesheetWithOutline, TexturePaths::BlockSpritesheetWithOutline);
-	textures.Load(Assets::TextureID::BlockSpritesheetWithoutOutline, TexturePaths::BlockSpritesheetWithoutOutline);
 	textures.Load(Assets::TextureID::ButtonBackground, TexturePaths::ButtonBackground);
 	textures.Load(Assets::TextureID::MenuBackground, TexturePaths::MenuBackground);
 	textures.Load(Assets::TextureID::PanelBackground, TexturePaths::PanelBackground);
@@ -268,7 +276,6 @@ Application::Application()
 			<< Assets::Paths::Data::LocalizationDir << "\" -- the UI will show raw text keys.\n";
 	}
 
-	settings.Load();
 	settings.Apply(context);
 
 	highScores.Load();

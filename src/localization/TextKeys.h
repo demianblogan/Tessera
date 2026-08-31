@@ -37,24 +37,6 @@ namespace TextKey
 		inline constexpr std::string_view MainMenu  = "game_over.main_menu";
 	}
 
-	namespace Settings
-	{
-		inline constexpr std::string_view Title             = "settings.title";
-		inline constexpr std::string_view SectionGraphics   = "settings.section_graphics";
-		inline constexpr std::string_view SectionAudio      = "settings.section_audio";
-		inline constexpr std::string_view FooterReturn      = "settings.footer_return";
-		inline constexpr std::string_view VsyncOn           = "settings.vsync_on";
-		inline constexpr std::string_view VsyncOff          = "settings.vsync_off";
-		inline constexpr std::string_view ShowFpsOn         = "settings.show_fps_on";
-		inline constexpr std::string_view ShowFpsOff        = "settings.show_fps_off";
-		inline constexpr std::string_view FpsLimit          = "settings.fps_limit";
-		inline constexpr std::string_view FpsUnlimited      = "settings.fps_unlimited";
-		inline constexpr std::string_view BlockStyleOutline = "settings.block_style_outline";
-		inline constexpr std::string_view BlockStyleNoOutline = "settings.block_style_no_outline";
-		inline constexpr std::string_view Sounds            = "settings.sounds";
-		inline constexpr std::string_view Music             = "settings.music";
-	}
-
 	namespace Options
 	{
 		inline constexpr std::string_view Title    = "options.title";

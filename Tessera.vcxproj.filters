@@ -87,10 +87,7 @@
     <ClCompile Include="src\core\Context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\SettingsState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\states\SettingsRowList.cpp">
+    <ClCompile Include="src\display\DisplayManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\Layout.cpp">
@@ -314,10 +311,10 @@
     <ClInclude Include="src\settings\SettingsManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\SettingsState.h">
+    <ClInclude Include="src\display\DisplayManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\SettingsRowList.h">
+    <ClInclude Include="src\display\DisplayMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Element.h">

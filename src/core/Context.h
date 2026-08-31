@@ -15,12 +15,14 @@ class GamepadManager;
 class LocalizationManager;
 
 namespace Haptics { class GamepadHaptics; }
+namespace Display { class DisplayManager; }
 
 struct Context
 {
     StateMachine& stateMachine;
 
     sf::RenderWindow& window;
+    Display::DisplayManager& display;
 
     FontManager& fonts;
     MusicManager& music;
@@ -48,6 +50,7 @@ struct Context
         AudioPlayer& audioPlayer,
         AudioBalance& audioBalance,
         HapticSettings& hapticSettings,
+        Display::DisplayManager& display,
         SettingsManager& settings,
         HighScoreManager& highScores,
         GamepadManager& gamepad,

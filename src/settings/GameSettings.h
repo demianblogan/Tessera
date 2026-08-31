@@ -2,16 +2,11 @@
 
 #include <SFML/Window/Keyboard.hpp>
 
-enum class BlockRenderStyle
-{
-    WithOutline,
-    WithoutOutline
-};
+#include "../display/DisplayMode.h"
 
 // Keyboard bindings for gameplay. Physical scancodes, so they survive a layout
 // change. Not persisted yet -- the rebinding UI and its save/load land with the
-// full Options screen (v1.4.0). Gamepad bindings are fixed and handled by
-// GamepadManager.
+// Controls category. Gamepad bindings are fixed and handled by GamepadManager.
 struct ControlSettings
 {
     sf::Keyboard::Scancode moveLeft = sf::Keyboard::Scancode::Left;
@@ -26,23 +21,20 @@ struct ControlSettings
 // Highest step the sound / music sliders go to (0..MaxVolumeStep).
 inline constexpr unsigned int MaxVolumeStep = 10;
 
-// Upper bound accepted for a saved frame-rate limit. 0 means "unlimited".
-inline constexpr unsigned int MaxFrameRateLimit = 1000;
-
 struct GameSettings
 {
     // Bumped whenever the on-disk settings layout changes. A file written by a
     // different version is preserved as .corrupt and replaced with defaults.
-    static constexpr int FormatVersion = 2;
+    static constexpr int FormatVersion = 3;
 
     // --- Graphics:
 
+    Display::Mode display;
     bool verticalSyncEnabled = true;
-    unsigned int frameRateLimit = 0;
-    BlockRenderStyle blockRenderStyle = BlockRenderStyle::WithOutline;
     bool showFps = false;
+    bool crtFilterEnabled = true;
 
-	// --- Audio:
+    // --- Audio:
 
     unsigned int soundVolume = MaxVolumeStep;
     unsigned int musicVolume = MaxVolumeStep;

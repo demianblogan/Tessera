@@ -22,21 +22,6 @@ game_over.save       = Save
 game_over.restart    = Restart
 game_over.main_menu  = Main Menu
 
-settings.title                  = Settings
-settings.section_graphics       = --- Graphics
-settings.section_audio          = --- Audio
-settings.footer_return          = ESC - RETURN TO MAIN MENU
-settings.vsync_on               = Vertical synchronization: ON
-settings.vsync_off              = Vertical synchronization: OFF
-settings.show_fps_on            = Show FPS: ON
-settings.show_fps_off           = Show FPS: OFF
-settings.fps_limit              = FPS limit:
-settings.fps_unlimited          = Unlimited
-settings.block_style_outline    = Block style: With outline
-settings.block_style_no_outline = Block style: Without outline
-settings.sounds                 = Sounds:
-settings.music                  = Music:
-
 options.title    = OPTIONS
 options.gameplay = Gameplay
 options.graphics = Graphics

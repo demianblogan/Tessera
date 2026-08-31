@@ -32,21 +32,24 @@ void SettingsManager::Load()
 	// kept as .corrupt and replaced with defaults.
 	int formatVersion = 0;
 	GameSettings parsed;
-	int blockRenderStyleValue = 0;
+	int windowModeValue = 0;
+	unsigned int resolutionWidth = 0;
+	unsigned int resolutionHeight = 0;
 
 	file >> formatVersion
 		>> parsed.verticalSyncEnabled
-		>> parsed.frameRateLimit
-		>> blockRenderStyleValue
 		>> parsed.showFps
+		>> parsed.crtFilterEnabled
 		>> parsed.soundVolume
-		>> parsed.musicVolume;
+		>> parsed.musicVolume
+		>> windowModeValue
+		>> resolutionWidth
+		>> resolutionHeight;
 
 	const bool fileIsUsable =
 		static_cast<bool>(file) &&
 		formatVersion == GameSettings::FormatVersion &&
-		(blockRenderStyleValue == 0 || blockRenderStyleValue == 1) &&
-		parsed.frameRateLimit <= MaxFrameRateLimit &&
+		windowModeValue >= 0 && windowModeValue <= 2 &&
 		parsed.soundVolume <= MaxVolumeStep &&
 		parsed.musicVolume <= MaxVolumeStep;
 
@@ -58,7 +61,8 @@ void SettingsManager::Load()
 		return;
 	}
 
-	parsed.blockRenderStyle = static_cast<BlockRenderStyle>(blockRenderStyleValue);
+	parsed.display.windowMode = static_cast<Display::WindowMode>(windowModeValue);
+	parsed.display.resolution = { resolutionWidth, resolutionHeight };
 	settings = parsed;
 }
 
@@ -79,11 +83,13 @@ void SettingsManager::Save() const
 
 		file << GameSettings::FormatVersion << '\n';
 		file << settings.verticalSyncEnabled << '\n';
-		file << settings.frameRateLimit << '\n';
-		file << static_cast<int>(settings.blockRenderStyle) << '\n';
 		file << settings.showFps << '\n';
+		file << settings.crtFilterEnabled << '\n';
 		file << settings.soundVolume << '\n';
 		file << settings.musicVolume << '\n';
+		file << static_cast<int>(settings.display.windowMode) << '\n';
+		file << settings.display.resolution.x << '\n';
+		file << settings.display.resolution.y << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));
@@ -92,11 +98,10 @@ void SettingsManager::Save() const
 void SettingsManager::Apply(Context& context) const
 {
 	// --- Graphics settings ---
+	// The window mode / resolution are applied by Application (they recreate the
+	// window); this only touches per-window toggles.
 
-	// SFML warns against combining vsync with a manual frame-rate limit, so the
-	// limit is only applied when vsync is off.
 	context.window.setVerticalSyncEnabled(settings.verticalSyncEnabled);
-	context.window.setFramerateLimit(settings.verticalSyncEnabled ? 0u : settings.frameRateLimit);
 
 	// --- Audio settings ---
 
