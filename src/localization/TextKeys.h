@@ -64,6 +64,7 @@ namespace TextKey
 		inline constexpr std::string_view Controls = "options.controls";
 		inline constexpr std::string_view Language = "options.language";
 		inline constexpr std::string_view Back     = "options.back";
+		inline constexpr std::string_view ComingSoon = "options.coming_soon";
 	}
 
 	namespace Credits

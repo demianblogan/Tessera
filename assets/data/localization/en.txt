@@ -44,6 +44,7 @@ options.audio    = Audio
 options.controls = Controls
 options.language = Language
 options.back     = Back to Main Menu
+options.coming_soon = Coming soon.
 
 credits.title      = CREDITS
 credits.line_1     = This game was developed by me, Demian Blogan.
