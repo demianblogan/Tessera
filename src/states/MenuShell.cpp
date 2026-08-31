@@ -18,6 +18,10 @@ namespace
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 
+	// Forward transition: how long the press pulse plays before the title flies
+	// off and the header starts to rise.
+	constexpr float ImpulseLead = 0.16f;
+
 	[[nodiscard]] Haptics::RGBColor ToRgb(sf::Color colour) noexcept
 	{
 		return { colour.r, colour.g, colour.b };
@@ -31,7 +35,9 @@ MenuShell::MenuShell(Context& context)
 	, aurora(context.shaders.Get(Assets::ShaderID::MenuAurora))
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
-	, header(context.fonts.Get(Assets::FontID::Menu))
+	, header(context.fonts.Get(Assets::FontID::Menu),
+		context.shaders.Get(Assets::ShaderID::NeonDilate),
+		context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	versionText.setFillColor(sf::Color(150, 160, 170));
 	const sf::FloatRect versionBounds = versionText.getLocalBounds();
@@ -77,7 +83,7 @@ bool MenuShell::IsTransitioning() const
 }
 
 void MenuShell::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
-	sf::Vector2f fromCentre, float fromHeight)
+	sf::Vector2f fromCentre, float fromHeight, std::size_t entryIndex)
 {
 	if (phase != Phase::Steady || onSubScreen || !screen)
 	{
@@ -85,8 +91,15 @@ void MenuShell::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String&
 	}
 
 	nextScreen = std::move(next);
-	header.RiseFrom(fromCentre, fromHeight, label, colour);
-	screen->StartExit();
+	pendingLabel = label;
+	pendingColour = colour;
+	pendingFromCentre = fromCentre;
+	pendingFromHeight = fromHeight;
+	returnEntryIndex = entryIndex;
+
+	screen->PlayActivatePulse();
+	forwardStarted = false;
+	forwardTimer = 0.f;
 	phase = Phase::Forward;
 }
 
@@ -102,7 +115,7 @@ void MenuShell::BeginBack()
 	phase = Phase::Back;
 }
 
-void MenuShell::AdvanceTransition(float /*deltaTime*/)
+void MenuShell::AdvanceTransition(float deltaTime)
 {
 	switch (phase)
 	{
@@ -110,7 +123,17 @@ void MenuShell::AdvanceTransition(float /*deltaTime*/)
 		break;
 
 	case Phase::Forward:
-		if (screen && screen->ExitFinished())
+		forwardTimer += deltaTime;
+		if (!forwardStarted && forwardTimer >= ImpulseLead)
+		{
+			header.RiseFrom(pendingFromCentre, pendingFromHeight, pendingLabel, pendingColour);
+			if (screen)
+			{
+				screen->StartExit();
+			}
+			forwardStarted = true;
+		}
+		if (forwardStarted && screen && screen->ExitFinished())
 		{
 			screen = std::move(nextScreen);
 			screen->PlayIntro();
@@ -122,7 +145,7 @@ void MenuShell::AdvanceTransition(float /*deltaTime*/)
 	case Phase::Back:
 		if (!mainRebuilt && screen && screen->ExitFinished())
 		{
-			auto menu = std::make_unique<MainMenuScreen>(*this, false);
+			auto menu = std::make_unique<MainMenuScreen>(*this, false, returnEntryIndex);
 			header.SinkTo(menu->FrontEntryCentre(), menu->FrontEntryHeight());
 			screen = std::move(menu);
 			onSubScreen = false;

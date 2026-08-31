@@ -36,6 +36,8 @@ public:
 	// sent StartExit() and then kept updating / rendering until ExitFinished()
 	// reports true, at which point the shell swaps it out. A screen that becomes
 	// active through a transition is sent PlayIntro().
+	// A brief press acknowledgement, played before StartExit().
+	virtual void PlayActivatePulse() {}
 	virtual void StartExit() {}
 	[[nodiscard]] virtual bool ExitFinished() const { return true; }
 	virtual void PlayIntro() {}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 
 #include <SFML/Graphics/Color.hpp>
@@ -54,7 +55,7 @@ public:
 	// (`fromCentre` / `fromHeight`) into the header slot, then `next` takes over.
 	// BeginBack() reverses it back to a freshly-built main menu.
 	void BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
-		sf::Vector2f fromCentre, float fromHeight);
+		sf::Vector2f fromCentre, float fromHeight, std::size_t entryIndex);
 	void BeginBack();
 	[[nodiscard]] bool IsTransitioning() const;
 
@@ -83,4 +84,14 @@ private:
 	bool onSubScreen = false;
 	bool mainRebuilt = false;             // Back: has the main menu been put back yet
 	std::unique_ptr<MenuScreen> nextScreen;
+
+	// Forward: a short lead where only the press pulse plays, then the exit /
+	// header rise begin.
+	bool forwardStarted = false;
+	float forwardTimer = 0.f;
+	sf::String pendingLabel;
+	sf::Color pendingColour{ sf::Color::White };
+	sf::Vector2f pendingFromCentre;
+	float pendingFromHeight = 0.f;
+	std::size_t returnEntryIndex = 0;   // ring entry to refocus on when going back
 };

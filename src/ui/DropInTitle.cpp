@@ -62,6 +62,10 @@ namespace
 	constexpr float GradientTopMix = 0.35f;      // fill: how far the top edge is pushed to white
 	constexpr float GradientBottomFactor = 0.55f; // fill: how far the bottom edge is darkened
 
+	// Exit: the word accelerates straight up off the screen and fades.
+	constexpr float ExitDuration = 0.34f;
+	constexpr float ExitLiftDistance = 950.f;
+
 	using UI::Darken;
 	using UI::MixToWhite;
 	using UI::ScaleRgb;
@@ -198,8 +202,47 @@ namespace UI
 		onLetterLand = std::move(callback);
 	}
 
+	void DropInTitle::PlayExit()
+	{
+		if (exitTime < 0.f)
+		{
+			exitTime = 0.f;
+		}
+	}
+
+	float DropInTitle::ExitLift() const
+	{
+		if (exitTime < 0.f)
+		{
+			return 0.f;
+		}
+
+		const float p = std::clamp(exitTime / ExitDuration, 0.f, 1.f);
+		return -p * p * ExitLiftDistance;   // ease-in: slow start, whipping up
+	}
+
+	float DropInTitle::ExitAlpha() const
+	{
+		if (exitTime < 0.f)
+		{
+			return 1.f;
+		}
+
+		return std::clamp(1.f - exitTime / ExitDuration, 0.f, 1.f);
+	}
+
+	bool DropInTitle::ExitComplete() const
+	{
+		return exitTime >= ExitDuration;
+	}
+
 	void DropInTitle::Update(float deltaTime)
 	{
+		if (exitTime >= 0.f)
+		{
+			exitTime += deltaTime;
+		}
+
 		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
 			Glyph& glyph = glyphs[i];
@@ -284,7 +327,7 @@ namespace UI
 	sf::Vector2f DropInTitle::RestingPosition(std::size_t index, const Pose& pose) const
 	{
 		return { center.x + glyphs[index].offsetX,
-				 center.y + kickOffset + glyphs[index].offsetY + pose.y };
+				 center.y + kickOffset + glyphs[index].offsetY + pose.y + ExitLift() };
 	}
 
 	void DropInTitle::DrawGradientLetter(sf::RenderTarget& target, std::size_t index, const Pose& pose,
@@ -298,8 +341,17 @@ namespace UI
 			base = MixToWhite(base, pose.flash);
 		}
 
-		const sf::Color top = MixToWhite(base, GradientTopMix);
-		const sf::Color bottom = Darken(base, GradientBottomFactor);
+		sf::Color top = MixToWhite(base, GradientTopMix);
+		sf::Color bottom = Darken(base, GradientBottomFactor);
+		sf::Color outlineColour = Darken(base, 0.28f);
+
+		// Fade the whole word out while it flies off.
+		if (const float exitAlpha = ExitAlpha(); exitAlpha < 1.f)
+		{
+			top.a = ToByte(static_cast<float>(top.a) * exitAlpha);
+			bottom.a = ToByte(static_cast<float>(bottom.a) * exitAlpha);
+			outlineColour.a = ToByte(static_cast<float>(outlineColour.a) * exitAlpha);
+		}
 
 		const sf::Glyph& fontGlyph = font.getGlyph(glyph.codepoint, characterSize, false);
 		const sf::FloatRect texRect(fontGlyph.textureRect);
@@ -319,7 +371,7 @@ namespace UI
 		outline.setRotation(sf::degrees(pose.rotationDegrees));
 		outline.setScale({ pose.scaleX, pose.scaleY });
 		outline.setFillColor(sf::Color::Transparent);
-		outline.setOutlineColor(Darken(base, 0.28f));
+		outline.setOutlineColor(outlineColour);
 		target.draw(outline);
 
 		sf::VertexArray fill(sf::PrimitiveType::Triangles);
@@ -426,8 +478,8 @@ namespace UI
 			}
 		}
 
-		// -- Per-letter neon bloom ---------------------------------------
-		if (glow != nullptr)
+		// -- Per-letter neon bloom (dropped once the word starts leaving) ----
+		if (glow != nullptr && exitTime < 0.f)
 		{
 			for (std::size_t i = 0; i < glyphs.size(); ++i)
 			{

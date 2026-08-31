@@ -42,10 +42,10 @@ namespace
 	constexpr float SwooshPitchStep = 0.04f;
 
 	// How long the exit animation runs before the shell swaps this screen out.
-	constexpr float ExitDuration = 0.30f;
+	constexpr float ExitDuration = 0.40f;
 }
 
-MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate)
+MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t frontEntry)
 	: MenuScreen(shell)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -89,7 +89,7 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate)
 		{
 			this->shell.BeginForward(std::make_unique<PlaceholderScreen>(this->shell),
 				context.localization.GetText(TextKey::Credits::Title), carousel.FrontColour(),
-				carousel.FrontEntryCentre(), carousel.FrontEntryHeight());
+				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
 		});
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { context.window.close(); });
@@ -98,20 +98,32 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate)
 	{
 		title.Skip();
 		carousel.Skip();
+		carousel.SetFrontImmediate(frontEntry);
 		carouselStarted = true;
 	}
+}
+
+std::size_t MainMenuScreen::CurrentFrontIndex() const
+{
+	return carousel.CurrentFrontIndex();
+}
+
+void MainMenuScreen::PlayActivatePulse()
+{
+	carousel.PulseActivate();
 }
 
 void MainMenuScreen::StartExit()
 {
 	exiting = true;
 	exitTimer = 0.f;
+	title.PlayExit();
 	carousel.StartExit();
 }
 
 bool MainMenuScreen::ExitFinished() const
 {
-	return exiting && exitTimer >= ExitDuration;
+	return exiting && exitTimer >= ExitDuration && title.ExitComplete();
 }
 
 sf::Vector2f MainMenuScreen::FrontEntryCentre() const

@@ -123,6 +123,9 @@
     <ClCompile Include="src\ui\MenuHeader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\PixelDust.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\ui\MenuSparks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -323,7 +326,13 @@
     <ClInclude Include="src\ui\MenuBackdrop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\GlyphQuad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ui\MenuHeader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\PixelDust.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\MenuSparks.h">
