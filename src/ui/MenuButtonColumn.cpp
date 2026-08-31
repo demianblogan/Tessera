@@ -97,6 +97,11 @@ namespace UI
 		onSelectionChanged = std::move(callback);
 	}
 
+	void MenuButtonColumn::SetSwooshCallback(std::function<void(std::size_t)> callback)
+	{
+		onSwoosh = std::move(callback);
+	}
+
 	bool MenuButtonColumn::AnyEnabled() const
 	{
 		return std::any_of(buttons.begin(), buttons.end(), [](const Button& b) { return b.enabled; });
@@ -107,6 +112,7 @@ namespace UI
 		started = true;
 		introTime = 0.f;
 		exitTime = -1.f;
+		swooshFired.assign(buttons.size(), 0);
 
 		// Resting slot: left edge at topLeft.x, so the draw centre is offset by
 		// half the (unscaled) text width.
@@ -285,6 +291,20 @@ namespace UI
 		if (exitTime >= 0.f)
 		{
 			exitTime += deltaTime;
+		}
+
+		// Fire the swoosh as each button launches into the fly-in.
+		if (started && !IsIntroDone() && onSwoosh)
+		{
+			for (std::size_t i = 0; i < buttons.size() && i < swooshFired.size(); ++i)
+			{
+				if (!swooshFired[i]
+					&& (introTime - static_cast<float>(i) * FlyStagger) / FlyDuration >= 0.08f)
+				{
+					swooshFired[i] = 1;
+					onSwoosh(i);
+				}
+			}
 		}
 
 		const float target = compact ? 1.f : 0.f;

@@ -51,6 +51,11 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 		{
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		});
+	column.SetSwooshCallback([this](std::size_t index)
+		{
+			// Same fly-in swoosh as the main-menu ring, pitched a little higher.
+			context.audioPlayer.Play(Assets::SoundID::MenuItemAppeared, 1.02f + 0.05f * static_cast<float>(index));
+		});
 
 	panels[Row::Graphics] = std::make_unique<GraphicsCategoryPanel>(context, GraphicsColour);
 	panels[Row::Audio] = std::make_unique<AudioCategoryPanel>(context, AudioColour);

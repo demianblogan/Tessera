@@ -43,6 +43,9 @@ namespace UI
 		// hover) -- the screen uses it to swap the preview panel.
 		void SetSelectionChangedCallback(std::function<void(std::size_t)> callback);
 
+		// Fired once per button as it launches into the fly-in.
+		void SetSwooshCallback(std::function<void(std::size_t)> callback);
+
 		void Begin();
 		void PlayExit();
 		[[nodiscard]] bool IsIntroDone() const;
@@ -90,6 +93,8 @@ namespace UI
 
 		std::size_t selectedIndex = 0;
 		std::function<void(std::size_t)> onSelectionChanged;
+		std::function<void(std::size_t)> onSwoosh;
+		std::vector<char> swooshFired;
 
 		bool started = false;
 		float introTime = 0.f;
