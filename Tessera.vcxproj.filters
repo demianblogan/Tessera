@@ -57,7 +57,7 @@
     <ClCompile Include="src\states\OptionsScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\PlaceholderCategoryPanel.cpp">
+    <ClCompile Include="src\states\AudioCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp">
@@ -275,7 +275,10 @@
     <ClInclude Include="src\states\OptionsCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\PlaceholderCategoryPanel.h">
+    <ClInclude Include="src\states\AudioCategoryPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\OptionsSfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GraphicsCategoryPanel.h">

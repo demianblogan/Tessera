@@ -184,8 +184,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\states\MainMenuScreen.cpp" />
     <ClCompile Include="src\states\CreditsScreen.cpp" />
     <ClCompile Include="src\states\OptionsScreen.cpp" />
-    <ClCompile Include="src\states\PlaceholderCategoryPanel.cpp" />
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp" />
+    <ClCompile Include="src\states\AudioCategoryPanel.cpp" />
     <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
     <ClCompile Include="src\states\StatisticsState.cpp" />
@@ -286,8 +286,9 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\CreditsScreen.h" />
     <ClInclude Include="src\states\OptionsScreen.h" />
     <ClInclude Include="src\states\OptionsCategoryPanel.h" />
-    <ClInclude Include="src\states\PlaceholderCategoryPanel.h" />
     <ClInclude Include="src\states\GraphicsCategoryPanel.h" />
+    <ClInclude Include="src\states\AudioCategoryPanel.h" />
+    <ClInclude Include="src\states\OptionsSfx.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\settings\SettingsManager.h" />

@@ -12,9 +12,9 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "AudioCategoryPanel.h"
 #include "GraphicsCategoryPanel.h"
 #include "MenuShell.h"
-#include "PlaceholderCategoryPanel.h"
 
 namespace
 {
@@ -53,8 +53,7 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 		});
 
 	panels[Row::Graphics] = std::make_unique<GraphicsCategoryPanel>(context, GraphicsColour);
-	panels[Row::Audio] = std::make_unique<PlaceholderCategoryPanel>(
-		context, text.GetText(TextKey::Options::Audio), AudioColour);
+	panels[Row::Audio] = std::make_unique<AudioCategoryPanel>(context, AudioColour);
 
 	previewIndex = Row::Graphics;   // the column starts focused on the first enabled row
 }

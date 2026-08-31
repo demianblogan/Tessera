@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Font.hpp>
@@ -17,13 +18,12 @@ namespace
 	constexpr unsigned int LabelSize = 46;
 	constexpr unsigned int ValueSize = 42;
 
-	constexpr float ControlFraction = 0.46f;   // right part of the row for the control
-	constexpr float ArrowScreenSize = 30.f;    // on-screen size of the carousel arrow sprite
-	constexpr float CheckboxSize = 46.f;       // on-screen height of the toggle checkbox
+	constexpr float ControlFraction = 0.46f;
+	constexpr float ArrowScreenSize = 30.f;
+	constexpr float CheckboxSize = 46.f;
+
 	constexpr sf::IntRect CheckboxOn{ { 0, 0 }, { 28, 27 } };
 	constexpr sf::IntRect CheckboxOff{ { 28, 0 }, { 28, 27 } };
-	const sf::Color TickColour{ 110, 235, 145 };
-	const sf::Color CrossColour{ 235, 120, 120 };
 
 	// Arrow press feedback, matching the main-menu ring arrows.
 	constexpr float ArrowPressDuration = 0.22f;
@@ -37,8 +37,10 @@ namespace
 	const sf::Color DisabledLabel{ 120, 124, 132 };
 	const sf::Color ValueColour{ 236, 242, 250 };
 	const sf::Color AccentColour{ 120, 210, 255 };
-	const sf::Color ArrowLive{ 210, 216, 224 };   // slightly dimmed; hover brings it to full
+	const sf::Color ArrowLive{ 210, 216, 224 };
 	const sf::Color ArrowDead{ 96, 102, 110 };
+	const sf::Color TickColour{ 110, 235, 145 };
+	const sf::Color CrossColour{ 235, 120, 120 };
 
 	[[nodiscard]] float VerticalCentre(const sf::Text& text, float rowTop, float rowHeight)
 	{
@@ -57,8 +59,6 @@ namespace
 		return { colour.r, colour.g, colour.b, a };
 	}
 
-	// A rounded thick line: the rectangle plus a disc at each end, so joins
-	// between segments don't leave a notch.
 	void RoundedLine(sf::RenderTarget& target, sf::Vector2f a, sf::Vector2f b, float thickness, sf::Color colour)
 	{
 		const sf::Vector2f delta = b - a;
@@ -80,7 +80,6 @@ namespace
 		target.draw(cap);
 	}
 
-	// A symmetric bar centred on `centre`, rotated by `degrees`.
 	void CentredBar(sf::RenderTarget& target, sf::Vector2f centre, float length, float thickness,
 		float degrees, sf::Color colour)
 	{
@@ -95,6 +94,10 @@ namespace
 
 namespace UI
 {
+	// =====================================================================
+	// OptionRow
+	// =====================================================================
+
 	OptionRow::OptionRow(const sf::Font& fontRef, const sf::String& label)
 		: font(fontRef)
 		, labelText(fontRef, label, LabelSize)
@@ -141,6 +144,12 @@ namespace UI
 	{
 		const float target = (selected && enabled) ? 1.f : 0.f;
 		highlight += (target - highlight) * std::min(1.f, deltaTime * 12.f);
+
+		for (float& time : arrowPress)
+		{
+			time += deltaTime;
+		}
+
 		UpdateControl(deltaTime);
 	}
 
@@ -172,126 +181,55 @@ namespace UI
 		RenderControl(target, panelAlpha);
 	}
 
-	// =====================================================================
-	// CarouselRow
-	// =====================================================================
+	// --- arrows ---
 
-	CarouselRow::CarouselRow(const sf::Font& fontRef, const sf::String& label,
-		std::vector<sf::String> options, std::size_t current, const sf::Texture& arrowTexture,
-		std::function<void(std::size_t)> onChange)
-		: OptionRow(fontRef, label)
-		, options(std::move(options))
-		, current(this->options.empty() ? 0 : std::min(current, this->options.size() - 1))
-		, arrowTexture(arrowTexture)
-		, onChange(std::move(onChange))
-		, valueText(fontRef, "", ValueSize)
+	sf::Vector2f OptionRow::ArrowCentre(int side) const
 	{
+		const sf::FloatRect area = ControlArea();
+		const float midY = area.position.y + area.size.y * 0.5f;
+		const float x = area.position.x + area.size.x * (side < 0 ? 0.12f : 0.88f);
+		return { x, midY };
 	}
 
-	void CarouselRow::SetCurrent(std::size_t index)
+	sf::FloatRect OptionRow::ArrowBox(int side) const
 	{
-		if (!options.empty())
+		const sf::Vector2f centre = ArrowCentre(side);
+		const float half = ArrowScreenSize * 0.5f + 10.f;
+		return { { centre.x - half, centre.y - half }, { 2.f * half, 2.f * half } };
+	}
+
+	void OptionRow::PressArrow(int side)
+	{
+		arrowPress[side < 0 ? 0 : 1] = 0.f;
+	}
+
+	int OptionRow::PickArrow(sf::Vector2f point, bool leftLive, bool rightLive)
+	{
+		hoveredArrow = 0;
+		if (leftLive && ArrowBox(-1).contains(point))
 		{
-			current = std::min(index, options.size() - 1);
+			hoveredArrow = -1;
 		}
+		else if (rightLive && ArrowBox(1).contains(point))
+		{
+			hoveredArrow = 1;
+		}
+		return hoveredArrow;
 	}
 
-	void CarouselRow::Adjust(int direction)
+	void OptionRow::DrawArrows(sf::RenderTarget& target, float panelAlpha, bool leftLive, bool rightLive) const
 	{
-		if (!enabled || options.empty())
+		if (arrowTexture == nullptr)
 		{
 			return;
 		}
 
-		const std::size_t next = direction < 0
-			? (current == 0 ? 0 : current - 1)
-			: std::min(current + 1, options.size() - 1);
-
-		pressTime[direction < 0 ? 0 : 1] = 0.f;
-
-		if (next != current)
-		{
-			current = next;
-			if (onChange)
-			{
-				onChange(current);
-			}
-		}
-	}
-
-	void CarouselRow::UpdateControl(float deltaTime)
-	{
-		for (float& time : pressTime)
-		{
-			time += deltaTime;
-		}
-	}
-
-	sf::Vector2f CarouselRow::ArrowCentre(int side) const
-	{
-		// Fixed columns: the arrows line up with a ToggleRow's Off / On options
-		// (the left and right quarter of the control area).
-		const sf::FloatRect area = ControlArea();
-		const float midY = area.position.y + area.size.y * 0.5f;
-		const float x = area.position.x + area.size.x * (side < 0 ? 0.25f : 0.75f);
-		return { x, midY };
-	}
-
-	sf::FloatRect CarouselRow::ArrowBox(int side) const
-	{
-		const sf::Vector2f centre = ArrowCentre(side);
-		const float half = ArrowScreenSize * 0.5f + 8.f;
-		return { { centre.x - half, centre.y - half }, { 2.f * half, 2.f * half } };
-	}
-
-	bool CarouselRow::HandlePointer(sf::Vector2f point, bool clicked)
-	{
-		hoveredArrow = 0;
-		if (!enabled || options.empty())
-		{
-			return false;
-		}
-
-		if (current > 0 && ArrowBox(-1).contains(point))
-		{
-			hoveredArrow = -1;
-		}
-		else if (current + 1 < options.size() && ArrowBox(1).contains(point))
-		{
-			hoveredArrow = 1;
-		}
-
-		if (clicked && hoveredArrow != 0)
-		{
-			Adjust(hoveredArrow);
-		}
-		return hoveredArrow != 0;
-	}
-
-	void CarouselRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
-	{
-		const sf::FloatRect area = ControlArea();
-		const float midY = area.position.y + area.size.y * 0.5f;
-
-		// -- Value --
-		if (!options.empty())
-		{
-			valueText.setString(options[current]);
-			const sf::FloatRect bounds = valueText.getLocalBounds();
-			valueText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-			valueText.setPosition({ area.position.x + area.size.x * 0.5f, midY });
-			const sf::Color c = enabled ? ValueColour : DisabledLabel;
-			valueText.setFillColor(WithAlpha(c, Alpha(panelAlpha)));
-			target.draw(valueText);
-		}
-
-		// -- Arrows --
-		const float baseScale = ArrowScreenSize / static_cast<float>(std::max(1u, arrowTexture.getSize().y));
+		const float baseScale = ArrowScreenSize / static_cast<float>(std::max(1u, arrowTexture->getSize().y));
 
 		const auto drawArrow = [&](int side, bool live)
 		{
 			const std::size_t index = side < 0 ? 0u : 1u;
-			const float press = std::clamp(1.f - pressTime[index] / ArrowPressDuration, 0.f, 1.f);
+			const float press = std::clamp(1.f - arrowPress[index] / ArrowPressDuration, 0.f, 1.f);
 			const bool hovered = live && hoveredArrow == side;
 
 			const sf::Vector2f centre = ArrowCentre(side);
@@ -311,17 +249,16 @@ namespace UI
 				target.draw(ring, sf::RenderStates(sf::BlendAdd));
 			}
 
-			sf::Sprite arrow(arrowTexture);
-			arrow.setOrigin(sf::Vector2f(arrowTexture.getSize()) * 0.5f);
+			sf::Sprite arrow(*arrowTexture);
+			arrow.setOrigin(sf::Vector2f(arrowTexture->getSize()) * 0.5f);
 			const float scale = baseScale * (1.f - ArrowPressDip * press) * (hovered ? 1.18f : 1.f);
-			// Texture points right; the left arrow is mirrored.
-			arrow.setScale({ side < 0 ? -scale : scale, scale });
+			arrow.setScale({ side < 0 ? -scale : scale, scale });   // texture points right
 			arrow.setPosition(drawCentre);
 
 			sf::Color base = live ? ArrowLive : ArrowDead;
 			if (hovered)
 			{
-				base = sf::Color(255, 255, 255);   // full-bright on hover
+				base = sf::Color(255, 255, 255);
 			}
 			const sf::Color tinted{
 				static_cast<std::uint8_t>(base.r + (ArrowPressTint.r - base.r) * press),
@@ -331,8 +268,210 @@ namespace UI
 			target.draw(arrow);
 		};
 
-		drawArrow(-1, enabled && current > 0);
-		drawArrow(1, enabled && !options.empty() && current + 1 < options.size());
+		drawArrow(-1, leftLive);
+		drawArrow(1, rightLive);
+	}
+
+	// =====================================================================
+	// CarouselRow
+	// =====================================================================
+
+	CarouselRow::CarouselRow(const sf::Font& fontRef, const sf::String& label,
+		std::vector<sf::String> options, std::size_t current, const sf::Texture& arrowTexture,
+		std::function<void(std::size_t)> onChange)
+		: OptionRow(fontRef, label)
+		, options(std::move(options))
+		, current(this->options.empty() ? 0 : std::min(current, this->options.size() - 1))
+		, onChange(std::move(onChange))
+		, valueText(fontRef, "", ValueSize)
+	{
+		UseArrows(arrowTexture);
+	}
+
+	void CarouselRow::SetCurrent(std::size_t index)
+	{
+		if (!options.empty())
+		{
+			current = std::min(index, options.size() - 1);
+		}
+	}
+
+	void CarouselRow::Adjust(int direction)
+	{
+		if (!enabled || options.empty())
+		{
+			return;
+		}
+
+		PressArrow(direction);
+
+		const std::size_t next = direction < 0
+			? (current == 0 ? 0 : current - 1)
+			: std::min(current + 1, options.size() - 1);
+
+		if (next != current)
+		{
+			current = next;
+			if (onChange)
+			{
+				onChange(current);
+			}
+		}
+	}
+
+	bool CarouselRow::HandlePointer(sf::Vector2f point, bool clicked)
+	{
+		if (!enabled || options.empty())
+		{
+			return false;
+		}
+
+		const int arrow = PickArrow(point, current > 0, current + 1 < options.size());
+		if (clicked && arrow != 0)
+		{
+			Adjust(arrow);
+		}
+		return arrow != 0;
+	}
+
+	void CarouselRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
+	{
+		const sf::FloatRect area = ControlArea();
+		const float midY = area.position.y + area.size.y * 0.5f;
+
+		if (!options.empty())
+		{
+			valueText.setString(options[current]);
+			const sf::FloatRect bounds = valueText.getLocalBounds();
+			valueText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
+			valueText.setPosition({ area.position.x + area.size.x * 0.5f, midY });
+			const sf::Color c = enabled ? ValueColour : DisabledLabel;
+			valueText.setFillColor(WithAlpha(c, Alpha(panelAlpha)));
+			target.draw(valueText);
+		}
+
+		DrawArrows(target, panelAlpha, enabled && current > 0,
+			enabled && !options.empty() && current + 1 < options.size());
+	}
+
+	// =====================================================================
+	// SliderRow
+	// =====================================================================
+
+	SliderRow::SliderRow(const sf::Font& fontRef, const sf::String& label, const sf::Texture& arrowTexture,
+		int steps, int current, std::function<void(int)> onChange)
+		: OptionRow(fontRef, label)
+		, steps(std::max(1, steps))
+		, current(std::clamp(current, 0, std::max(1, steps)))
+		, onChange(std::move(onChange))
+		, percentText(fontRef, "", 30u)
+	{
+		UseArrows(arrowTexture);
+	}
+
+	void SliderRow::SetCurrent(int value)
+	{
+		current = std::clamp(value, 0, steps);
+	}
+
+	void SliderRow::Set(int value)
+	{
+		const int clamped = std::clamp(value, 0, steps);
+		if (clamped != current)
+		{
+			current = clamped;
+			if (onChange)
+			{
+				onChange(current);
+			}
+		}
+	}
+
+	void SliderRow::Adjust(int direction)
+	{
+		if (!enabled)
+		{
+			return;
+		}
+		PressArrow(direction);
+		Set(current + direction);
+	}
+
+	sf::FloatRect SliderRow::BarRect() const
+	{
+		const sf::FloatRect area = ControlArea();
+		const float inset = area.size.x * 0.20f;   // clear of the arrows
+		const float barHeight = 16.f;
+		return { { area.position.x + inset, area.position.y + area.size.y * 0.5f - barHeight * 0.5f },
+			{ area.size.x - 2.f * inset, barHeight } };
+	}
+
+	bool SliderRow::HandlePointer(sf::Vector2f point, bool clicked)
+	{
+		if (!enabled)
+		{
+			return false;
+		}
+
+		const int arrow = PickArrow(point, current > 0, current < steps);
+		if (arrow != 0)
+		{
+			if (clicked)
+			{
+				Adjust(arrow);
+			}
+			return true;
+		}
+
+		// Click on the bar jumps to the nearest step.
+		const sf::FloatRect bar = BarRect();
+		const sf::FloatRect hit{ { bar.position.x, bar.position.y - 16.f }, { bar.size.x, bar.size.y + 32.f } };
+		if (hit.contains(point))
+		{
+			if (clicked && bar.size.x > 0.f)
+			{
+				const float fraction = std::clamp((point.x - bar.position.x) / bar.size.x, 0.f, 1.f);
+				Set(static_cast<int>(std::lround(fraction * static_cast<float>(steps))));
+			}
+			return true;
+		}
+		return false;
+	}
+
+	void SliderRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
+	{
+		const sf::FloatRect bar = BarRect();
+		const float fraction = static_cast<float>(current) / static_cast<float>(steps);
+
+		const std::uint8_t a = Alpha(panelAlpha);
+		const sf::Color track = enabled ? sf::Color(48, 54, 64) : sf::Color(40, 44, 50);
+		const sf::Color fillColour = enabled ? AccentColour : sf::Color(90, 110, 124);
+
+		sf::RectangleShape trackShape(bar.size);
+		trackShape.setPosition(bar.position);
+		trackShape.setFillColor(WithAlpha(track, a));
+		trackShape.setOutlineThickness(1.5f);
+		trackShape.setOutlineColor(WithAlpha(sf::Color(90, 98, 110), a));
+		target.draw(trackShape);
+
+		if (fraction > 0.f)
+		{
+			sf::RectangleShape fillShape({ bar.size.x * fraction, bar.size.y });
+			fillShape.setPosition(bar.position);
+			fillShape.setFillColor(WithAlpha(fillColour, a));
+			target.draw(fillShape);
+		}
+
+		percentText.setString(std::to_string(current * (100 / steps)) + "%");
+		const sf::FloatRect bounds = percentText.getLocalBounds();
+		percentText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
+		percentText.setPosition({ bar.position.x + bar.size.x * 0.5f, bar.position.y + bar.size.y * 0.5f });
+		percentText.setFillColor(WithAlpha(enabled ? sf::Color::White : DisabledLabel, a));
+		percentText.setOutlineThickness(2.f);
+		percentText.setOutlineColor(WithAlpha(sf::Color(10, 14, 20), a));
+		target.draw(percentText);
+
+		DrawArrows(target, panelAlpha, enabled && current > 0, enabled && current < steps);
 	}
 
 	// =====================================================================
@@ -420,7 +559,6 @@ namespace UI
 			: sf::Color(120, 124, 132), Alpha(panelAlpha)));
 		target.draw(box);
 
-		// The tick / cross itself, drawn from shapes over the empty frame.
 		const float s = CheckboxSize * (live ? 1.08f : 1.f);
 		const float thickness = std::max(3.f, s * 0.13f);
 		const sf::Color symbol = WithAlpha(
@@ -429,7 +567,7 @@ namespace UI
 		if (on)
 		{
 			const sf::Vector2f p0{ centre.x - s * 0.24f, centre.y + s * 0.02f };
-			const sf::Vector2f p1{ centre.x - s * 0.06f, centre.y + s * 0.20f };   // low vertex
+			const sf::Vector2f p1{ centre.x - s * 0.06f, centre.y + s * 0.20f };
 			const sf::Vector2f p2{ centre.x + s * 0.26f, centre.y - s * 0.20f };
 			RoundedLine(target, p0, p1, thickness, symbol);
 			RoundedLine(target, p1, p2, thickness, symbol);

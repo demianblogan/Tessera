@@ -20,7 +20,8 @@ namespace sf
 namespace UI
 {
 	// One row of a settings panel: a left-aligned label and a control on the
-	// right. Concrete rows below add a left/right carousel or an on/off toggle.
+	// right. Rows that use left / right arrows (carousel, slider) get the arrow
+	// rendering, hover and press feedback from this base.
 	class OptionRow
 	{
 	public:
@@ -45,13 +46,22 @@ namespace UI
 		void Render(sf::RenderTarget& target, float panelAlpha) const;
 
 	protected:
-		// The right-hand area the control is laid out in.
 		[[nodiscard]] sf::FloatRect ControlArea() const;
 		[[nodiscard]] std::uint8_t Alpha(float panelAlpha, float extra = 1.f) const;
 		[[nodiscard]] sf::Color LabelColour() const;
 
 		virtual void RenderControl(sf::RenderTarget& target, float panelAlpha) const = 0;
 		virtual void UpdateControl(float /*deltaTime*/) {}
+
+		// --- Left / right arrows (opt-in) ---
+		void UseArrows(const sf::Texture& texture) { arrowTexture = &texture; }
+		[[nodiscard]] sf::Vector2f ArrowCentre(int side) const;   // -1 left, +1 right
+		[[nodiscard]] sf::FloatRect ArrowBox(int side) const;
+		void PressArrow(int side);
+		// Updates the hover state and returns -1 / +1 for the arrow under `point`
+		// (0 for none). `leftLive` / `rightLive` gate the ends.
+		int PickArrow(sf::Vector2f point, bool leftLive, bool rightLive);
+		void DrawArrows(sf::RenderTarget& target, float panelAlpha, bool leftLive, bool rightLive) const;
 
 		const sf::Font& font;
 		mutable sf::Text labelText;
@@ -62,7 +72,12 @@ namespace UI
 
 		bool enabled = true;
 		bool selected = false;
-		float highlight = 0.f;   // eases toward 1 while selected
+		float highlight = 0.f;
+
+	private:
+		const sf::Texture* arrowTexture = nullptr;
+		float arrowPress[2] = { 1000.f, 1000.f };
+		int hoveredArrow = 0;
 	};
 
 	// Label + [ <  value  > ]. Not a loop: the arrows grey out at the ends.
@@ -81,25 +96,42 @@ namespace UI
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
-		void UpdateControl(float deltaTime) override;
 
 	private:
-		[[nodiscard]] sf::Vector2f ArrowCentre(int side) const;   // -1 left, +1 right
-		[[nodiscard]] sf::FloatRect ArrowBox(int side) const;
-
 		std::vector<sf::String> options;
 		std::size_t current = 0;
-		const sf::Texture& arrowTexture;
 		std::function<void(std::size_t)> onChange;
 		mutable sf::Text valueText;
-
-		// Seconds since each arrow (0 = left, 1 = right) was pressed; large = idle.
-		float pressTime[2] = { 1000.f, 1000.f };
-		int hoveredArrow = 0;   // -1 left, +1 right, 0 none
 	};
 
-	// Label + a checkbox (a tick sprite when on, a cross sprite when off,
-	// drawn from a two-frame texture).
+	// Label + [ <  |=====fill====|  > ] with a percent read-out on the bar.
+	class SliderRow final : public OptionRow
+	{
+	public:
+		SliderRow(const sf::Font& font, const sf::String& label, const sf::Texture& arrowTexture,
+			int steps, int current, std::function<void(int)> onChange);
+
+		void Adjust(int direction) override;
+		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+
+		void SetCurrent(int value);
+		[[nodiscard]] int Current() const { return current; }
+
+	protected:
+		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
+
+	private:
+		[[nodiscard]] sf::FloatRect BarRect() const;
+		void Set(int value);
+
+		int steps = 10;
+		int current = 0;
+		std::function<void(int)> onChange;
+		mutable sf::Text percentText;
+	};
+
+	// Label + a checkbox (a tick when on, a cross when off, drawn over a
+	// two-frame sprite).
 	class ToggleRow final : public OptionRow
 	{
 	public:
