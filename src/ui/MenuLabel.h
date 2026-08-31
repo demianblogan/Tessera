@@ -30,6 +30,11 @@ namespace UI
 		void SetText(const sf::String& text);
 		void Update(float deltaTime);   // advances the idle-wave phase
 
+		// Pin the glow box to a fixed size (e.g. the widest button in a column),
+		// so NeonGlow does not re-size its buffers when the glow moves between
+		// labels of different widths. Zero restores the per-label size.
+		void SetGlowBoxSize(sf::Vector2f size);
+
 		[[nodiscard]] sf::Vector2f InkSize() const { return inkSize; }
 		[[nodiscard]] float InkCentreY() const { return inkCentreY; }
 
@@ -47,6 +52,10 @@ namespace UI
 		void DrawGlow(sf::RenderTarget& target, NeonGlow& glow, sf::Vector2f centre, float scale,
 			sf::Color tint) const;
 
+		// The glow box currently in use (fixed if one was set, else derived from
+		// the text). Lets a column pick one size for all its buttons.
+		[[nodiscard]] sf::Vector2f GlowBox() const;
+
 	private:
 		struct Glyph
 		{
@@ -56,13 +65,14 @@ namespace UI
 
 		[[nodiscard]] float WaveOffset(std::size_t index) const;
 
-		const sf::Font& font;
+		const sf::Font* font;
 		unsigned int characterSize;
 
 		std::vector<Glyph> glyphs;
 		sf::Vector2f inkSize;
 		float inkCentreY = 0.f;
-		sf::Vector2f glowBoxSize;
+		sf::Vector2f autoGlowBoxSize;     // derived from the text
+		sf::Vector2f fixedGlowBoxSize;    // {0,0} => use autoGlowBoxSize
 
 		float waveTime = 0.f;
 	};

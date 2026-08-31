@@ -55,6 +55,17 @@ namespace TextKey
 		inline constexpr std::string_view Music             = "settings.music";
 	}
 
+	namespace Options
+	{
+		inline constexpr std::string_view Title    = "options.title";
+		inline constexpr std::string_view Gameplay = "options.gameplay";
+		inline constexpr std::string_view Graphics = "options.graphics";
+		inline constexpr std::string_view Audio    = "options.audio";
+		inline constexpr std::string_view Controls = "options.controls";
+		inline constexpr std::string_view Language = "options.language";
+		inline constexpr std::string_view Back     = "options.back";
+	}
+
 	namespace Credits
 	{
 		inline constexpr std::string_view Title      = "credits.title";

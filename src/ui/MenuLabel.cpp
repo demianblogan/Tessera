@@ -39,7 +39,7 @@ namespace
 namespace UI
 {
 	MenuLabel::MenuLabel(const sf::Font& fontRef, unsigned int size)
-		: font(fontRef)
+		: font(&fontRef)
 		, characterSize(size)
 	{
 	}
@@ -61,18 +61,18 @@ namespace UI
 			const char32_t codepoint = text[i];
 			if (previous != 0)
 			{
-				penX += font.getKerning(previous, codepoint, characterSize) + tracking;
+				penX += font->getKerning(previous, codepoint, characterSize) + tracking;
 			}
 
 			if (codepoint != U' ')
 			{
 				raw.push_back({ codepoint, penX });
-				const sf::FloatRect gb = font.getGlyph(codepoint, characterSize, false).bounds;
+				const sf::FloatRect gb = font->getGlyph(codepoint, characterSize, false).bounds;
 				inkTop = std::min(inkTop, gb.position.y);
 				inkBottom = std::max(inkBottom, gb.position.y + gb.size.y);
 			}
 
-			penX += font.getGlyph(codepoint, characterSize, false).advance;
+			penX += font->getGlyph(codepoint, characterSize, false).advance;
 			previous = codepoint;
 		}
 
@@ -84,10 +84,17 @@ namespace UI
 
 		inkCentreY = (inkTop + inkBottom) * 0.5f;
 		inkSize = { penX, std::max(inkBottom - inkTop, 1.f) };
+		autoGlowBoxSize = { inkSize.x * 1.5f + 120.f, inkSize.y * 2.4f + 120.f };
+	}
 
-		// One fixed glow box, so NeonGlow allocates its buffers once and not
-		// every animation frame.
-		glowBoxSize = { inkSize.x * 1.5f + 120.f, inkSize.y * 2.4f + 120.f };
+	void MenuLabel::SetGlowBoxSize(sf::Vector2f size)
+	{
+		fixedGlowBoxSize = size;
+	}
+
+	sf::Vector2f MenuLabel::GlowBox() const
+	{
+		return (fixedGlowBoxSize.x > 0.f && fixedGlowBoxSize.y > 0.f) ? fixedGlowBoxSize : autoGlowBoxSize;
 	}
 
 	void MenuLabel::Update(float deltaTime)
@@ -141,8 +148,8 @@ namespace UI
 		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
 			const float waveY = WaveOffset(i);
-			const sf::Glyph& body = font.getGlyph(glyphs[i].codepoint, characterSize, false);
-			const sf::Glyph& rim = font.getGlyph(glyphs[i].codepoint, characterSize, false, OutlineThickness);
+			const sf::Glyph& body = font->getGlyph(glyphs[i].codepoint, characterSize, false);
+			const sf::Glyph& rim = font->getGlyph(glyphs[i].codepoint, characterSize, false, OutlineThickness);
 
 			AppendGlyphQuad(shadow, glyphs[i].penX, body, shadowColour, shadowColour,
 				{ ShadowOffset.x, ShadowOffset.y + waveY });
@@ -152,7 +159,7 @@ namespace UI
 
 		sf::RenderStates states;
 		states.transform = transform;
-		states.texture = &font.getTexture(characterSize);
+		states.texture = &font->getTexture(characterSize);
 
 		target.draw(shadow, states);
 		target.draw(outline, states);
@@ -172,9 +179,8 @@ namespace UI
 		transform.scale({ scale, scale });
 		transform.translate({ 0.f, -inkCentreY });
 
-		const sf::FloatRect area{
-			{ centre.x - glowBoxSize.x * 0.5f, centre.y - glowBoxSize.y * 0.5f },
-			glowBoxSize };
+		const sf::Vector2f box = GlowBox();
+		const sf::FloatRect area{ { centre.x - box.x * 0.5f, centre.y - box.y * 0.5f }, box };
 
 		glow.Draw(target, area,
 			[this, &transform](sf::RenderTarget& buffer, const sf::RenderStates& states)
@@ -183,13 +189,13 @@ namespace UI
 				for (std::size_t i = 0; i < glyphs.size(); ++i)
 				{
 					AppendGlyphQuad(white, glyphs[i].penX,
-						font.getGlyph(glyphs[i].codepoint, characterSize, false),
+						font->getGlyph(glyphs[i].codepoint, characterSize, false),
 						sf::Color::White, sf::Color::White, { 0.f, WaveOffset(i) });
 				}
 
 				sf::RenderStates s = states;
 				s.transform *= transform;
-				s.texture = &font.getTexture(characterSize);
+				s.texture = &font->getTexture(characterSize);
 				buffer.draw(white, s);
 			},
 			tint, false);

@@ -184,6 +184,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\states\MenuScreen.cpp" />
     <ClCompile Include="src\states\MainMenuScreen.cpp" />
     <ClCompile Include="src\states\CreditsScreen.cpp" />
+    <ClCompile Include="src\states\OptionsScreen.cpp" />
     <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
     <ClCompile Include="src\states\StatisticsState.cpp" />
@@ -197,6 +198,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\ui\MenuBackdrop.cpp" />
     <ClCompile Include="src\ui\MenuHeader.cpp" />
     <ClCompile Include="src\ui\MenuLabel.cpp" />
+    <ClCompile Include="src\ui\MenuButtonColumn.cpp" />
     <ClCompile Include="src\ui\MenuSparks.cpp" />
     <ClCompile Include="src\ui\PixelDust.cpp" />
     <ClCompile Include="src\ui\Label.cpp" />
@@ -266,6 +268,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\ui\GlyphQuad.h" />
     <ClInclude Include="src\ui\MenuHeader.h" />
     <ClInclude Include="src\ui\MenuLabel.h" />
+    <ClInclude Include="src\ui\MenuButtonColumn.h" />
     <ClInclude Include="src\ui\MenuSparks.h" />
     <ClInclude Include="src\ui\PixelDust.h" />
     <ClInclude Include="src\loading\AssetLoadJob.h" />
@@ -276,6 +279,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\MenuScreen.h" />
     <ClInclude Include="src\states\MainMenuScreen.h" />
     <ClInclude Include="src\states\CreditsScreen.h" />
+    <ClInclude Include="src\states\OptionsScreen.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\settings\SettingsManager.h" />

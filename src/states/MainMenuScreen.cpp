@@ -19,7 +19,7 @@
 #include "CreditsScreen.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
-#include "SettingsState.h"
+#include "OptionsScreen.h"
 #include "StatisticsState.h"
 
 namespace
@@ -85,7 +85,12 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this] { this->shell.ExitTo(std::make_unique<GameplayState>(context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
-		[this] { this->shell.ExitTo(std::make_unique<SettingsState>(context)); },
+		[this]
+		{
+			this->shell.BeginForward(std::make_unique<OptionsScreen>(this->shell, OptionsColour),
+				context.localization.GetText(TextKey::Options::Title), OptionsColour,
+				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
+		},
 		true, OptionsColour);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
 		[this] { this->shell.ExitTo(std::make_unique<StatisticsState>(context)); });
