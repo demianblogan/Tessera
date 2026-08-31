@@ -6,8 +6,7 @@ namespace Assets
 	{
 		Main,
 		Loading,
-		Menu,
-		Credits
+		Menu
 	};
 
 	enum class MusicID
@@ -69,9 +68,6 @@ namespace Assets
 
 			// Main-menu carousel entries. Pixel face with localisation coverage.
 			inline constexpr const char* Menu = "assets/fonts/pixel.ttf";
-
-			// The Credits panel body -- a narrow pixel serif.
-			inline constexpr const char* Credits = "assets/fonts/BarNewRomanPix.ttf";
 		}
 
 		namespace Music

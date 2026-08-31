@@ -22,15 +22,15 @@
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 290.f, 175.f }, { 1340.f, 775.f } };
+	constexpr sf::FloatRect PanelBounds{ { 330.f, 210.f }, { 1260.f, 710.f } };
 	constexpr unsigned int PanelSourceBorder = 28u;   // of the 96px frame texture
-	constexpr sf::Vector2f PanelTargetBorder{ 46.f, 46.f };
+	constexpr sf::Vector2f PanelTargetBorder{ 44.f, 44.f };
 
-	constexpr float LineMaxWidth = PanelBounds.size.x - 170.f;
+	constexpr float LineMaxWidth = PanelBounds.size.x - 160.f;
 	constexpr float CentreX = PanelBounds.position.x + PanelBounds.size.x * 0.5f;
 
-	constexpr unsigned int ButtonTextSize = 52;
-	constexpr float ButtonCentreY = 1002.f;   // below the frame
+	constexpr unsigned int ButtonTextSize = 40;
+	constexpr float ButtonCentreY = 968.f;   // below the frame
 
 	constexpr float IntroDuration = 0.24f;
 	constexpr float ExitDuration = 0.18f;
@@ -50,17 +50,17 @@ namespace
 	};
 
 	constexpr std::array<LineSpec, 11> Lines{ {
-		{ TextKey::Credits::Line1,      50u, 285.f, 3 },
-		{ TextKey::Credits::Line2,      40u, 350.f, 0 },
-		{ TextKey::Credits::Line3,      38u, 400.f, 0 },
-		{ TextKey::Credits::Line4,      38u, 448.f, 0 },
-		{ TextKey::Credits::Line5,      38u, 496.f, 0 },
-		{ TextKey::Credits::Line6,      42u, 556.f, 0 },
-		{ TextKey::Credits::Contact,    36u, 636.f, 1 },
-		{ TextKey::Credits::Email,      42u, 686.f, 2 },
-		{ TextKey::Credits::YouTube,    34u, 742.f, 1 },
-		{ TextKey::Credits::Source,     34u, 794.f, 1 },
-		{ TextKey::Credits::Repository, 40u, 836.f, 2 },
+		{ TextKey::Credits::Line1,      40u, 300.f, 3 },
+		{ TextKey::Credits::Line2,      34u, 358.f, 0 },
+		{ TextKey::Credits::Line3,      33u, 404.f, 0 },
+		{ TextKey::Credits::Line4,      33u, 448.f, 0 },
+		{ TextKey::Credits::Line5,      33u, 492.f, 0 },
+		{ TextKey::Credits::Line6,      36u, 546.f, 0 },
+		{ TextKey::Credits::Contact,    30u, 622.f, 1 },
+		{ TextKey::Credits::Email,      34u, 664.f, 2 },
+		{ TextKey::Credits::YouTube,    29u, 718.f, 1 },
+		{ TextKey::Credits::Source,     29u, 766.f, 1 },
+		{ TextKey::Credits::Repository, 32u, 804.f, 2 },
 	} };
 
 	[[nodiscard]] sf::Color PaletteColour(int palette, sf::Color accent)
@@ -82,7 +82,7 @@ CreditsScreen::CreditsScreen(MenuShell& shell, sf::Color accent)
 	, backLabel(context.fonts.Get(Assets::FontID::Menu), ButtonTextSize)
 	, backGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
-	const sf::Font& bodyFont = context.fonts.Get(Assets::FontID::Credits);
+	const sf::Font& bodyFont = context.fonts.Get(Assets::FontID::Main);
 
 	lines.reserve(Lines.size());
 	for (const LineSpec& spec : Lines)
