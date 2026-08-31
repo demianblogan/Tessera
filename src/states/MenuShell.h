@@ -2,8 +2,10 @@
 
 #include <memory>
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Text.hpp>
+#include <SFML/System/String.hpp>
 
 #include "../core/State.h"
 #include "../ui/MenuAurora.h"
@@ -46,8 +48,19 @@ public:
 	// confirmation, ...).
 	void ExitTo(std::unique_ptr<State> state);
 
+	// Animate from the main menu into a sub-screen: the current screen plays its
+	// exit, the header (`label` in `colour`) rises into place, then `next` takes
+	// over. BeginBack() reverses it back to a freshly-built main menu.
+	void BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour);
+	void BeginBack();
+	[[nodiscard]] bool IsTransitioning() const;
+
 private:
+	enum class Phase { Steady, Forward, Back };
+
 	void ApplyPendingScreen();
+	void AdvanceTransition(float deltaTime);
+	void DriveHeaderAlpha(float target, float deltaTime);
 
 	Context& context;
 
@@ -60,4 +73,14 @@ private:
 	std::unique_ptr<MenuScreen> screen;
 	std::unique_ptr<MenuScreen> pendingScreen;
 	bool screenChangePending = false;
+
+	// --- Screen transition ---
+	Phase phase = Phase::Steady;
+	bool onSubScreen = false;
+	bool mainRebuilt = false;             // Back: has the main menu been put back yet
+	std::unique_ptr<MenuScreen> nextScreen;
+
+	sf::Text headerText;
+	sf::Color headerColour{ sf::Color::White };
+	float headerAlpha = 0.f;
 };

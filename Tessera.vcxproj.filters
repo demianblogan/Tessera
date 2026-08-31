@@ -51,6 +51,9 @@
     <ClCompile Include="src\states\MainMenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\PlaceholderScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\MenuScreenState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -237,6 +240,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\MainMenuScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\PlaceholderScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\MenuScreenState.h">

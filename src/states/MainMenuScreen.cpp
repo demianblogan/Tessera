@@ -18,6 +18,7 @@
 #include "../resources/Assets.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
+#include "PlaceholderScreen.h"
 #include "SettingsState.h"
 #include "StatisticsState.h"
 
@@ -39,9 +40,12 @@ namespace
 
 	constexpr float SwooshBasePitch = 0.94f;
 	constexpr float SwooshPitchStep = 0.04f;
+
+	// How long the exit animation runs before the shell swaps this screen out.
+	constexpr float ExitDuration = 0.30f;
 }
 
-MainMenuScreen::MainMenuScreen(MenuShell& shell)
+MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate)
 	: MenuScreen(shell)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -80,13 +84,42 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell)
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
 		[this] { this->shell.ExitTo(std::make_unique<StatisticsState>(context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Achievements), nullptr, false);
-	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Credits), nullptr, false);
+	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Credits),
+		[this]
+		{
+			this->shell.BeginForward(std::make_unique<PlaceholderScreen>(this->shell),
+				context.localization.GetText(TextKey::Credits::Title), carousel.FrontColour());
+		});
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { context.window.close(); });
+
+	if (!animate)
+	{
+		title.Skip();
+		carousel.Skip();
+		carouselStarted = true;
+	}
+}
+
+void MainMenuScreen::StartExit()
+{
+	exiting = true;
+	exitTimer = 0.f;
+}
+
+bool MainMenuScreen::ExitFinished() const
+{
+	return exiting && exitTimer >= ExitDuration;
 }
 
 void MainMenuScreen::HandleEvent(const sf::Event& event)
 {
+	// Ignore input once the screen is on its way out.
+	if (exiting)
+	{
+		return;
+	}
+
 	// While the build animation plays, any key / button / click skips it.
 	if (!carousel.IsReady())
 	{
@@ -160,6 +193,11 @@ void MainMenuScreen::HandleEvent(const sf::Event& event)
 
 void MainMenuScreen::Update(float deltaTime)
 {
+	if (exiting)
+	{
+		exitTimer += deltaTime;
+	}
+
 	title.Update(deltaTime);
 	titleGlow.Update(deltaTime);
 	entryGlow.Update(deltaTime);

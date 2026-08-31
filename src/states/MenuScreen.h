@@ -32,6 +32,14 @@ public:
 	// Drawn after the shell's background and before its version stamp.
 	virtual void Render(sf::RenderTarget& target) = 0;
 
+	// Transition hooks. A screen being replaced through a shell transition is
+	// sent StartExit() and then kept updating / rendering until ExitFinished()
+	// reports true, at which point the shell swaps it out. A screen that becomes
+	// active through a transition is sent PlayIntro().
+	virtual void StartExit() {}
+	[[nodiscard]] virtual bool ExitFinished() const { return true; }
+	virtual void PlayIntro() {}
+
 	// The lightbar colour to hold while this screen is active; std::nullopt
 	// leaves the lightbar untouched (e.g. during an intro animation).
 	[[nodiscard]] virtual std::optional<sf::Color> LightbarColour() const { return std::nullopt; }
