@@ -180,7 +180,9 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\loading\AssetLoadJob.cpp" />
     <ClCompile Include="src\states\CompanySplashState.cpp" />
     <ClCompile Include="src\states\LoadingState.cpp" />
-    <ClCompile Include="src\states\MainMenuState.cpp" />
+    <ClCompile Include="src\states\MenuShell.cpp" />
+    <ClCompile Include="src\states\MenuScreen.cpp" />
+    <ClCompile Include="src\states\MainMenuScreen.cpp" />
     <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
     <ClCompile Include="src\states\StatisticsState.cpp" />
@@ -262,7 +264,9 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\loading\LoadingProgress.h" />
     <ClInclude Include="src\states\CompanySplashState.h" />
     <ClInclude Include="src\states\LoadingState.h" />
-    <ClInclude Include="src\states\MainMenuState.h" />
+    <ClInclude Include="src\states\MenuShell.h" />
+    <ClInclude Include="src\states\MenuScreen.h" />
+    <ClInclude Include="src\states\MainMenuScreen.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\settings\SettingsManager.h" />

@@ -11,7 +11,7 @@
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../resources/Assets.h"
-#include "MainMenuState.h"
+#include "MenuShell.h"
 
 CompanySplashState::CompanySplashState(Context& context)
 	: State(context.stateMachine)
@@ -76,7 +76,7 @@ void CompanySplashState::Finish()
 	}
 
 	isFinishing = true;
-	RequestChange(std::make_unique<MainMenuState>(context));
+	RequestChange(std::make_unique<MenuShell>(context));
 }
 
 void CompanySplashState::UpdateOpacity()

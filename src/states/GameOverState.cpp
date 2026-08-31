@@ -16,7 +16,7 @@
 #include "../ui/Label.h"
 #include "../ui/Spacer.h"
 #include "GameplayState.h"
-#include "MainMenuState.h"
+#include "MenuShell.h"
 
 namespace
 {
@@ -109,7 +109,7 @@ GameOverState::GameOverState(Context& context, int finalScore)
 		AddMenuItem(context.localization.GetText(TextKey::GameOver::MainMenu), [this]
 			{
 				RequestClear();
-				RequestPush(std::make_unique<MainMenuState>(this->context));
+				RequestPush(std::make_unique<MenuShell>(this->context));
 			});
 	}
 
@@ -131,7 +131,7 @@ void GameOverState::OnBack()
 {
 	// Leave without saving.
 	RequestClear();
-	RequestPush(std::make_unique<MainMenuState>(this->context));
+	RequestPush(std::make_unique<MenuShell>(this->context));
 }
 
 bool GameOverState::HandleExtraEvent(const sf::Event& event)
@@ -161,7 +161,7 @@ void GameOverState::SaveRecordAndLeave()
 	context.highScores.Save();
 
 	RequestClear();
-	RequestPush(std::make_unique<MainMenuState>(this->context));
+	RequestPush(std::make_unique<MenuShell>(this->context));
 }
 
 void GameOverState::HandleTextInput(char32_t character)

@@ -10,7 +10,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
-#include "MainMenuState.h"
+#include "MenuShell.h"
 
 namespace
 {
@@ -172,7 +172,7 @@ void StatisticsState::HandleEvent(const sf::Event& event)
 {
 	if (MenuInput::Resolve(event, context.gamepad) == MenuInput::Action::Back)
 	{
-		RequestChange(std::make_unique<MainMenuState>(context));
+		RequestChange(std::make_unique<MenuShell>(context));
 		return;
 	}
 

@@ -42,7 +42,13 @@
     <ClCompile Include="src\loading\AssetLoadJob.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\MainMenuState.cpp">
+    <ClCompile Include="src\states\MenuShell.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\MenuScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\MainMenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\MenuScreenState.cpp">
@@ -224,7 +230,13 @@
     <ClInclude Include="src\loading\LoadingProgress.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\MainMenuState.h">
+    <ClInclude Include="src\states\MenuShell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\MenuScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\MainMenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\MenuScreenState.h">

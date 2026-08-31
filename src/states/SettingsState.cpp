@@ -20,7 +20,7 @@
 #include "../ui/Label.h"
 #include "../ui/Slider.h"
 #include "../ui/Spacer.h"
-#include "MainMenuState.h"
+#include "MenuShell.h"
 
 namespace
 {
@@ -441,7 +441,7 @@ void SettingsState::HandleEvent(const sf::Event& event)
 	switch (const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad))
 	{
 	case MenuInput::Action::Back:
-		RequestChange(std::make_unique<MainMenuState>(context));
+		RequestChange(std::make_unique<MenuShell>(context));
 		return;
 
 	case MenuInput::Action::Up:      rows.SelectPrevious(); return;

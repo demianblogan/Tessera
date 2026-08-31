@@ -10,7 +10,7 @@
 #include "../resources/Assets.h"
 #include "../ui/Label.h"
 #include "../ui/Spacer.h"
-#include "MainMenuState.h"
+#include "MenuShell.h"
 #include "GameplayState.h"
 
 namespace
@@ -51,7 +51,7 @@ PauseState::PauseState(Context& context)
 	AddMenuItem(context.localization.GetText(TextKey::Pause::MainMenu), [this]
 		{
 			RequestClear();
-			RequestPush(std::make_unique<MainMenuState>(this->context));
+			RequestPush(std::make_unique<MenuShell>(this->context));
 		});
 
 	RefreshLayout();
