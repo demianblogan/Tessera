@@ -10,7 +10,6 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 
-#include "../rendering/NeonGlow.h"
 #include "../settings/GameSettings.h"
 #include "../ui/ConfirmDialog.h"
 #include "../ui/MenuLabel.h"
@@ -86,8 +85,8 @@ private:
 
 	std::array<UI::MenuLabel, ButtonCount> buttons;
 	std::array<sf::Vector2f, ButtonCount> buttonPositions{};
+	std::array<sf::FloatRect, ButtonCount> buttonBoxes{};
 	std::array<std::optional<UI::NineSliceFrame>, ButtonCount> buttonFrames;
-	mutable NeonGlow buttonGlow;
 
 	UI::ConfirmDialog dialog;
 

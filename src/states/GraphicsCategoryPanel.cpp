@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -31,8 +32,8 @@ namespace
 	constexpr float RowHeight = 96.f;
 	constexpr float RowGap = 12.f;
 	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 94.f;
-	constexpr float ButtonGap = 128.f;
-	constexpr sf::Vector2f ButtonBoxPadding{ 116.f, 46.f };   // frame size vs the label ink
+	constexpr float ButtonGap = 96.f;
+	constexpr sf::Vector2f ButtonBoxPadding{ 120.f, 84.f };   // frame size vs the widest / tallest label
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
@@ -56,7 +57,6 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize } } }
-	, buttonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, dialog(context.fonts.Get(Assets::FontID::Main),
 		context.textures.Get(Assets::TextureID::Checkbox),
 		context.textures.Get(Assets::TextureID::SettingsButton))
@@ -67,15 +67,8 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	buttons[ButtonId::Reset].SetText(text.GetText(TextKey::Options::Reset));
 	buttons[ButtonId::Back].SetText(text.GetText(TextKey::Options::BackButton));
 
-	sf::Vector2f maxGlowBox{ 0.f, 0.f };
 	for (UI::MenuLabel& button : buttons)
 	{
-		maxGlowBox.x = std::max(maxGlowBox.x, button.GlowBox().x);
-		maxGlowBox.y = std::max(maxGlowBox.y, button.GlowBox().y);
-	}
-	for (UI::MenuLabel& button : buttons)
-	{
-		button.SetGlowBoxSize(maxGlowBox);
 		button.SetWaveEnabled(false);   // settings buttons stay still
 	}
 
@@ -236,26 +229,26 @@ void GraphicsCategoryPanel::BuildRows()
 
 void GraphicsCategoryPanel::LayOutButtons()
 {
-	float totalWidth = 0.f;
+	// One box size for all three buttons (widest label + padding).
+	sf::Vector2f labelMax{ 0.f, 0.f };
 	for (const UI::MenuLabel& button : buttons)
 	{
-		totalWidth += button.InkSize().x;
+		labelMax.x = std::max(labelMax.x, button.InkSize().x);
+		labelMax.y = std::max(labelMax.y, button.InkSize().y);
 	}
-	totalWidth += ButtonGap * (ButtonId::ButtonCount - 1);
+	const sf::Vector2f boxSize{ labelMax.x + ButtonBoxPadding.x, labelMax.y + ButtonBoxPadding.y };
 
+	constexpr float count = static_cast<float>(ButtonId::ButtonCount);
+	const float totalWidth = count * boxSize.x + (count - 1.f) * ButtonGap;
 	float x = PanelBounds.position.x + PanelBounds.size.x * 0.5f - totalWidth * 0.5f;
+
 	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 	{
-		const float labelWidth = buttons[i].InkSize().x;
-		buttonPositions[i] = { x + labelWidth * 0.5f, ButtonRowY };
-
-		const sf::FloatRect box{
-			{ x - ButtonBoxPadding.x * 0.5f, ButtonRowY - (buttons[i].InkSize().y + ButtonBoxPadding.y) * 0.5f },
-			{ labelWidth + ButtonBoxPadding.x, buttons[i].InkSize().y + ButtonBoxPadding.y } };
-		buttonFrames[i].emplace(context.textures.Get(Assets::TextureID::SettingsButton), box, 16u,
+		buttonPositions[i] = { x + boxSize.x * 0.5f, ButtonRowY };
+		buttonBoxes[i] = { { x, ButtonRowY - boxSize.y * 0.5f }, boxSize };
+		buttonFrames[i].emplace(context.textures.Get(Assets::TextureID::SettingsButton), buttonBoxes[i], 16u,
 			sf::Vector2f{ 20.f, 20.f });
-
-		x += labelWidth + ButtonGap;
+		x += boxSize.x + ButtonGap;
 	}
 }
 
@@ -456,7 +449,6 @@ void GraphicsCategoryPanel::Update(float deltaTime)
 		closeRequested = true;
 	}
 
-	buttonGlow.Update(deltaTime);
 	for (UI::MenuLabel& button : buttons)
 	{
 		button.Update(deltaTime);
@@ -483,27 +475,41 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 			row->Render(target, alpha);
 		}
 
+		const auto frac = std::clamp(alpha, 0.f, 1.f);
+
 		for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 		{
 			const bool enabled = ButtonEnabled(i);
 			const bool focused = active && focus == Focus::Buttons && selectedButton == i && !dialog.IsOpen();
 
 			const sf::Color colour = enabled ? ButtonColour[i] : ButtonDisabled[i];
-			const float scale = focused ? 1.05f : 1.f;
+
+			// Focused: a soft glow of the button's own colour around the frame.
+			if (focused)
+			{
+				for (int band = 3; band >= 1; --band)
+				{
+					const float inflate = static_cast<float>(band) * 5.f;
+					sf::RectangleShape halo({ buttonBoxes[i].size.x + 2.f * inflate, buttonBoxes[i].size.y + 2.f * inflate });
+					halo.setOrigin(halo.getSize() * 0.5f);
+					halo.setPosition(buttonPositions[i]);
+					halo.setFillColor(sf::Color::Transparent);
+					halo.setOutlineThickness(3.f);
+					halo.setOutlineColor(sf::Color(colour.r, colour.g, colour.b,
+						static_cast<std::uint8_t>(frac * (70.f - static_cast<float>(band) * 16.f))));
+					target.draw(halo);
+				}
+			}
 
 			if (buttonFrames[i])
 			{
 				buttonFrames[i]->SetColor(sf::Color(255, 255, 255,
-					static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * (enabled ? 1.f : 0.55f) * 255.f)));
+					static_cast<std::uint8_t>(frac * (enabled ? 1.f : 0.55f) * 255.f)));
 				buttonFrames[i]->Draw(target);
 			}
 
-			if (focused)
-			{
-				buttons[i].DrawGlow(target, buttonGlow, buttonPositions[i], scale,
-					UI::ScaleRgb(colour, 0.55f * alpha));
-			}
-			buttons[i].Draw(target, buttonPositions[i], scale, focused ? UI::MixToWhite(colour, 0.25f) : colour, alpha);
+			buttons[i].Draw(target, buttonPositions[i], focused ? 1.04f : 1.f,
+				focused ? UI::MixToWhite(colour, 0.2f) : colour, alpha);
 		}
 	}
 
