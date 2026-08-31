@@ -33,6 +33,11 @@ public:
 	void StartExit() override;
 	[[nodiscard]] bool ExitFinished() const override;
 
+	// The front ring entry's on-screen centre and height -- the shell's header
+	// sinks back to this when returning from a sub-screen.
+	[[nodiscard]] sf::Vector2f FrontEntryCentre() const;
+	[[nodiscard]] float FrontEntryHeight() const;
+
 	[[nodiscard]] std::optional<sf::Color> LightbarColour() const override;
 
 	// No cursor while the title / ring build animation is still playing.

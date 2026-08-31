@@ -56,6 +56,15 @@ namespace UI
 		void RotateRight();
 		void Activate();
 
+		// Play the ring's exit: the front entry and its arrows stop drawing (the
+		// shell's header takes the entry's place), leaving the rest of the ring.
+		void StartExit();
+
+		// The front entry's on-screen centre and ink height, for handing off to
+		// the header at the start of a transition.
+		[[nodiscard]] sf::Vector2f FrontEntryCentre() const;
+		[[nodiscard]] float FrontEntryHeight() const;
+
 		// Mouse. The caller maps the pixel to view coordinates first.
 		enum class PointerHit { None, RotatedLeft, RotatedRight, Activated };
 		PointerHit PointerPressed(sf::Vector2f point);
@@ -121,6 +130,7 @@ namespace UI
 		float rotateTimer = 1.f;     // >= 1 means settled
 
 		bool started = false;
+		bool exiting = false;        // playing the transition-out
 		float introTimer = 0.f;      // 0..1 across the fly-in
 
 		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front

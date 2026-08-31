@@ -1,7 +1,5 @@
 #include "MenuShell.h"
 
-#include <algorithm>
-#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -20,13 +18,6 @@ namespace
 	constexpr unsigned int VersionTextSize = 34;
 	constexpr sf::Vector2f VersionMargin{ 28.f, 22.f };
 
-	// The window header a sub-screen sits under (the grown menu entry lands here).
-	constexpr unsigned int HeaderTextSize = 110;
-	constexpr sf::Vector2f HeaderCentre{ 960.f, 120.f };
-
-	// Seconds for the header to fade fully in or out.
-	constexpr float HeaderFadeDuration = 0.22f;
-
 	[[nodiscard]] Haptics::RGBColor ToRgb(sf::Color colour) noexcept
 	{
 		return { colour.r, colour.g, colour.b };
@@ -40,7 +31,7 @@ MenuShell::MenuShell(Context& context)
 	, aurora(context.shaders.Get(Assets::ShaderID::MenuAurora))
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	, versionText(context.fonts.Get(Assets::FontID::Main), std::string(GameVersion::Text), VersionTextSize)
-	, headerText(context.fonts.Get(Assets::FontID::Menu), "", HeaderTextSize)
+	, header(context.fonts.Get(Assets::FontID::Menu))
 {
 	versionText.setFillColor(sf::Color(150, 160, 170));
 	const sf::FloatRect versionBounds = versionText.getLocalBounds();
@@ -85,7 +76,8 @@ bool MenuShell::IsTransitioning() const
 	return phase != Phase::Steady;
 }
 
-void MenuShell::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour)
+void MenuShell::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
+	sf::Vector2f fromCentre, float fromHeight)
 {
 	if (phase != Phase::Steady || onSubScreen || !screen)
 	{
@@ -93,13 +85,7 @@ void MenuShell::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String&
 	}
 
 	nextScreen = std::move(next);
-
-	headerColour = colour;
-	headerText.setString(label);
-	const sf::FloatRect bounds = headerText.getLocalBounds();
-	headerText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-	headerText.setPosition(HeaderCentre);
-
+	header.RiseFrom(fromCentre, fromHeight, label, colour);
 	screen->StartExit();
 	phase = Phase::Forward;
 }
@@ -116,29 +102,14 @@ void MenuShell::BeginBack()
 	phase = Phase::Back;
 }
 
-void MenuShell::DriveHeaderAlpha(float target, float deltaTime)
-{
-	const float step = deltaTime / HeaderFadeDuration;
-	if (headerAlpha < target)
-	{
-		headerAlpha = std::min(target, headerAlpha + step);
-	}
-	else
-	{
-		headerAlpha = std::max(target, headerAlpha - step);
-	}
-}
-
-void MenuShell::AdvanceTransition(float deltaTime)
+void MenuShell::AdvanceTransition(float /*deltaTime*/)
 {
 	switch (phase)
 	{
 	case Phase::Steady:
-		DriveHeaderAlpha(onSubScreen ? 1.f : 0.f, deltaTime);
 		break;
 
 	case Phase::Forward:
-		DriveHeaderAlpha(1.f, deltaTime);
 		if (screen && screen->ExitFinished())
 		{
 			screen = std::move(nextScreen);
@@ -151,17 +122,15 @@ void MenuShell::AdvanceTransition(float deltaTime)
 	case Phase::Back:
 		if (!mainRebuilt && screen && screen->ExitFinished())
 		{
-			screen = std::make_unique<MainMenuScreen>(*this, false);
+			auto menu = std::make_unique<MainMenuScreen>(*this, false);
+			header.SinkTo(menu->FrontEntryCentre(), menu->FrontEntryHeight());
+			screen = std::move(menu);
 			onSubScreen = false;
 			mainRebuilt = true;
 		}
-		if (mainRebuilt)
+		if (mainRebuilt && header.IsIdle())
 		{
-			DriveHeaderAlpha(0.f, deltaTime);
-			if (headerAlpha <= 0.f)
-			{
-				phase = Phase::Steady;
-			}
+			phase = Phase::Steady;
 		}
 		break;
 	}
@@ -201,6 +170,7 @@ void MenuShell::Update(float deltaTime)
 		screen->Update(deltaTime);
 	}
 
+	header.Update(deltaTime);
 	AdvanceTransition(deltaTime);
 	ApplyPendingScreen();
 
@@ -226,12 +196,7 @@ void MenuShell::Render(sf::RenderTarget& target)
 		screen->Render(target);
 	}
 
-	if (headerAlpha > 0.f)
-	{
-		const auto alpha = static_cast<std::uint8_t>(std::clamp(headerAlpha, 0.f, 1.f) * 255.f);
-		headerText.setFillColor(sf::Color(headerColour.r, headerColour.g, headerColour.b, alpha));
-		target.draw(headerText);
-	}
+	header.Render(target);
 
 	versionText.setPosition(target.getView().getSize() - VersionMargin);
 	target.draw(versionText);

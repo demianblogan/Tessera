@@ -88,7 +88,8 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate)
 		[this]
 		{
 			this->shell.BeginForward(std::make_unique<PlaceholderScreen>(this->shell),
-				context.localization.GetText(TextKey::Credits::Title), carousel.FrontColour());
+				context.localization.GetText(TextKey::Credits::Title), carousel.FrontColour(),
+				carousel.FrontEntryCentre(), carousel.FrontEntryHeight());
 		});
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Quit),
 		[this] { context.window.close(); });
@@ -105,11 +106,22 @@ void MainMenuScreen::StartExit()
 {
 	exiting = true;
 	exitTimer = 0.f;
+	carousel.StartExit();
 }
 
 bool MainMenuScreen::ExitFinished() const
 {
 	return exiting && exitTimer >= ExitDuration;
+}
+
+sf::Vector2f MainMenuScreen::FrontEntryCentre() const
+{
+	return carousel.FrontEntryCentre();
+}
+
+float MainMenuScreen::FrontEntryHeight() const
+{
+	return carousel.FrontEntryHeight();
 }
 
 void MainMenuScreen::HandleEvent(const sf::Event& event)

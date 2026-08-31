@@ -349,6 +349,27 @@ namespace UI
 		}
 	}
 
+	void CarouselMenu::StartExit()
+	{
+		exiting = true;
+	}
+
+	sf::Vector2f CarouselMenu::FrontEntryCentre() const
+	{
+		return items.empty() ? center : PlacementOf(FrontItem()).position;
+	}
+
+	float CarouselMenu::FrontEntryHeight() const
+	{
+		if (items.empty())
+		{
+			return 0.f;
+		}
+
+		const std::size_t front = FrontItem();
+		return items[front].text.getLocalBounds().size.y * PlacementOf(front).scale;
+	}
+
 	void CarouselMenu::Update(float deltaTime)
 	{
 		if (!started)
@@ -456,6 +477,12 @@ namespace UI
 		for (std::size_t i = 0; i < items.size(); ++i)
 		{
 			const Placement placement = PlacementOf(i);
+
+			// During the exit the front entry is handed to the shell's header.
+			if (exiting && i == FrontItem())
+			{
+				continue;
+			}
 
 			// PlacementOf reports depth < 0 for anything still behind the title
 			// (including entries mid-curl during the fly-in).
@@ -630,14 +657,14 @@ namespace UI
 
 	void CarouselMenu::RenderFront(sf::RenderTarget& target, NeonGlow* glow) const
 	{
-		if (glow != nullptr && IsReady())
+		if (glow != nullptr && IsReady() && !exiting)
 		{
 			DrawFrontGlow(target, *glow);
 		}
 
 		Render(target, true);
 
-		if (IsReady())
+		if (IsReady() && !exiting)
 		{
 			DrawArrow(target, -1);
 			DrawArrow(target, 1);
