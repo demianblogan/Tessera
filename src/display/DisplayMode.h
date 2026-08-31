@@ -17,7 +17,7 @@ namespace Display
 	struct Mode
 	{
 		sf::Vector2u resolution{ 0u, 0u };
-		WindowMode windowMode = WindowMode::Borderless;
+		WindowMode windowMode = WindowMode::Fullscreen;
 	};
 
 	[[nodiscard]] inline bool operator==(const Mode& lhs, const Mode& rhs) noexcept

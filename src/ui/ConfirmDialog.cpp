@@ -1,24 +1,29 @@
 #include "ConfirmDialog.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
-#include "ColourUtils.h"
+#include "NineSliceFrame.h"
 #include "TextLayout.h"
 
 namespace
 {
 	constexpr sf::Vector2f Centre{ 960.f, 540.f };
-	constexpr sf::Vector2f BoxSize{ 780.f, 300.f };
-	constexpr unsigned int MessageSize = 34;
-	constexpr unsigned int ButtonSize = 44;
-	constexpr float ButtonSpacing = 170.f;
-	constexpr float ButtonY = Centre.y + 78.f;
+	constexpr sf::Vector2f BoxSize{ 760.f, 320.f };
+	constexpr unsigned int MessageSize = 42;
+
+	constexpr float ButtonBox = 78.f;         // framed button, on-screen
+	constexpr float ButtonSpacing = 120.f;    // from centre to each button
+	constexpr float ButtonY = Centre.y + 82.f;
+	constexpr float IconSize = 40.f;
+
+	constexpr sf::IntRect TickRect{ { 0, 0 }, { 26, 26 } };
+	constexpr sf::IntRect CrossRect{ { 28, 0 }, { 26, 26 } };
 
 	const sf::Color BoxFill{ 14, 16, 22 };
 	const sf::Color BoxOutline{ 120, 210, 255 };
@@ -34,23 +39,19 @@ namespace
 
 namespace UI
 {
-	ConfirmDialog::ConfirmDialog(const sf::Font& messageFont, const sf::Font& buttonFont,
-		sf::Shader& dilateShader, sf::Shader& blurShader)
-		: glow(dilateShader, blurShader)
+	ConfirmDialog::ConfirmDialog(const sf::Font& messageFont, const sf::Texture& iconTexture,
+		const sf::Texture& frameTexture)
+		: iconTexture(iconTexture)
+		, frameTexture(frameTexture)
 		, messageText(messageFont, "", MessageSize)
-		, yesButton(buttonFont, ButtonSize)
-		, noButton(buttonFont, ButtonSize)
 	{
 	}
 
-	void ConfirmDialog::Show(const sf::String& message, const sf::String& yesLabel, const sf::String& noLabel)
+	void ConfirmDialog::Show(const sf::String& message)
 	{
 		messageText.setString(message);
 		UI::TextLayout::CentreOrigin(messageText);
-		messageText.setPosition({ Centre.x, Centre.y - 40.f });
-
-		yesButton.SetText(yesLabel);
-		noButton.SetText(noLabel);
+		messageText.setPosition({ Centre.x, Centre.y - 48.f });
 
 		open = true;
 		yesSelected = false;   // default to "no" -- the safe answer
@@ -97,14 +98,42 @@ namespace UI
 
 	void ConfirmDialog::Update(float deltaTime)
 	{
-		glow.Update(deltaTime);
-		yesButton.Update(deltaTime);
-		noButton.Update(deltaTime);
-
 		if (open)
 		{
 			appear = std::min(1.f, appear + deltaTime / 0.18f);
 		}
+	}
+
+	void ConfirmDialog::DrawButton(sf::RenderTarget& target, bool yesSide, bool chosen) const
+	{
+		const sf::Vector2f centre{ Centre.x + (yesSide ? ButtonSpacing : -ButtonSpacing), ButtonY };
+		const float box = ButtonBox * (chosen ? 1.12f : 1.f);
+
+		const sf::FloatRect bounds{ { centre.x - box * 0.5f, centre.y - box * 0.5f }, { box, box } };
+
+		if (chosen)
+		{
+			sf::RectangleShape halo({ box + 26.f, box + 26.f });
+			halo.setOrigin(halo.getSize() * 0.5f);
+			halo.setPosition(centre);
+			halo.setFillColor(sf::Color(BoxOutline.r, BoxOutline.g, BoxOutline.b, 40));
+			target.draw(halo);
+		}
+
+		NineSliceFrame frame(frameTexture, bounds, 16u, { 18.f, 18.f });
+		frame.SetColor(sf::Color::White);
+		frame.Draw(target);
+
+		sf::Sprite icon(iconTexture);
+		icon.setTextureRect(yesSide ? TickRect : CrossRect);
+		icon.setOrigin(sf::Vector2f(TickRect.size) * 0.5f);
+		const float iconScale = IconSize / static_cast<float>(TickRect.size.x) * (chosen ? 1.12f : 1.f);
+		icon.setScale({ iconScale, iconScale });
+		icon.setPosition(centre);
+		icon.setColor(chosen
+			? (yesSide ? sf::Color(120, 240, 150) : sf::Color(255, 120, 120))
+			: sf::Color(150, 156, 166));
+		target.draw(icon);
 	}
 
 	void ConfirmDialog::Render(sf::RenderTarget& target) const
@@ -135,20 +164,7 @@ namespace UI
 
 		target.draw(messageText);
 
-		const sf::Vector2f yesPos{ Centre.x + ButtonSpacing, ButtonY };
-		const sf::Vector2f noPos{ Centre.x - ButtonSpacing, ButtonY };
-
-		const auto drawButton = [&](const MenuLabel& label, sf::Vector2f pos, bool chosen)
-		{
-			if (chosen)
-			{
-				label.DrawGlow(target, glow, pos, 1.f, UI::ScaleRgb(sf::Color::White, 0.5f));
-			}
-			label.Draw(target, pos, chosen ? 1.06f : 1.f,
-				chosen ? sf::Color::White : sf::Color(150, 156, 166));
-		};
-
-		drawButton(noButton, noPos, !yesSelected);
-		drawButton(yesButton, yesPos, yesSelected);
+		DrawButton(target, false, !yesSelected);
+		DrawButton(target, true, yesSelected);
 	}
 }

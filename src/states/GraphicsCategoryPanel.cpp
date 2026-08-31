@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -17,7 +18,6 @@
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
 #include "../ui/ColourUtils.h"
-#include "../ui/TextLayout.h"
 
 namespace
 {
@@ -25,22 +25,27 @@ namespace
 	constexpr unsigned int PanelSourceBorder = 28u;
 	constexpr sf::Vector2f PanelTargetBorder{ 44.f, 44.f };
 
-	constexpr unsigned int TitleSize = 52;
-	constexpr unsigned int ButtonSize = 40;
+	constexpr unsigned int ButtonSize = 46;
 
-	constexpr float TitleY = PanelBounds.position.y + 56.f;
-	constexpr float RowsTop = PanelBounds.position.y + 128.f;
-	constexpr float RowMargin = 80.f;
-	constexpr float RowHeight = 74.f;
-	constexpr float RowGap = 6.f;
-	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 78.f;
-	constexpr float ButtonGap = 90.f;
+	constexpr float RowsTop = PanelBounds.position.y + 70.f;
+	constexpr float RowMargin = 84.f;
+	constexpr float RowHeight = 84.f;
+	constexpr float RowGap = 14.f;
+	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 82.f;
+	constexpr float ButtonGap = 64.f;
+	constexpr sf::Vector2f ButtonBoxPadding{ 68.f, 26.f };   // frame size vs the label ink
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
 
-	const sf::Color DisabledButton{ 120, 124, 132 };
-	const sf::Color IdleButton{ 188, 194, 204 };
+	// A dark blue wash over the panel interior so Graphics reads in its own hue.
+	const sf::Color PanelWash{ 16, 40, 66 };
+	constexpr float PanelWashOpacity = 0.62f;
+
+	// Apply is green, Reset is orange, Back is plain -- each with a dim disabled
+	// variant so it's obvious what can be pressed.
+	const sf::Color ButtonColour[3] = { { 70, 200, 110 }, { 255, 162, 62 }, { 236, 240, 246 } };
+	const sf::Color ButtonDisabled[3] = { { 34, 82, 50 }, { 110, 72, 36 }, { 120, 124, 132 } };
 
 	[[nodiscard]] sf::String FormatResolution(sf::Vector2u size)
 	{
@@ -52,19 +57,16 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	: context(context)
 	, accent(accent)
 	, frame(context.textures.Get(Assets::TextureID::UiFrame), PanelBounds, PanelSourceBorder, PanelTargetBorder)
-	, titleText(context.fonts.Get(Assets::FontID::Menu), context.localization.GetText(TextKey::Options::Graphics), TitleSize)
 	, buttons{ {
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize } } }
 	, buttonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-	, dialog(context.fonts.Get(Assets::FontID::Main), context.fonts.Get(Assets::FontID::Menu),
-		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, dialog(context.fonts.Get(Assets::FontID::Main),
+		context.textures.Get(Assets::TextureID::Checkbox),
+		context.textures.Get(Assets::TextureID::SettingsButton))
 	, resolutions(context.display.AvailableResolutions())
 {
-	UI::TextLayout::CentreOrigin(titleText);
-	titleText.setPosition({ PanelBounds.position.x + PanelBounds.size.x * 0.5f, TitleY });
-
 	const LocalizationManager& text = context.localization;
 	buttons[ButtonId::Apply].SetText(text.GetText(TextKey::Options::Apply));
 	buttons[ButtonId::Reset].SetText(text.GetText(TextKey::Options::Reset));
@@ -79,6 +81,7 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	for (UI::MenuLabel& button : buttons)
 	{
 		button.SetGlowBoxSize(maxGlowBox);
+		button.SetWaveEnabled(false);   // settings buttons stay still
 	}
 
 	working = applied = context.settings.GetSettings();
@@ -169,6 +172,7 @@ void GraphicsCategoryPanel::BuildRows()
 {
 	const LocalizationManager& text = context.localization;
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
+	const sf::Texture& arrow = context.textures.Get(Assets::TextureID::CarouselArrow);
 
 	rows.clear();
 
@@ -180,7 +184,7 @@ void GraphicsCategoryPanel::BuildRows()
 	}
 
 	auto resolutionRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::Resolution),
-		std::move(resolutionOptions), ResolutionIndexFor(working.display.resolution),
+		std::move(resolutionOptions), ResolutionIndexFor(working.display.resolution), arrow,
 		[this](std::size_t index)
 		{
 			if (index < resolutions.size())
@@ -198,7 +202,7 @@ void GraphicsCategoryPanel::BuildRows()
 		text.GetText(TextKey::Options::ModeWindow) };
 
 	auto windowModeRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::WindowMode),
-		std::move(modeOptions), static_cast<std::size_t>(working.display.windowMode),
+		std::move(modeOptions), static_cast<std::size_t>(working.display.windowMode), arrow,
 		[this](std::size_t index)
 		{
 			working.display.windowMode = static_cast<Display::WindowMode>(index);
@@ -247,9 +251,16 @@ void GraphicsCategoryPanel::LayOutButtons()
 	float x = PanelBounds.position.x + PanelBounds.size.x * 0.5f - totalWidth * 0.5f;
 	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 	{
-		const float half = buttons[i].InkSize().x * 0.5f;
-		buttonPositions[i] = { x + half, ButtonRowY };
-		x += buttons[i].InkSize().x + ButtonGap;
+		const float labelWidth = buttons[i].InkSize().x;
+		buttonPositions[i] = { x + labelWidth * 0.5f, ButtonRowY };
+
+		const sf::FloatRect box{
+			{ x - ButtonBoxPadding.x * 0.5f, ButtonRowY - (buttons[i].InkSize().y + ButtonBoxPadding.y) * 0.5f },
+			{ labelWidth + ButtonBoxPadding.x, buttons[i].InkSize().y + ButtonBoxPadding.y } };
+		buttonFrames[i].emplace(context.textures.Get(Assets::TextureID::SettingsButton), box, 16u,
+			sf::Vector2f{ 20.f, 20.f });
+
+		x += labelWidth + ButtonGap;
 	}
 }
 
@@ -369,9 +380,7 @@ void GraphicsCategoryPanel::BackPressed()
 {
 	if (IsDirty())
 	{
-		const LocalizationManager& text = context.localization;
-		dialog.Show(text.GetText(TextKey::Options::Unsaved),
-			text.GetText(TextKey::Common::Yes), text.GetText(TextKey::Common::No));
+		dialog.Show(context.localization.GetText(TextKey::Options::Unsaved));
 	}
 	else
 	{
@@ -453,11 +462,9 @@ void GraphicsCategoryPanel::Update(float deltaTime)
 	}
 
 	buttonGlow.Update(deltaTime);
-	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+	for (UI::MenuLabel& button : buttons)
 	{
-		const bool focused = active && focus == Focus::Buttons && selectedButton == i && !dialog.IsOpen();
-		buttons[i].SetWaveEnabled(focused);
-		buttons[i].Update(deltaTime);
+		button.Update(deltaTime);
 	}
 
 	for (std::size_t i = 0; i < rows.size(); ++i)
@@ -476,8 +483,13 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 		frame.SetColor(sf::Color(255, 255, 255, a));
 		frame.Draw(target);
 
-		titleText.setFillColor(sf::Color(accent.r, accent.g, accent.b, a));
-		target.draw(titleText);
+		// Dark blue wash over the interior (inside the frame border).
+		sf::RectangleShape wash({ PanelBounds.size.x - 2.f * PanelTargetBorder.x,
+			PanelBounds.size.y - 2.f * PanelTargetBorder.y });
+		wash.setPosition({ PanelBounds.position.x + PanelTargetBorder.x, PanelBounds.position.y + PanelTargetBorder.y });
+		wash.setFillColor(sf::Color(PanelWash.r, PanelWash.g, PanelWash.b,
+			static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * PanelWashOpacity * 255.f)));
+		target.draw(wash);
 
 		for (const std::unique_ptr<UI::OptionRow>& row : rows)
 		{
@@ -489,15 +501,22 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 			const bool enabled = ButtonEnabled(i);
 			const bool focused = active && focus == Focus::Buttons && selectedButton == i && !dialog.IsOpen();
 
-			const sf::Color colour = !enabled ? DisabledButton : (focused ? sf::Color::White : IdleButton);
-			const float scale = focused ? 1.06f : 1.f;
+			const sf::Color colour = enabled ? ButtonColour[i] : ButtonDisabled[i];
+			const float scale = focused ? 1.05f : 1.f;
+
+			if (buttonFrames[i])
+			{
+				buttonFrames[i]->SetColor(sf::Color(255, 255, 255,
+					static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * (enabled ? 1.f : 0.55f) * 255.f)));
+				buttonFrames[i]->Draw(target);
+			}
 
 			if (focused)
 			{
 				buttons[i].DrawGlow(target, buttonGlow, buttonPositions[i], scale,
-					UI::ScaleRgb(sf::Color::White, 0.5f * alpha));
+					UI::ScaleRgb(colour, 0.55f * alpha));
 			}
-			buttons[i].Draw(target, buttonPositions[i], scale, colour, alpha);
+			buttons[i].Draw(target, buttonPositions[i], scale, focused ? UI::MixToWhite(colour, 0.25f) : colour, alpha);
 		}
 	}
 

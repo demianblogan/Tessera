@@ -43,7 +43,10 @@ namespace Assets
 		CompanyLogo,
 		Cursor,
 		UiArrow,
-		UiFrame
+		UiFrame,
+		CarouselArrow,
+		Checkbox,
+		SettingsButton
 	};
 
 	enum class ShaderID
@@ -109,6 +112,11 @@ namespace Assets
 
 			// Ornate 9-slice panel border (corners stay crisp, edges tile).
 			inline constexpr const char* UiFrame = "assets/textures/ui/frame.png";
+
+			// Settings widgets.
+			inline constexpr const char* CarouselArrow = "assets/textures/ui/carusel_arrow.png";
+			inline constexpr const char* Checkbox = "assets/textures/ui/checkbox.png";        // two 26x26 frames at x=0 and x=28
+			inline constexpr const char* SettingsButton = "assets/textures/ui/settings_button.png";   // 9-slice button frame
 		}
 
 		namespace Data

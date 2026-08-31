@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -75,7 +76,6 @@ private:
 	sf::Color accent;
 
 	UI::NineSliceFrame frame;
-	sf::Text titleText;
 
 	std::vector<std::unique_ptr<UI::OptionRow>> rows;
 	UI::CarouselRow* resolutionRowPtr = nullptr;
@@ -86,6 +86,7 @@ private:
 
 	std::array<UI::MenuLabel, ButtonCount> buttons;
 	std::array<sf::Vector2f, ButtonCount> buttonPositions{};
+	std::array<std::optional<UI::NineSliceFrame>, ButtonCount> buttonFrames;
 	mutable NeonGlow buttonGlow;
 
 	UI::ConfirmDialog dialog;

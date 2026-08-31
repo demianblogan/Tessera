@@ -2,31 +2,30 @@
 
 #include <optional>
 
+#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 
-#include "MenuLabel.h"
 #include "../input/MenuInput.h"
-#include "../rendering/NeonGlow.h"
 
 namespace sf
 {
 	class Font;
 	class RenderTarget;
+	class Texture;
 }
 
 namespace UI
 {
 	// A modal yes / no dialog: dims the screen and shows a centred box with a
-	// message and two buttons. Drive it with Navigate(); poll TakeResult() for
-	// the answer (nullopt while still open).
+	// message and two framed icon buttons (a tick and a cross). Drive it with
+	// Navigate(); poll TakeResult() for the answer (nullopt while still open).
 	class ConfirmDialog
 	{
 	public:
-		ConfirmDialog(const sf::Font& messageFont, const sf::Font& buttonFont,
-			sf::Shader& dilateShader, sf::Shader& blurShader);
+		ConfirmDialog(const sf::Font& messageFont, const sf::Texture& iconTexture, const sf::Texture& frameTexture);
 
-		void Show(const sf::String& message, const sf::String& yesLabel, const sf::String& noLabel);
+		void Show(const sf::String& message);
 
 		[[nodiscard]] bool IsOpen() const { return open; }
 		[[nodiscard]] std::optional<bool> TakeResult();
@@ -38,16 +37,16 @@ namespace UI
 
 	private:
 		void Resolve(bool answer);
+		void DrawButton(sf::RenderTarget& target, bool yesSide, bool chosen) const;
 
-		mutable NeonGlow glow;
+		const sf::Texture& iconTexture;
+		const sf::Texture& frameTexture;
 
 		sf::Text messageText;
-		MenuLabel yesButton;
-		MenuLabel noButton;
 
 		bool open = false;
 		bool yesSelected = false;
 		std::optional<bool> result;
-		float appear = 0.f;   // 0..1 pop-in
+		float appear = 0.f;
 	};
 }

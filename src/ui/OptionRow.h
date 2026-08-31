@@ -14,6 +14,7 @@ namespace sf
 {
 	class Font;
 	class RenderTarget;
+	class Texture;
 }
 
 namespace UI
@@ -50,6 +51,7 @@ namespace UI
 		[[nodiscard]] sf::Color LabelColour() const;
 
 		virtual void RenderControl(sf::RenderTarget& target, float panelAlpha) const = 0;
+		virtual void UpdateControl(float /*deltaTime*/) {}
 
 		const sf::Font& font;
 		mutable sf::Text labelText;
@@ -69,7 +71,7 @@ namespace UI
 	public:
 		CarouselRow(const sf::Font& font, const sf::String& label,
 			std::vector<sf::String> options, std::size_t current,
-			std::function<void(std::size_t)> onChange);
+			const sf::Texture& arrowTexture, std::function<void(std::size_t)> onChange);
 
 		void Adjust(int direction) override;
 		bool HandlePointer(sf::Vector2f point, bool clicked) override;
@@ -79,14 +81,20 @@ namespace UI
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
+		void UpdateControl(float deltaTime) override;
 
 	private:
-		[[nodiscard]] sf::FloatRect ArrowBox(int side) const;   // -1 left, +1 right
+		[[nodiscard]] sf::Vector2f ArrowCentre(int side) const;   // -1 left, +1 right
+		[[nodiscard]] sf::FloatRect ArrowBox(int side) const;
 
 		std::vector<sf::String> options;
 		std::size_t current = 0;
+		const sf::Texture& arrowTexture;
 		std::function<void(std::size_t)> onChange;
 		mutable sf::Text valueText;
+
+		// Seconds since each arrow (0 = left, 1 = right) was pressed; large = idle.
+		float pressTime[2] = { 1000.f, 1000.f };
 	};
 
 	// Label + [ On | Off ].

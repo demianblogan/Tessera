@@ -1,28 +1,40 @@
 #include "OptionRow.h"
 
 #include <algorithm>
+#include <cmath>
 
-#include <SFML/Graphics/ConvexShape.hpp>
+#include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 namespace
 {
-	constexpr unsigned int LabelSize = 30;
-	constexpr unsigned int ValueSize = 28;
+	constexpr unsigned int LabelSize = 38;
+	constexpr unsigned int ValueSize = 34;
 
-	constexpr float ControlFraction = 0.46f;   // right part of the row for the control
-	constexpr float ArrowHalf = 11.f;
-	constexpr float TogglePadding = 16.f;
+	constexpr float ControlFraction = 0.44f;   // right part of the row for the control
+	constexpr float ArrowScreenSize = 34.f;    // on-screen height of the carousel arrow sprite
+	constexpr float ArrowGap = 22.f;           // between the value's edge and the arrow
+	constexpr float TogglePadding = 18.f;
+
+	// Arrow press feedback, matching the main-menu ring arrows.
+	constexpr float ArrowPressDuration = 0.22f;
+	constexpr float ArrowPressDip = 0.24f;
+	constexpr float ArrowPressShift = 7.f;
+	constexpr sf::Color ArrowPressTint{ 255, 155, 70 };
+	constexpr sf::Color ArrowPulseColour{ 255, 140, 45 };
 
 	const sf::Color SelectedLabel{ 255, 255, 255 };
-	const sf::Color IdleLabel{ 206, 212, 222 };
+	const sf::Color IdleLabel{ 210, 216, 226 };
 	const sf::Color DisabledLabel{ 120, 124, 132 };
-	const sf::Color ValueColour{ 235, 240, 248 };
+	const sf::Color ValueColour{ 236, 242, 250 };
 	const sf::Color AccentColour{ 120, 210, 255 };
-	const sf::Color ArrowLive{ 235, 240, 248 };
-	const sf::Color ArrowDead{ 96, 100, 108 };
+	const sf::Color ArrowLive{ 150, 205, 255 };   // faintly blue
+	const sf::Color ArrowDead{ 80, 92, 104 };
 
 	[[nodiscard]] float VerticalCentre(const sf::Text& text, float rowTop, float rowHeight)
 	{
@@ -30,15 +42,15 @@ namespace
 		return rowTop + rowHeight * 0.5f - (bounds.position.y + bounds.size.y * 0.5f);
 	}
 
-	void DrawTriangle(sf::RenderTarget& target, sf::Vector2f centre, int side, sf::Color colour)
+	[[nodiscard]] float EaseOutCubic(float t) noexcept
 	{
-		sf::ConvexShape triangle(3);
-		const float dir = static_cast<float>(side);
-		triangle.setPoint(0, { centre.x + dir * ArrowHalf, centre.y });
-		triangle.setPoint(1, { centre.x - dir * ArrowHalf, centre.y - ArrowHalf });
-		triangle.setPoint(2, { centre.x - dir * ArrowHalf, centre.y + ArrowHalf });
-		triangle.setFillColor(colour);
-		target.draw(triangle);
+		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
+		return 1.f - inv * inv * inv;
+	}
+
+	[[nodiscard]] sf::Color WithAlpha(sf::Color colour, std::uint8_t a) noexcept
+	{
+		return { colour.r, colour.g, colour.b, a };
 	}
 }
 
@@ -90,6 +102,7 @@ namespace UI
 	{
 		const float target = (selected && enabled) ? 1.f : 0.f;
 		highlight += (target - highlight) * std::min(1.f, deltaTime * 12.f);
+		UpdateControl(deltaTime);
 	}
 
 	void OptionRow::Render(sf::RenderTarget& target, float panelAlpha) const
@@ -108,13 +121,13 @@ namespace UI
 
 			sf::RectangleShape bar({ 5.f, height });
 			bar.setPosition(left);
-			bar.setFillColor(sf::Color(AccentColour.r, AccentColour.g, AccentColour.b, Alpha(panelAlpha, highlight)));
+			bar.setFillColor(WithAlpha(AccentColour, Alpha(panelAlpha, highlight)));
 			target.draw(bar);
 		}
 
 		const sf::Color colour = LabelColour();
-		labelText.setFillColor(sf::Color(colour.r, colour.g, colour.b, Alpha(panelAlpha)));
-		labelText.setPosition({ left.x + 24.f, VerticalCentre(labelText, left.y, height) });
+		labelText.setFillColor(WithAlpha(colour, Alpha(panelAlpha)));
+		labelText.setPosition({ left.x + 26.f, VerticalCentre(labelText, left.y, height) });
 		target.draw(labelText);
 
 		RenderControl(target, panelAlpha);
@@ -125,10 +138,12 @@ namespace UI
 	// =====================================================================
 
 	CarouselRow::CarouselRow(const sf::Font& fontRef, const sf::String& label,
-		std::vector<sf::String> options, std::size_t current, std::function<void(std::size_t)> onChange)
+		std::vector<sf::String> options, std::size_t current, const sf::Texture& arrowTexture,
+		std::function<void(std::size_t)> onChange)
 		: OptionRow(fontRef, label)
 		, options(std::move(options))
 		, current(this->options.empty() ? 0 : std::min(current, this->options.size() - 1))
+		, arrowTexture(arrowTexture)
 		, onChange(std::move(onChange))
 		, valueText(fontRef, "", ValueSize)
 	{
@@ -153,6 +168,8 @@ namespace UI
 			? (current == 0 ? 0 : current - 1)
 			: std::min(current + 1, options.size() - 1);
 
+		pressTime[direction < 0 ? 0 : 1] = 0.f;
+
 		if (next != current)
 		{
 			current = next;
@@ -163,11 +180,36 @@ namespace UI
 		}
 	}
 
-	sf::FloatRect CarouselRow::ArrowBox(int side) const
+	void CarouselRow::UpdateControl(float deltaTime)
+	{
+		for (float& time : pressTime)
+		{
+			time += deltaTime;
+		}
+	}
+
+	sf::Vector2f CarouselRow::ArrowCentre(int side) const
 	{
 		const sf::FloatRect area = ControlArea();
-		const float x = side < 0 ? area.position.x : area.position.x + area.size.x;
-		return { { x - ArrowHalf - 6.f, area.position.y }, { 2.f * ArrowHalf + 12.f, area.size.y } };
+		const float midY = area.position.y + area.size.y * 0.5f;
+		const float midX = area.position.x + area.size.x * 0.5f;
+
+		float valueHalf = 40.f;
+		if (!options.empty())
+		{
+			valueText.setString(options[current]);
+			valueHalf = valueText.getLocalBounds().size.x * 0.5f;
+		}
+
+		const float offset = valueHalf + ArrowGap + ArrowScreenSize * 0.5f;
+		return { midX + static_cast<float>(side) * offset, midY };
+	}
+
+	sf::FloatRect CarouselRow::ArrowBox(int side) const
+	{
+		const sf::Vector2f centre = ArrowCentre(side);
+		const float half = ArrowScreenSize * 0.5f + 8.f;
+		return { { centre.x - half, centre.y - half }, { 2.f * half, 2.f * half } };
 	}
 
 	bool CarouselRow::HandlePointer(sf::Vector2f point, bool clicked)
@@ -195,16 +237,7 @@ namespace UI
 		const sf::FloatRect area = ControlArea();
 		const float midY = area.position.y + area.size.y * 0.5f;
 
-		const bool canLeft = enabled && current > 0;
-		const bool canRight = enabled && !options.empty() && current + 1 < options.size();
-
-		DrawTriangle(target, { area.position.x + ArrowHalf, midY }, -1,
-			sf::Color((canLeft ? ArrowLive : ArrowDead).r, (canLeft ? ArrowLive : ArrowDead).g,
-				(canLeft ? ArrowLive : ArrowDead).b, Alpha(panelAlpha)));
-		DrawTriangle(target, { area.position.x + area.size.x - ArrowHalf, midY }, 1,
-			sf::Color((canRight ? ArrowLive : ArrowDead).r, (canRight ? ArrowLive : ArrowDead).g,
-				(canRight ? ArrowLive : ArrowDead).b, Alpha(panelAlpha)));
-
+		// -- Value --
 		if (!options.empty())
 		{
 			valueText.setString(options[current]);
@@ -212,9 +245,53 @@ namespace UI
 			valueText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 			valueText.setPosition({ area.position.x + area.size.x * 0.5f, midY });
 			const sf::Color c = enabled ? ValueColour : DisabledLabel;
-			valueText.setFillColor(sf::Color(c.r, c.g, c.b, Alpha(panelAlpha)));
+			valueText.setFillColor(WithAlpha(c, Alpha(panelAlpha)));
 			target.draw(valueText);
 		}
+
+		// -- Arrows --
+		const float baseScale = ArrowScreenSize / static_cast<float>(std::max(1u, arrowTexture.getSize().y));
+
+		const auto drawArrow = [&](int side, bool live)
+		{
+			const std::size_t index = side < 0 ? 0u : 1u;
+			const float press = std::clamp(1.f - pressTime[index] / ArrowPressDuration, 0.f, 1.f);
+
+			const sf::Vector2f centre = ArrowCentre(side);
+			const sf::Vector2f drawCentre{ centre.x - static_cast<float>(side) * ArrowPressShift * press, centre.y };
+
+			if (press > 0.f && live)
+			{
+				const float t = EaseOutCubic(1.f - press);
+				const float radius = 8.f + t * 26.f;
+				sf::CircleShape ring(radius);
+				ring.setOrigin({ radius, radius });
+				ring.setPosition(centre);
+				ring.setFillColor(sf::Color::Transparent);
+				ring.setOutlineThickness(4.f);
+				ring.setOutlineColor(WithAlpha(ArrowPulseColour,
+					static_cast<std::uint8_t>(press * press * 120.f * std::clamp(panelAlpha, 0.f, 1.f))));
+				target.draw(ring, sf::RenderStates(sf::BlendAdd));
+			}
+
+			sf::Sprite arrow(arrowTexture);
+			arrow.setOrigin(sf::Vector2f(arrowTexture.getSize()) * 0.5f);
+			const float scale = baseScale * (1.f - ArrowPressDip * press);
+			// Texture points right; the left arrow is mirrored.
+			arrow.setScale({ side < 0 ? -scale : scale, scale });
+			arrow.setPosition(drawCentre);
+
+			const sf::Color base = live ? ArrowLive : ArrowDead;
+			const sf::Color tinted{
+				static_cast<std::uint8_t>(base.r + (ArrowPressTint.r - base.r) * press),
+				static_cast<std::uint8_t>(base.g + (ArrowPressTint.g - base.g) * press),
+				static_cast<std::uint8_t>(base.b + (ArrowPressTint.b - base.b) * press) };
+			arrow.setColor(WithAlpha(tinted, Alpha(panelAlpha)));
+			target.draw(arrow);
+		};
+
+		drawArrow(-1, enabled && current > 0);
+		drawArrow(1, enabled && !options.empty() && current + 1 < options.size());
 	}
 
 	// =====================================================================
@@ -222,12 +299,12 @@ namespace UI
 	// =====================================================================
 
 	ToggleRow::ToggleRow(const sf::Font& fontRef, const sf::String& label,
-		const sf::String& onLabel, const sf::String& offLabel, bool on,
+		const sf::String& onLabelRef, const sf::String& offLabelRef, bool on,
 		std::function<void(bool)> onChange)
 		: OptionRow(fontRef, label)
 		, on(on)
-		, onLabel(onLabel)
-		, offLabel(offLabel)
+		, onLabel(onLabelRef)
+		, offLabel(offLabelRef)
 		, onChange(std::move(onChange))
 		, onText(fontRef, "", ValueSize)
 		, offText(fontRef, "", ValueSize)
@@ -309,17 +386,17 @@ namespace UI
 
 			if (active && enabled)
 			{
-				sf::RectangleShape pill({ bounds.size.x + 2.f * TogglePadding, box.size.y * 0.62f });
+				sf::RectangleShape pill({ bounds.size.x + 2.f * TogglePadding, box.size.y * 0.66f });
 				pill.setOrigin(pill.getSize() * 0.5f);
 				pill.setPosition(centre);
-				pill.setFillColor(sf::Color(AccentColour.r, AccentColour.g, AccentColour.b, Alpha(panelAlpha, 0.22f)));
+				pill.setFillColor(WithAlpha(AccentColour, Alpha(panelAlpha, 0.22f)));
 				pill.setOutlineThickness(2.f);
-				pill.setOutlineColor(sf::Color(AccentColour.r, AccentColour.g, AccentColour.b, Alpha(panelAlpha)));
+				pill.setOutlineColor(WithAlpha(AccentColour, Alpha(panelAlpha)));
 				target.draw(pill);
 			}
 
 			const sf::Color c = !enabled ? DisabledLabel : (active ? sf::Color::White : sf::Color(140, 146, 156));
-			text.setFillColor(sf::Color(c.r, c.g, c.b, Alpha(panelAlpha)));
+			text.setFillColor(WithAlpha(c, Alpha(panelAlpha)));
 			target.draw(text);
 		};
 
