@@ -10,6 +10,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/System/Angle.hpp>
 
 namespace
 {
@@ -54,6 +55,19 @@ namespace
 	[[nodiscard]] sf::Color WithAlpha(sf::Color colour, std::uint8_t a) noexcept
 	{
 		return { colour.r, colour.g, colour.b, a };
+	}
+
+	void ThickLine(sf::RenderTarget& target, sf::Vector2f a, sf::Vector2f b, float thickness, sf::Color colour)
+	{
+		const sf::Vector2f delta = b - a;
+		const float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+
+		sf::RectangleShape segment({ length, thickness });
+		segment.setOrigin({ 0.f, thickness * 0.5f });
+		segment.setPosition(a);
+		segment.setRotation(sf::radians(std::atan2(delta.y, delta.x)));
+		segment.setFillColor(colour);
+		target.draw(segment);
 	}
 }
 
@@ -309,7 +323,6 @@ namespace UI
 		, on(on)
 		, checkboxTexture(checkboxTexture)
 		, onChange(std::move(onChange))
-		, symbolText(fontRef, "", static_cast<unsigned int>(CheckboxSize * 0.7f))
 	{
 	}
 
@@ -385,13 +398,25 @@ namespace UI
 			: sf::Color(120, 124, 132), Alpha(panelAlpha)));
 		target.draw(box);
 
-		// The tick / cross itself, drawn as text over the empty frame.
-		symbolText.setString(sf::String(static_cast<char32_t>(on ? 0x2713 : 0x2717)));   // tick / cross
-		const sf::FloatRect bounds = symbolText.getLocalBounds();
-		symbolText.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-		symbolText.setPosition(centre);
-		const sf::Color symbolColour = enabled ? (on ? TickColour : CrossColour) : sf::Color(120, 124, 132);
-		symbolText.setFillColor(WithAlpha(symbolColour, Alpha(panelAlpha)));
-		target.draw(symbolText);
+		// The tick / cross itself, drawn with line segments over the empty frame.
+		const float s = CheckboxSize * 0.5f * (live ? 1.08f : 1.f);
+		const float thickness = std::max(3.f, s * 0.26f);
+		const sf::Color symbol = WithAlpha(
+			enabled ? (on ? TickColour : CrossColour) : sf::Color(120, 124, 132), Alpha(panelAlpha));
+
+		if (on)
+		{
+			ThickLine(target, { centre.x - s * 0.44f, centre.y }, { centre.x - s * 0.10f, centre.y + s * 0.34f },
+				thickness, symbol);
+			ThickLine(target, { centre.x - s * 0.10f, centre.y + s * 0.34f }, { centre.x + s * 0.46f, centre.y - s * 0.36f },
+				thickness, symbol);
+		}
+		else
+		{
+			ThickLine(target, { centre.x - s * 0.34f, centre.y - s * 0.34f }, { centre.x + s * 0.34f, centre.y + s * 0.34f },
+				thickness, symbol);
+			ThickLine(target, { centre.x + s * 0.34f, centre.y - s * 0.34f }, { centre.x - s * 0.34f, centre.y + s * 0.34f },
+				thickness, symbol);
+		}
 	}
 }
