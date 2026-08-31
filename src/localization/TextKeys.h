@@ -47,6 +47,17 @@ namespace TextKey
 		inline constexpr std::string_view Language = "options.language";
 		inline constexpr std::string_view Back     = "options.back";
 		inline constexpr std::string_view ComingSoon = "options.coming_soon";
+
+		inline constexpr std::string_view Resolution     = "options.resolution";
+		inline constexpr std::string_view WindowMode     = "options.window_mode";
+		inline constexpr std::string_view Vsync          = "options.vsync";
+		inline constexpr std::string_view ShowFps        = "options.show_fps";
+		inline constexpr std::string_view CrtFilter      = "options.crt_filter";
+		inline constexpr std::string_view ModeFullscreen = "options.mode_fullscreen";
+		inline constexpr std::string_view ModeBorderless = "options.mode_borderless";
+		inline constexpr std::string_view ModeWindow     = "options.mode_window";
+		inline constexpr std::string_view On             = "options.on";
+		inline constexpr std::string_view Off            = "options.off";
 	}
 
 	namespace Credits
