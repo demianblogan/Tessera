@@ -41,6 +41,13 @@ options.mode_borderless = Borderless
 options.mode_window     = Window
 options.on              = On
 options.off             = Off
+options.apply           = Apply
+options.reset           = Reset
+options.back_button     = Back
+options.unsaved         = You have unsaved changes.\nSave them before leaving?
+
+common.yes = Yes
+common.no  = No
 
 credits.title      = CREDITS
 credits.line_1     = This game was developed by me, Demian Blogan.

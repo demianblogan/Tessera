@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -15,24 +16,31 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
+#include "../ui/ColourUtils.h"
 #include "../ui/TextLayout.h"
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 600.f, 200.f }, { 1260.f, 730.f } };
+	constexpr sf::FloatRect PanelBounds{ { 600.f, 190.f }, { 1260.f, 760.f } };
 	constexpr unsigned int PanelSourceBorder = 28u;
 	constexpr sf::Vector2f PanelTargetBorder{ 44.f, 44.f };
 
 	constexpr unsigned int TitleSize = 52;
-	constexpr float TitleY = PanelBounds.position.y + 56.f;
+	constexpr unsigned int ButtonSize = 40;
 
-	constexpr float RowsTop = PanelBounds.position.y + 130.f;
+	constexpr float TitleY = PanelBounds.position.y + 56.f;
+	constexpr float RowsTop = PanelBounds.position.y + 128.f;
 	constexpr float RowMargin = 80.f;
 	constexpr float RowHeight = 74.f;
 	constexpr float RowGap = 6.f;
+	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 78.f;
+	constexpr float ButtonGap = 90.f;
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
+
+	const sf::Color DisabledButton{ 120, 124, 132 };
+	const sf::Color IdleButton{ 188, 194, 204 };
 
 	[[nodiscard]] sf::String FormatResolution(sf::Vector2u size)
 	{
@@ -45,13 +53,89 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	, accent(accent)
 	, frame(context.textures.Get(Assets::TextureID::UiFrame), PanelBounds, PanelSourceBorder, PanelTargetBorder)
 	, titleText(context.fonts.Get(Assets::FontID::Menu), context.localization.GetText(TextKey::Options::Graphics), TitleSize)
+	, buttons{ {
+		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
+		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
+		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize } } }
+	, buttonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, dialog(context.fonts.Get(Assets::FontID::Main), context.fonts.Get(Assets::FontID::Menu),
+		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, resolutions(context.display.AvailableResolutions())
 {
 	UI::TextLayout::CentreOrigin(titleText);
 	titleText.setPosition({ PanelBounds.position.x + PanelBounds.size.x * 0.5f, TitleY });
 
-	working = context.settings.GetSettings();
+	const LocalizationManager& text = context.localization;
+	buttons[ButtonId::Apply].SetText(text.GetText(TextKey::Options::Apply));
+	buttons[ButtonId::Reset].SetText(text.GetText(TextKey::Options::Reset));
+	buttons[ButtonId::Back].SetText(text.GetText(TextKey::Options::BackButton));
+
+	sf::Vector2f maxGlowBox{ 0.f, 0.f };
+	for (UI::MenuLabel& button : buttons)
+	{
+		maxGlowBox.x = std::max(maxGlowBox.x, button.GlowBox().x);
+		maxGlowBox.y = std::max(maxGlowBox.y, button.GlowBox().y);
+	}
+	for (UI::MenuLabel& button : buttons)
+	{
+		button.SetGlowBoxSize(maxGlowBox);
+	}
+
+	working = applied = context.settings.GetSettings();
 	BuildRows();
+	LayOutButtons();
+}
+
+GameSettings GraphicsCategoryPanel::Defaults() const
+{
+	GameSettings defaults;
+	defaults.display.resolution = context.display.DesktopResolution();
+	return defaults;
+}
+
+bool GraphicsCategoryPanel::GraphicsMatch(const GameSettings& a, const GameSettings& b) const
+{
+	return a.display == b.display
+		&& a.verticalSyncEnabled == b.verticalSyncEnabled
+		&& a.showFps == b.showFps
+		&& a.crtFilterEnabled == b.crtFilterEnabled;
+}
+
+bool GraphicsCategoryPanel::IsDirty() const { return !GraphicsMatch(working, applied); }
+bool GraphicsCategoryPanel::IsAtDefaults() const { return GraphicsMatch(working, Defaults()); }
+
+bool GraphicsCategoryPanel::ButtonEnabled(std::size_t index) const
+{
+	switch (index)
+	{
+	case ButtonId::Apply: return IsDirty();
+	case ButtonId::Reset: return !IsAtDefaults();
+	default:              return true;   // Back
+	}
+}
+
+std::size_t GraphicsCategoryPanel::FirstEnabledButton() const
+{
+	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+	{
+		if (ButtonEnabled(i))
+		{
+			return i;
+		}
+	}
+	return ButtonId::Back;
+}
+
+std::size_t GraphicsCategoryPanel::LastEnabledRow() const
+{
+	for (std::size_t i = rows.size(); i-- > 0;)
+	{
+		if (rows[i]->IsEnabled())
+		{
+			return i;
+		}
+	}
+	return 0;
 }
 
 std::size_t GraphicsCategoryPanel::ResolutionIndexFor(sf::Vector2u resolution) const
@@ -64,7 +148,6 @@ std::size_t GraphicsCategoryPanel::ResolutionIndexFor(sf::Vector2u resolution) c
 		}
 	}
 
-	// Closest by pixel count.
 	std::size_t best = 0;
 	std::uint64_t bestDelta = ~0ull;
 	const auto pixels = [](sf::Vector2u s) { return static_cast<std::uint64_t>(s.x) * s.y; };
@@ -96,7 +179,7 @@ void GraphicsCategoryPanel::BuildRows()
 		resolutionOptions.push_back(FormatResolution(size));
 	}
 
-	auto resolutionRowPtr = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::Resolution),
+	auto resolutionRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::Resolution),
 		std::move(resolutionOptions), ResolutionIndexFor(working.display.resolution),
 		[this](std::size_t index)
 		{
@@ -105,32 +188,42 @@ void GraphicsCategoryPanel::BuildRows()
 				working.display.resolution = resolutions[index];
 			}
 		});
+	resolutionRowPtr = resolutionRow.get();
 	resolutionRowPtr->SetEnabled(working.display.windowMode != Display::WindowMode::Borderless);
-	rows.push_back(std::move(resolutionRowPtr));
-	resolutionRow = 0;
+	rows.push_back(std::move(resolutionRow));
 
 	std::vector<sf::String> modeOptions{
 		text.GetText(TextKey::Options::ModeFullscreen),
 		text.GetText(TextKey::Options::ModeBorderless),
 		text.GetText(TextKey::Options::ModeWindow) };
 
-	rows.push_back(std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::WindowMode),
+	auto windowModeRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::WindowMode),
 		std::move(modeOptions), static_cast<std::size_t>(working.display.windowMode),
 		[this](std::size_t index)
 		{
 			working.display.windowMode = static_cast<Display::WindowMode>(index);
-			rows[resolutionRow]->SetEnabled(working.display.windowMode != Display::WindowMode::Borderless);
-		}));
+			resolutionRowPtr->SetEnabled(working.display.windowMode != Display::WindowMode::Borderless);
+		});
+	windowModeRowPtr = windowModeRow.get();
+	rows.push_back(std::move(windowModeRow));
 
 	const sf::String on = text.GetText(TextKey::Options::On);
 	const sf::String off = text.GetText(TextKey::Options::Off);
 
-	rows.push_back(std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::Vsync), on, off,
-		working.verticalSyncEnabled, [this](bool value) { working.verticalSyncEnabled = value; }));
-	rows.push_back(std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::ShowFps), on, off,
-		working.showFps, [this](bool value) { working.showFps = value; }));
-	rows.push_back(std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::CrtFilter), on, off,
-		working.crtFilterEnabled, [this](bool value) { working.crtFilterEnabled = value; }));
+	auto vsyncRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::Vsync), on, off,
+		working.verticalSyncEnabled, [this](bool value) { working.verticalSyncEnabled = value; });
+	vsyncRowPtr = vsyncRow.get();
+	rows.push_back(std::move(vsyncRow));
+
+	auto showFpsRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::ShowFps), on, off,
+		working.showFps, [this](bool value) { working.showFps = value; });
+	showFpsRowPtr = showFpsRow.get();
+	rows.push_back(std::move(showFpsRow));
+
+	auto crtRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::CrtFilter), on, off,
+		working.crtFilterEnabled, [this](bool value) { working.crtFilterEnabled = value; });
+	crtRowPtr = crtRow.get();
+	rows.push_back(std::move(crtRow));
 
 	for (std::size_t i = 0; i < rows.size(); ++i)
 	{
@@ -139,34 +232,193 @@ void GraphicsCategoryPanel::BuildRows()
 			PanelBounds.size.x - 2.f * RowMargin, RowHeight);
 	}
 
-	selected = 0;
+	selectedRow = 0;
+}
+
+void GraphicsCategoryPanel::LayOutButtons()
+{
+	float totalWidth = 0.f;
+	for (const UI::MenuLabel& button : buttons)
+	{
+		totalWidth += button.InkSize().x;
+	}
+	totalWidth += ButtonGap * (ButtonId::ButtonCount - 1);
+
+	float x = PanelBounds.position.x + PanelBounds.size.x * 0.5f - totalWidth * 0.5f;
+	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+	{
+		const float half = buttons[i].InkSize().x * 0.5f;
+		buttonPositions[i] = { x + half, ButtonRowY };
+		x += buttons[i].InkSize().x + ButtonGap;
+	}
+}
+
+void GraphicsCategoryPanel::SyncRows()
+{
+	resolutionRowPtr->SetCurrent(ResolutionIndexFor(working.display.resolution));
+	resolutionRowPtr->SetEnabled(working.display.windowMode != Display::WindowMode::Borderless);
+	windowModeRowPtr->SetCurrent(static_cast<std::size_t>(working.display.windowMode));
+	vsyncRowPtr->SetOn(working.verticalSyncEnabled);
+	showFpsRowPtr->SetOn(working.showFps);
+	crtRowPtr->SetOn(working.crtFilterEnabled);
 }
 
 void GraphicsCategoryPanel::Open()
 {
-	working = context.settings.GetSettings();
+	working = applied = context.settings.GetSettings();
 	BuildRows();
+	LayOutButtons();
+	focus = Focus::Rows;
+	selectedRow = 0;
+	for (std::size_t i = 0; i < rows.size(); ++i)
+	{
+		if (rows[i]->IsEnabled()) { selectedRow = i; break; }
+	}
+	selectedButton = ButtonId::Back;
+	closeRequested = false;
 	active = true;
 }
 
-void GraphicsCategoryPanel::MoveSelection(int direction)
+void GraphicsCategoryPanel::Close()
 {
-	if (rows.empty())
+	active = false;
+	closeRequested = false;
+}
+
+void GraphicsCategoryPanel::MoveVertical(int direction)
+{
+	if (focus == Focus::Buttons)
 	{
+		if (direction < 0)
+		{
+			focus = Focus::Rows;
+			selectedRow = LastEnabledRow();
+		}
 		return;
 	}
 
-	const int count = static_cast<int>(rows.size());
-	int index = static_cast<int>(selected);
-	for (int step = 0; step < count; ++step)
+	int index = static_cast<int>(selectedRow);
+	while (true)
 	{
-		index = (index + direction + count) % count;
+		index += direction;
+		if (index >= static_cast<int>(rows.size()))
+		{
+			focus = Focus::Buttons;
+			selectedButton = FirstEnabledButton();
+			return;
+		}
+		if (index < 0)
+		{
+			return;
+		}
 		if (rows[static_cast<std::size_t>(index)]->IsEnabled())
 		{
-			break;
+			selectedRow = static_cast<std::size_t>(index);
+			return;
 		}
 	}
-	selected = static_cast<std::size_t>(index);
+}
+
+void GraphicsCategoryPanel::MoveHorizontal(int direction)
+{
+	if (focus == Focus::Rows)
+	{
+		if (selectedRow < rows.size())
+		{
+			rows[selectedRow]->Adjust(direction);
+		}
+		return;
+	}
+
+	int index = static_cast<int>(selectedButton);
+	while (true)
+	{
+		index += direction;
+		if (index < 0 || index >= static_cast<int>(ButtonId::ButtonCount))
+		{
+			return;
+		}
+		if (ButtonEnabled(static_cast<std::size_t>(index)))
+		{
+			selectedButton = static_cast<std::size_t>(index);
+			return;
+		}
+	}
+}
+
+void GraphicsCategoryPanel::ConfirmFocused()
+{
+	if (focus == Focus::Rows)
+	{
+		if (selectedRow < rows.size())
+		{
+			rows[selectedRow]->Activate();
+		}
+		return;
+	}
+
+	switch (selectedButton)
+	{
+	case ButtonId::Apply: if (ButtonEnabled(ButtonId::Apply)) { DoApply(); } break;
+	case ButtonId::Reset: if (ButtonEnabled(ButtonId::Reset)) { DoReset(); } break;
+	default:              BackPressed(); break;
+	}
+}
+
+void GraphicsCategoryPanel::BackPressed()
+{
+	if (IsDirty())
+	{
+		const LocalizationManager& text = context.localization;
+		dialog.Show(text.GetText(TextKey::Options::Unsaved),
+			text.GetText(TextKey::Common::Yes), text.GetText(TextKey::Common::No));
+	}
+	else
+	{
+		closeRequested = true;
+	}
+}
+
+void GraphicsCategoryPanel::DoApply()
+{
+	GameSettings& saved = context.settings.GetSettings();
+	const bool displayChanged = !(saved.display == working.display);
+
+	saved.display = working.display;
+	saved.verticalSyncEnabled = working.verticalSyncEnabled;
+	saved.showFps = working.showFps;
+	saved.crtFilterEnabled = working.crtFilterEnabled;
+
+	context.settings.Apply(context);
+	context.settings.Save();
+
+	if (displayChanged)
+	{
+		context.display.RequestApply(saved.display);
+	}
+
+	applied = saved;
+
+	if (focus == Focus::Buttons && !ButtonEnabled(selectedButton))
+	{
+		selectedButton = ButtonId::Back;
+	}
+}
+
+void GraphicsCategoryPanel::DoReset()
+{
+	const GameSettings defaults = Defaults();
+	working.display = defaults.display;
+	working.verticalSyncEnabled = defaults.verticalSyncEnabled;
+	working.showFps = defaults.showFps;
+	working.crtFilterEnabled = defaults.crtFilterEnabled;
+
+	SyncRows();
+
+	if (focus == Focus::Buttons && !ButtonEnabled(selectedButton))
+	{
+		selectedButton = FirstEnabledButton();
+	}
 }
 
 void GraphicsCategoryPanel::SetVisibility(Visibility visibility, float previewFade)
@@ -181,36 +433,75 @@ void GraphicsCategoryPanel::SetVisibility(Visibility visibility, float previewFa
 	active = visibility == Visibility::Open;
 }
 
+bool GraphicsCategoryPanel::WantsToStayOpen() const
+{
+	return dialog.IsOpen();
+}
+
 void GraphicsCategoryPanel::Update(float deltaTime)
 {
 	alpha += (targetAlpha - alpha) * std::min(1.f, deltaTime * FadeSpeed);
 
+	dialog.Update(deltaTime);
+	if (const std::optional<bool> answer = dialog.TakeResult())
+	{
+		if (*answer)
+		{
+			DoApply();
+		}
+		closeRequested = true;
+	}
+
+	buttonGlow.Update(deltaTime);
+	for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+	{
+		const bool focused = active && focus == Focus::Buttons && selectedButton == i && !dialog.IsOpen();
+		buttons[i].SetWaveEnabled(focused);
+		buttons[i].Update(deltaTime);
+	}
+
 	for (std::size_t i = 0; i < rows.size(); ++i)
 	{
-		rows[i]->SetSelected(active && i == selected);
+		rows[i]->SetSelected(active && focus == Focus::Rows && i == selectedRow && !dialog.IsOpen());
 		rows[i]->Update(deltaTime);
 	}
 }
 
 void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 {
-	if (alpha <= 0.01f)
+	if (alpha > 0.01f)
 	{
-		return;
+		const auto a = static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f);
+
+		frame.SetColor(sf::Color(255, 255, 255, a));
+		frame.Draw(target);
+
+		titleText.setFillColor(sf::Color(accent.r, accent.g, accent.b, a));
+		target.draw(titleText);
+
+		for (const std::unique_ptr<UI::OptionRow>& row : rows)
+		{
+			row->Render(target, alpha);
+		}
+
+		for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+		{
+			const bool enabled = ButtonEnabled(i);
+			const bool focused = active && focus == Focus::Buttons && selectedButton == i && !dialog.IsOpen();
+
+			const sf::Color colour = !enabled ? DisabledButton : (focused ? sf::Color::White : IdleButton);
+			const float scale = focused ? 1.06f : 1.f;
+
+			if (focused)
+			{
+				buttons[i].DrawGlow(target, buttonGlow, buttonPositions[i], scale,
+					UI::ScaleRgb(sf::Color::White, 0.5f * alpha));
+			}
+			buttons[i].Draw(target, buttonPositions[i], scale, colour, alpha);
+		}
 	}
 
-	const auto a = static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f);
-
-	frame.SetColor(sf::Color(255, 255, 255, a));
-	frame.Draw(target);
-
-	titleText.setFillColor(sf::Color(accent.r, accent.g, accent.b, a));
-	target.draw(titleText);
-
-	for (const std::unique_ptr<UI::OptionRow>& row : rows)
-	{
-		row->Render(target, alpha);
-	}
+	dialog.Render(target);
 }
 
 bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
@@ -220,14 +511,22 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 		return false;
 	}
 
-	switch (MenuInput::Resolve(event, context.gamepad))
+	const MenuInput::Action action = MenuInput::Resolve(event, context.gamepad);
+
+	if (dialog.IsOpen())
 	{
-	case MenuInput::Action::Up:      MoveSelection(-1); return true;
-	case MenuInput::Action::Down:    MoveSelection(1);  return true;
-	case MenuInput::Action::Left:    if (selected < rows.size()) { rows[selected]->Adjust(-1); } return true;
-	case MenuInput::Action::Right:   if (selected < rows.size()) { rows[selected]->Adjust(1); }  return true;
-	case MenuInput::Action::Confirm: if (selected < rows.size()) { rows[selected]->Activate(); } return true;
-	case MenuInput::Action::Back:    return false;   // let OptionsScreen close the category (Apply flow comes next)
+		dialog.Navigate(action);
+		return true;
+	}
+
+	switch (action)
+	{
+	case MenuInput::Action::Up:      MoveVertical(-1);   return true;
+	case MenuInput::Action::Down:    MoveVertical(1);    return true;
+	case MenuInput::Action::Left:    MoveHorizontal(-1); return true;
+	case MenuInput::Action::Right:   MoveHorizontal(1);  return true;
+	case MenuInput::Action::Confirm: ConfirmFocused();   return true;
+	case MenuInput::Action::Back:    BackPressed();      return true;
 	default:                         break;
 	}
 
@@ -238,9 +537,18 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 		{
 			if (rows[i]->IsEnabled() && rows[i]->Bounds().contains(point))
 			{
-				selected = i;
+				focus = Focus::Rows;
+				selectedRow = i;
 			}
 			rows[i]->HandlePointer(point, false);
+		}
+		for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+		{
+			if (ButtonEnabled(i) && buttons[i].Bounds(buttonPositions[i], 1.f).contains(point))
+			{
+				focus = Focus::Buttons;
+				selectedButton = i;
+			}
 		}
 		return true;
 	}
@@ -254,7 +562,17 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 			{
 				if (rows[i]->HandlePointer(point, true))
 				{
-					selected = i;
+					focus = Focus::Rows;
+					selectedRow = i;
+				}
+			}
+			for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
+			{
+				if (ButtonEnabled(i) && buttons[i].Bounds(buttonPositions[i], 1.f).contains(point))
+				{
+					focus = Focus::Buttons;
+					selectedButton = i;
+					ConfirmFocused();
 				}
 			}
 		}

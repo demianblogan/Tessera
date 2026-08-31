@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/View.hpp>
@@ -35,6 +36,13 @@ namespace Display
 		// (Re)create `window` for `mode`, then fit its view. Hides the OS cursor.
 		void Apply(sf::RenderWindow& window, const Mode& mode) const;
 
+		// Queue a recreation to be done between frames (never mid event loop).
+		void RequestApply(const Mode& mode) { pendingApply = mode; }
+
+		// If a mode is queued, apply it to `window` and clear the queue.
+		// Returns true if it recreated the window.
+		bool ApplyPending(sf::RenderWindow& window);
+
 		// Recompute the letterboxed view for the window's current size (on resize).
 		void FitView(sf::RenderWindow& window) const;
 
@@ -43,5 +51,6 @@ namespace Display
 	private:
 		std::vector<sf::Vector2u> resolutions;
 		sf::Vector2u desktop;
+		std::optional<Mode> pendingApply;
 	};
 }

@@ -314,6 +314,13 @@ void Application::Run()
 		HandleInput();
 		stateMachine.ApplyPendingChanges();
 
+		// A settings panel may have asked for a new window mode / resolution;
+		// recreate the window now, safely outside the event loop.
+		if (displayManager.ApplyPending(window))
+		{
+			settings.Apply(context);
+		}
+
 		Update(deltaTime);
 		stateMachine.ApplyPendingChanges();
 

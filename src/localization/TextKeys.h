@@ -58,6 +58,16 @@ namespace TextKey
 		inline constexpr std::string_view ModeWindow     = "options.mode_window";
 		inline constexpr std::string_view On             = "options.on";
 		inline constexpr std::string_view Off            = "options.off";
+		inline constexpr std::string_view Apply          = "options.apply";
+		inline constexpr std::string_view Reset          = "options.reset";
+		inline constexpr std::string_view BackButton     = "options.back_button";
+		inline constexpr std::string_view Unsaved        = "options.unsaved";
+	}
+
+	namespace Common
+	{
+		inline constexpr std::string_view Yes = "common.yes";
+		inline constexpr std::string_view No  = "common.no";
 	}
 
 	namespace Credits

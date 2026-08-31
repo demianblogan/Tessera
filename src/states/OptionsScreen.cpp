@@ -187,6 +187,11 @@ void OptionsScreen::Update(float deltaTime)
 		panels[i]->SetVisibility(visibility, previewFade);
 		panels[i]->Update(deltaTime);
 	}
+
+	if (openIndex && panels[*openIndex] && panels[*openIndex]->WantsToClose())
+	{
+		CloseCategory();
+	}
 }
 
 void OptionsScreen::Render(sf::RenderTarget& target)

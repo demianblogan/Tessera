@@ -85,6 +85,18 @@ namespace Display
 		window.setView(LetterboxView(window.getSize()));
 	}
 
+	bool DisplayManager::ApplyPending(sf::RenderWindow& window)
+	{
+		if (!pendingApply)
+		{
+			return false;
+		}
+
+		Apply(window, *pendingApply);
+		pendingApply.reset();
+		return true;
+	}
+
 	void DisplayManager::Apply(sf::RenderWindow& window, const Mode& mode) const
 	{
 		sf::Vector2u resolution = mode.resolution;

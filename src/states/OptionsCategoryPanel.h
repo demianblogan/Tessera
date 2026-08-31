@@ -40,4 +40,8 @@ public:
 
 	// Blocks the category from closing (an open confirmation dialog, ...).
 	[[nodiscard]] virtual bool WantsToStayOpen() const { return false; }
+
+	// The panel asks the screen to close the category (e.g. after resolving its
+	// own unsaved-changes dialog).
+	[[nodiscard]] virtual bool WantsToClose() const { return false; }
 };

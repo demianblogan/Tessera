@@ -66,6 +66,9 @@
     <ClCompile Include="src\ui\OptionRow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\ConfirmDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\MenuScreenState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -279,6 +282,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\OptionRow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ConfirmDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\MenuScreenState.h">
