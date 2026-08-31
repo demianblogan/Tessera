@@ -5,7 +5,6 @@
 #include <optional>
 #include <string>
 
-#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -27,20 +26,16 @@ namespace
 
 	constexpr unsigned int ButtonSize = 46;
 
-	constexpr float RowsTop = PanelBounds.position.y + 70.f;
+	constexpr float RowsTop = PanelBounds.position.y + 58.f;
 	constexpr float RowMargin = 84.f;
-	constexpr float RowHeight = 84.f;
-	constexpr float RowGap = 14.f;
-	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 82.f;
-	constexpr float ButtonGap = 64.f;
-	constexpr sf::Vector2f ButtonBoxPadding{ 68.f, 26.f };   // frame size vs the label ink
+	constexpr float RowHeight = 96.f;
+	constexpr float RowGap = 12.f;
+	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 94.f;
+	constexpr float ButtonGap = 128.f;
+	constexpr sf::Vector2f ButtonBoxPadding{ 116.f, 46.f };   // frame size vs the label ink
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
-
-	// A dark blue wash over the panel interior so Graphics reads in its own hue.
-	const sf::Color PanelWash{ 16, 40, 66 };
-	constexpr float PanelWashOpacity = 0.62f;
 
 	// Apply is green, Reset is orange, Back is plain -- each with a dim disabled
 	// variant so it's obvious what can be pressed.
@@ -482,14 +477,6 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 
 		frame.SetColor(sf::Color(255, 255, 255, a));
 		frame.Draw(target);
-
-		// Dark blue wash over the interior (inside the frame border).
-		sf::RectangleShape wash({ PanelBounds.size.x - 2.f * PanelTargetBorder.x,
-			PanelBounds.size.y - 2.f * PanelTargetBorder.y });
-		wash.setPosition({ PanelBounds.position.x + PanelTargetBorder.x, PanelBounds.position.y + PanelTargetBorder.y });
-		wash.setFillColor(sf::Color(PanelWash.r, PanelWash.g, PanelWash.b,
-			static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * PanelWashOpacity * 255.f)));
-		target.draw(wash);
 
 		for (const std::unique_ptr<UI::OptionRow>& row : rows)
 		{

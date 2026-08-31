@@ -13,13 +13,12 @@
 
 namespace
 {
-	constexpr unsigned int LabelSize = 38;
-	constexpr unsigned int ValueSize = 34;
+	constexpr unsigned int LabelSize = 46;
+	constexpr unsigned int ValueSize = 42;
 
-	constexpr float ControlFraction = 0.44f;   // right part of the row for the control
-	constexpr float ArrowScreenSize = 34.f;    // on-screen height of the carousel arrow sprite
-	constexpr float ArrowGap = 22.f;           // between the value's edge and the arrow
-	constexpr float TogglePadding = 18.f;
+	constexpr float ControlFraction = 0.46f;   // right part of the row for the control
+	constexpr float ArrowScreenSize = 30.f;    // on-screen size of the carousel arrow sprite
+	constexpr float TogglePadding = 20.f;
 
 	// Arrow press feedback, matching the main-menu ring arrows.
 	constexpr float ArrowPressDuration = 0.22f;
@@ -33,8 +32,8 @@ namespace
 	const sf::Color DisabledLabel{ 120, 124, 132 };
 	const sf::Color ValueColour{ 236, 242, 250 };
 	const sf::Color AccentColour{ 120, 210, 255 };
-	const sf::Color ArrowLive{ 150, 205, 255 };   // faintly blue
-	const sf::Color ArrowDead{ 80, 92, 104 };
+	const sf::Color ArrowLive{ 210, 216, 224 };   // slightly dimmed; hover brings it to full
+	const sf::Color ArrowDead{ 96, 102, 110 };
 
 	[[nodiscard]] float VerticalCentre(const sf::Text& text, float rowTop, float rowHeight)
 	{
@@ -190,19 +189,12 @@ namespace UI
 
 	sf::Vector2f CarouselRow::ArrowCentre(int side) const
 	{
+		// Fixed columns: the arrows line up with a ToggleRow's Off / On options
+		// (the left and right quarter of the control area).
 		const sf::FloatRect area = ControlArea();
 		const float midY = area.position.y + area.size.y * 0.5f;
-		const float midX = area.position.x + area.size.x * 0.5f;
-
-		float valueHalf = 40.f;
-		if (!options.empty())
-		{
-			valueText.setString(options[current]);
-			valueHalf = valueText.getLocalBounds().size.x * 0.5f;
-		}
-
-		const float offset = valueHalf + ArrowGap + ArrowScreenSize * 0.5f;
-		return { midX + static_cast<float>(side) * offset, midY };
+		const float x = area.position.x + area.size.x * (side < 0 ? 0.25f : 0.75f);
+		return { x, midY };
 	}
 
 	sf::FloatRect CarouselRow::ArrowBox(int side) const
@@ -214,22 +206,26 @@ namespace UI
 
 	bool CarouselRow::HandlePointer(sf::Vector2f point, bool clicked)
 	{
-		if (!enabled)
+		hoveredArrow = 0;
+		if (!enabled || options.empty())
 		{
 			return false;
 		}
 
-		if (ArrowBox(-1).contains(point))
+		if (current > 0 && ArrowBox(-1).contains(point))
 		{
-			if (clicked) { Adjust(-1); }
-			return true;
+			hoveredArrow = -1;
 		}
-		if (ArrowBox(1).contains(point))
+		else if (current + 1 < options.size() && ArrowBox(1).contains(point))
 		{
-			if (clicked) { Adjust(1); }
-			return true;
+			hoveredArrow = 1;
 		}
-		return false;
+
+		if (clicked && hoveredArrow != 0)
+		{
+			Adjust(hoveredArrow);
+		}
+		return hoveredArrow != 0;
 	}
 
 	void CarouselRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
@@ -256,6 +252,7 @@ namespace UI
 		{
 			const std::size_t index = side < 0 ? 0u : 1u;
 			const float press = std::clamp(1.f - pressTime[index] / ArrowPressDuration, 0.f, 1.f);
+			const bool hovered = live && hoveredArrow == side;
 
 			const sf::Vector2f centre = ArrowCentre(side);
 			const sf::Vector2f drawCentre{ centre.x - static_cast<float>(side) * ArrowPressShift * press, centre.y };
@@ -276,12 +273,16 @@ namespace UI
 
 			sf::Sprite arrow(arrowTexture);
 			arrow.setOrigin(sf::Vector2f(arrowTexture.getSize()) * 0.5f);
-			const float scale = baseScale * (1.f - ArrowPressDip * press);
+			const float scale = baseScale * (1.f - ArrowPressDip * press) * (hovered ? 1.18f : 1.f);
 			// Texture points right; the left arrow is mirrored.
 			arrow.setScale({ side < 0 ? -scale : scale, scale });
 			arrow.setPosition(drawCentre);
 
-			const sf::Color base = live ? ArrowLive : ArrowDead;
+			sf::Color base = live ? ArrowLive : ArrowDead;
+			if (hovered)
+			{
+				base = sf::Color(255, 255, 255);   // full-bright on hover
+			}
 			const sf::Color tinted{
 				static_cast<std::uint8_t>(base.r + (ArrowPressTint.r - base.r) * press),
 				static_cast<std::uint8_t>(base.g + (ArrowPressTint.g - base.g) * press),

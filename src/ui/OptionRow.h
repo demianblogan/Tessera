@@ -95,6 +95,7 @@ namespace UI
 
 		// Seconds since each arrow (0 = left, 1 = right) was pressed; large = idle.
 		float pressTime[2] = { 1000.f, 1000.f };
+		int hoveredArrow = 0;   // -1 left, +1 right, 0 none
 	};
 
 	// Label + [ On | Off ].
