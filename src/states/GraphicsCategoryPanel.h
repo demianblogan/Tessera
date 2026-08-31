@@ -75,6 +75,7 @@ private:
 	sf::Color accent;
 
 	UI::NineSliceFrame frame;
+	sf::Text borderlessNote;
 
 	std::vector<std::unique_ptr<UI::OptionRow>> rows;
 	UI::CarouselRow* resolutionRowPtr = nullptr;

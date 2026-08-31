@@ -62,6 +62,7 @@ namespace TextKey
 		inline constexpr std::string_view Reset          = "options.reset";
 		inline constexpr std::string_view BackButton     = "options.back_button";
 		inline constexpr std::string_view Unsaved        = "options.unsaved";
+		inline constexpr std::string_view BorderlessNote = "options.borderless_note";
 	}
 
 	namespace Common

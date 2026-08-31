@@ -53,6 +53,8 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	: context(context)
 	, accent(accent)
 	, frame(context.textures.Get(Assets::TextureID::UiFrame), PanelBounds, PanelSourceBorder, PanelTargetBorder)
+	, borderlessNote(context.fonts.Get(Assets::FontID::Main),
+		context.localization.GetText(TextKey::Options::BorderlessNote), 24)
 	, buttons{ {
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
 		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
@@ -71,6 +73,8 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	{
 		button.SetWaveEnabled(false);   // settings buttons stay still
 	}
+
+	borderlessNote.setFillColor(sf::Color(150, 160, 175));
 
 	working = applied = context.settings.GetSettings();
 	BuildRows();
@@ -476,6 +480,16 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 		}
 
 		const auto frac = std::clamp(alpha, 0.f, 1.f);
+
+		if (working.display.windowMode == Display::WindowMode::Borderless && resolutionRowPtr != nullptr)
+		{
+			const sf::FloatRect bounds = resolutionRowPtr->Bounds();
+			borderlessNote.setPosition({ bounds.position.x + 26.f, bounds.position.y + bounds.size.y * 0.66f });
+			sf::Color c = borderlessNote.getFillColor();
+			c.a = static_cast<std::uint8_t>(frac * 255.f);
+			borderlessNote.setFillColor(c);
+			target.draw(borderlessNote);
+		}
 
 		for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 		{
