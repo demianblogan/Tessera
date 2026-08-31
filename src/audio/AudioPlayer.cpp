@@ -51,7 +51,7 @@ void AudioPlayer::Play(Assets::SoundID soundID, float pitch)
 	active->sound.play();
 }
 
-void AudioPlayer::Restart(Assets::SoundID soundID)
+void AudioPlayer::Restart(Assets::SoundID soundID, float pitch)
 {
 	for (const std::unique_ptr<ActiveSound>& active : activeSounds)
 	{
@@ -59,13 +59,14 @@ void AudioPlayer::Restart(Assets::SoundID soundID)
 		{
 			active->sound.stop();
 			active->sound.setPlayingOffset(sf::Time::Zero);
+			active->sound.setPitch(pitch);
 			active->sound.play();
 			active->age.restart();
 			return;
 		}
 	}
 
-	Play(soundID);
+	Play(soundID, pitch);
 }
 
 void AudioPlayer::RemoveStoppedSounds()

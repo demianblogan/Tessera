@@ -10,6 +10,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
 
+#include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../display/DisplayManager.h"
 #include "../input/MenuInput.h"
@@ -38,10 +39,30 @@ namespace
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
 
+	constexpr std::size_t FirstToggleRow = 2;   // rows 0-1 are carousels, 2-4 are toggles
+
 	// Apply is green, Reset is orange, Back is plain -- each with a dim disabled
 	// variant so it's obvious what can be pressed.
 	const sf::Color ButtonColour[3] = { { 70, 200, 110 }, { 255, 162, 62 }, { 236, 240, 246 } };
 	const sf::Color ButtonDisabled[3] = { { 34, 82, 50 }, { 110, 72, 36 }, { 120, 124, 132 } };
+
+	// Options-menu audio, reusing the shared sound set at tweaked pitch.
+	namespace Sfx
+	{
+		void Nav(AudioPlayer& audio, int direction)
+		{
+			audio.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.06f : 0.92f);
+		}
+		void Step(AudioPlayer& audio, int direction)
+		{
+			audio.Play(Assets::SoundID::MovePiece, direction > 0 ? 1.14f : 0.9f);
+		}
+		void Toggle(AudioPlayer& audio) { audio.Play(Assets::SoundID::RotatePiece, 1.15f); }
+		void Apply(AudioPlayer& audio)  { audio.Play(Assets::SoundID::NextLevel, 1.0f); }
+		void Reset(AudioPlayer& audio)  { audio.Play(Assets::SoundID::MenuItemPressed, 0.82f); }
+		void DialogOpen(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed, 0.7f); }
+		void DialogPick(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed, 1.0f); }
+	}
 
 	[[nodiscard]] sf::String FormatResolution(sf::Vector2u size)
 	{
@@ -318,11 +339,28 @@ void GraphicsCategoryPanel::MoveVertical(int direction)
 
 void GraphicsCategoryPanel::MoveHorizontal(int direction)
 {
+	AudioPlayer& audio = context.audioPlayer;
+
 	if (focus == Focus::Rows)
 	{
-		if (selectedRow < rows.size())
+		if (selectedRow >= rows.size())
+		{
+			return;
+		}
+		if (selectedRow >= FirstToggleRow)   // toggle
 		{
 			rows[selectedRow]->Adjust(direction);
+			Sfx::Toggle(audio);
+		}
+		else                                 // carousel
+		{
+			auto* carousel = static_cast<UI::CarouselRow*>(rows[selectedRow].get());
+			const std::size_t before = carousel->Current();
+			carousel->Adjust(direction);
+			if (carousel->Current() != before)
+			{
+				Sfx::Step(audio, direction);
+			}
 		}
 		return;
 	}
@@ -338,6 +376,7 @@ void GraphicsCategoryPanel::MoveHorizontal(int direction)
 		if (ButtonEnabled(static_cast<std::size_t>(index)))
 		{
 			selectedButton = static_cast<std::size_t>(index);
+			Sfx::Nav(context.audioPlayer, direction);
 			return;
 		}
 	}
@@ -345,19 +384,25 @@ void GraphicsCategoryPanel::MoveHorizontal(int direction)
 
 void GraphicsCategoryPanel::ConfirmFocused()
 {
+	AudioPlayer& audio = context.audioPlayer;
+
 	if (focus == Focus::Rows)
 	{
 		if (selectedRow < rows.size())
 		{
 			rows[selectedRow]->Activate();
+			if (selectedRow >= FirstToggleRow)
+			{
+				Sfx::Toggle(audio);
+			}
 		}
 		return;
 	}
 
 	switch (selectedButton)
 	{
-	case ButtonId::Apply: if (ButtonEnabled(ButtonId::Apply)) { DoApply(); } break;
-	case ButtonId::Reset: if (ButtonEnabled(ButtonId::Reset)) { DoReset(); } break;
+	case ButtonId::Apply: if (ButtonEnabled(ButtonId::Apply)) { DoApply(); Sfx::Apply(audio); } break;
+	case ButtonId::Reset: if (ButtonEnabled(ButtonId::Reset)) { DoReset(); Sfx::Reset(audio); } break;
 	default:              BackPressed(); break;
 	}
 }
@@ -369,6 +414,7 @@ void GraphicsCategoryPanel::BackPressed()
 		const LocalizationManager& text = context.localization;
 		dialog.Show(text.GetText(TextKey::Options::Unsaved),
 			text.GetText(TextKey::Common::Yes), text.GetText(TextKey::Common::No));
+		Sfx::DialogOpen(context.audioPlayer);
 	}
 	else
 	{
@@ -531,13 +577,21 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 	if (dialog.IsOpen())
 	{
 		dialog.Navigate(action);
+		if (!dialog.IsOpen())
+		{
+			Sfx::DialogPick(context.audioPlayer);
+		}
+		else if (action == MenuInput::Action::Left || action == MenuInput::Action::Right)
+		{
+			Sfx::Nav(context.audioPlayer, 1);
+		}
 		return true;
 	}
 
 	switch (action)
 	{
-	case MenuInput::Action::Up:      MoveVertical(-1);   return true;
-	case MenuInput::Action::Down:    MoveVertical(1);    return true;
+	case MenuInput::Action::Up:      MoveVertical(-1); Sfx::Nav(context.audioPlayer, -1); return true;
+	case MenuInput::Action::Down:    MoveVertical(1);  Sfx::Nav(context.audioPlayer, 1);  return true;
 	case MenuInput::Action::Left:    MoveHorizontal(-1); return true;
 	case MenuInput::Action::Right:   MoveHorizontal(1);  return true;
 	case MenuInput::Action::Confirm: ConfirmFocused();   return true;
@@ -579,6 +633,8 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 				{
 					focus = Focus::Rows;
 					selectedRow = i;
+					if (i >= FirstToggleRow) { Sfx::Toggle(context.audioPlayer); }
+					else { Sfx::Step(context.audioPlayer, 1); }
 				}
 			}
 			for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)

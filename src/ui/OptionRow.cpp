@@ -57,7 +57,9 @@ namespace
 		return { colour.r, colour.g, colour.b, a };
 	}
 
-	void ThickLine(sf::RenderTarget& target, sf::Vector2f a, sf::Vector2f b, float thickness, sf::Color colour)
+	// A rounded thick line: the rectangle plus a disc at each end, so joins
+	// between segments don't leave a notch.
+	void RoundedLine(sf::RenderTarget& target, sf::Vector2f a, sf::Vector2f b, float thickness, sf::Color colour)
 	{
 		const sf::Vector2f delta = b - a;
 		const float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
@@ -68,6 +70,26 @@ namespace
 		segment.setRotation(sf::radians(std::atan2(delta.y, delta.x)));
 		segment.setFillColor(colour);
 		target.draw(segment);
+
+		sf::CircleShape cap(thickness * 0.5f);
+		cap.setOrigin({ thickness * 0.5f, thickness * 0.5f });
+		cap.setFillColor(colour);
+		cap.setPosition(a);
+		target.draw(cap);
+		cap.setPosition(b);
+		target.draw(cap);
+	}
+
+	// A symmetric bar centred on `centre`, rotated by `degrees`.
+	void CentredBar(sf::RenderTarget& target, sf::Vector2f centre, float length, float thickness,
+		float degrees, sf::Color colour)
+	{
+		sf::RectangleShape bar({ length, thickness });
+		bar.setOrigin(bar.getSize() * 0.5f);
+		bar.setPosition(centre);
+		bar.setRotation(sf::degrees(degrees));
+		bar.setFillColor(colour);
+		target.draw(bar);
 	}
 }
 
@@ -398,25 +420,24 @@ namespace UI
 			: sf::Color(120, 124, 132), Alpha(panelAlpha)));
 		target.draw(box);
 
-		// The tick / cross itself, drawn with line segments over the empty frame.
-		const float s = CheckboxSize * 0.5f * (live ? 1.08f : 1.f);
-		const float thickness = std::max(3.f, s * 0.26f);
+		// The tick / cross itself, drawn from shapes over the empty frame.
+		const float s = CheckboxSize * (live ? 1.08f : 1.f);
+		const float thickness = std::max(3.f, s * 0.13f);
 		const sf::Color symbol = WithAlpha(
 			enabled ? (on ? TickColour : CrossColour) : sf::Color(120, 124, 132), Alpha(panelAlpha));
 
 		if (on)
 		{
-			ThickLine(target, { centre.x - s * 0.44f, centre.y }, { centre.x - s * 0.10f, centre.y + s * 0.34f },
-				thickness, symbol);
-			ThickLine(target, { centre.x - s * 0.10f, centre.y + s * 0.34f }, { centre.x + s * 0.46f, centre.y - s * 0.36f },
-				thickness, symbol);
+			const sf::Vector2f p0{ centre.x - s * 0.24f, centre.y + s * 0.02f };
+			const sf::Vector2f p1{ centre.x - s * 0.06f, centre.y + s * 0.20f };   // low vertex
+			const sf::Vector2f p2{ centre.x + s * 0.26f, centre.y - s * 0.20f };
+			RoundedLine(target, p0, p1, thickness, symbol);
+			RoundedLine(target, p1, p2, thickness, symbol);
 		}
 		else
 		{
-			ThickLine(target, { centre.x - s * 0.34f, centre.y - s * 0.34f }, { centre.x + s * 0.34f, centre.y + s * 0.34f },
-				thickness, symbol);
-			ThickLine(target, { centre.x + s * 0.34f, centre.y - s * 0.34f }, { centre.x - s * 0.34f, centre.y + s * 0.34f },
-				thickness, symbol);
+			CentredBar(target, centre, s * 0.62f, thickness, 45.f, symbol);
+			CentredBar(target, centre, s * 0.62f, thickness, -45.f, symbol);
 		}
 	}
 }

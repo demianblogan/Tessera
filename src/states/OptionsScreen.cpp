@@ -96,6 +96,7 @@ void OptionsScreen::OpenCategory(std::size_t index)
 	openIndex = index;
 	column.SetCompact(true, index);
 	panels[index]->Open();
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 1.05f);
 }
 
 void OptionsScreen::CloseCategory()
@@ -108,7 +109,7 @@ void OptionsScreen::CloseCategory()
 	panels[*openIndex]->Close();
 	openIndex.reset();
 	column.SetCompact(false, 0);
-	context.audioPlayer.Play(Assets::SoundID::MenuItemSelected);
+	context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
 }
 
 void OptionsScreen::HandleEvent(const sf::Event& event)
