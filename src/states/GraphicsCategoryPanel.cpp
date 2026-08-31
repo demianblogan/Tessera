@@ -34,7 +34,7 @@ namespace
 	constexpr float RowGap = 12.f;
 	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 94.f;
 	constexpr float ButtonGap = 108.f;
-	constexpr sf::Vector2f ButtonBoxPadding{ 54.f, 34.f };   // focus-glow box vs the widest / tallest label
+	constexpr sf::Vector2f ButtonBoxPadding{ 84.f, 52.f };   // focus-glow / click box vs the widest / tallest label
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
@@ -46,22 +46,20 @@ namespace
 	const sf::Color ButtonColour[3] = { { 70, 200, 110 }, { 255, 162, 62 }, { 236, 240, 246 } };
 	const sf::Color ButtonDisabled[3] = { { 34, 82, 50 }, { 110, 72, 36 }, { 120, 124, 132 } };
 
-	// Options-menu audio, reusing the shared sound set at tweaked pitch.
+	// Options-menu audio -- the same menu-nav / menu-press sounds as the main
+	// menu, at tweaked pitch. No gameplay sounds here.
 	namespace Sfx
 	{
 		void Nav(AudioPlayer& audio, int direction)
 		{
-			audio.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.06f : 0.92f);
+			audio.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 		}
-		void Step(AudioPlayer& audio, int direction)
-		{
-			audio.Play(Assets::SoundID::MovePiece, direction > 0 ? 1.14f : 0.9f);
-		}
-		void Toggle(AudioPlayer& audio) { audio.Play(Assets::SoundID::RotatePiece, 1.15f); }
-		void Apply(AudioPlayer& audio)  { audio.Play(Assets::SoundID::NextLevel, 1.0f); }
-		void Reset(AudioPlayer& audio)  { audio.Play(Assets::SoundID::MenuItemPressed, 0.82f); }
-		void DialogOpen(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed, 0.7f); }
-		void DialogPick(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed, 1.0f); }
+		void Step(AudioPlayer& audio, int direction) { Nav(audio, direction); }
+		void Toggle(AudioPlayer& audio) { audio.Restart(Assets::SoundID::MenuItemSelected, 1.05f); }
+		void Apply(AudioPlayer& audio)  { audio.Play(Assets::SoundID::MenuItemPressed); }
+		void Reset(AudioPlayer& audio)  { audio.Play(Assets::SoundID::MenuItemPressed, 0.9f); }
+		void DialogOpen(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed, 0.85f); }
+		void DialogPick(AudioPlayer& audio) { audio.Play(Assets::SoundID::MenuItemPressed); }
 	}
 
 	[[nodiscard]] sf::String FormatResolution(sf::Vector2u size)
@@ -613,7 +611,7 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 		}
 		for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 		{
-			if (ButtonEnabled(i) && buttons[i].Bounds(buttonPositions[i], 1.f).contains(point))
+			if (ButtonEnabled(i) && buttonBoxes[i].contains(point))
 			{
 				focus = Focus::Buttons;
 				selectedButton = i;
@@ -639,7 +637,7 @@ bool GraphicsCategoryPanel::HandleEvent(const sf::Event& event)
 			}
 			for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)
 			{
-				if (ButtonEnabled(i) && buttons[i].Bounds(buttonPositions[i], 1.f).contains(point))
+				if (ButtonEnabled(i) && buttonBoxes[i].contains(point))
 				{
 					focus = Focus::Buttons;
 					selectedButton = i;
