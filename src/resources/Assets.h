@@ -45,8 +45,7 @@ namespace Assets
 		UiArrow,
 		UiFrame,
 		CarouselArrow,
-		Checkbox,
-		SettingsButton
+		Checkbox
 	};
 
 	enum class ShaderID
@@ -115,8 +114,7 @@ namespace Assets
 
 			// Settings widgets.
 			inline constexpr const char* CarouselArrow = "assets/textures/ui/carusel_arrow.png";
-			inline constexpr const char* Checkbox = "assets/textures/ui/checkbox.png";        // two 26x26 frames at x=0 and x=28
-			inline constexpr const char* SettingsButton = "assets/textures/ui/settings_button.png";   // 9-slice button frame
+			inline constexpr const char* Checkbox = "assets/textures/ui/checkbox.png";   // two 26x26 sprites at x=0 and x=28
 		}
 
 		namespace Data

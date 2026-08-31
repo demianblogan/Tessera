@@ -45,7 +45,7 @@ options.apply           = Apply
 options.reset           = Reset
 options.back_button     = Back
 options.unsaved         = You have unsaved changes.\nSave them before leaving?
-options.borderless_note = Resolution follows the desktop in Borderless mode.
+options.borderless_note = You can't change the screen resolution in Borderless mode.
 
 common.yes = Yes
 common.no  = No

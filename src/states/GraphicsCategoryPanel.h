@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <memory>
-#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -87,7 +86,6 @@ private:
 	std::array<UI::MenuLabel, ButtonCount> buttons;
 	std::array<sf::Vector2f, ButtonCount> buttonPositions{};
 	std::array<sf::FloatRect, ButtonCount> buttonBoxes{};
-	std::array<std::optional<UI::NineSliceFrame>, ButtonCount> buttonFrames;
 
 	UI::ConfirmDialog dialog;
 

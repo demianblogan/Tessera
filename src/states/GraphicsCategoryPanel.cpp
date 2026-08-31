@@ -32,8 +32,8 @@ namespace
 	constexpr float RowHeight = 96.f;
 	constexpr float RowGap = 12.f;
 	constexpr float ButtonRowY = PanelBounds.position.y + PanelBounds.size.y - 94.f;
-	constexpr float ButtonGap = 96.f;
-	constexpr sf::Vector2f ButtonBoxPadding{ 120.f, 84.f };   // frame size vs the widest / tallest label
+	constexpr float ButtonGap = 108.f;
+	constexpr sf::Vector2f ButtonBoxPadding{ 54.f, 34.f };   // focus-glow box vs the widest / tallest label
 
 	constexpr float FadeSpeed = 9.f;
 	constexpr float PreviewOpacity = 0.55f;
@@ -56,12 +56,10 @@ GraphicsCategoryPanel::GraphicsCategoryPanel(Context& context, sf::Color accent)
 	, borderlessNote(context.fonts.Get(Assets::FontID::Main),
 		context.localization.GetText(TextKey::Options::BorderlessNote), 24)
 	, buttons{ {
-		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
-		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize },
-		{ context.fonts.Get(Assets::FontID::Menu), ButtonSize } } }
-	, dialog(context.fonts.Get(Assets::FontID::Main),
-		context.textures.Get(Assets::TextureID::Checkbox),
-		context.textures.Get(Assets::TextureID::SettingsButton))
+		{ context.fonts.Get(Assets::FontID::Main), ButtonSize },
+		{ context.fonts.Get(Assets::FontID::Main), ButtonSize },
+		{ context.fonts.Get(Assets::FontID::Main), ButtonSize } } }
+	, dialog(context.fonts.Get(Assets::FontID::Main), context.textures.Get(Assets::TextureID::Checkbox))
 	, resolutions(context.display.AvailableResolutions())
 {
 	const LocalizationManager& text = context.localization;
@@ -250,8 +248,6 @@ void GraphicsCategoryPanel::LayOutButtons()
 	{
 		buttonPositions[i] = { x + boxSize.x * 0.5f, ButtonRowY };
 		buttonBoxes[i] = { { x, ButtonRowY - boxSize.y * 0.5f }, boxSize };
-		buttonFrames[i].emplace(context.textures.Get(Assets::TextureID::SettingsButton), buttonBoxes[i], 16u,
-			sf::Vector2f{ 20.f, 20.f });
 		x += boxSize.x + ButtonGap;
 	}
 }
@@ -513,13 +509,6 @@ void GraphicsCategoryPanel::Render(sf::RenderTarget& target)
 						static_cast<std::uint8_t>(frac * (70.f - static_cast<float>(band) * 16.f))));
 					target.draw(halo);
 				}
-			}
-
-			if (buttonFrames[i])
-			{
-				buttonFrames[i]->SetColor(sf::Color(255, 255, 255,
-					static_cast<std::uint8_t>(frac * (enabled ? 1.f : 0.55f) * 255.f)));
-				buttonFrames[i]->Draw(target);
 			}
 
 			buttons[i].Draw(target, buttonPositions[i], focused ? 1.04f : 1.f,

@@ -253,7 +253,6 @@ Application::Application()
 	textures.Load(Assets::TextureID::UiFrame, TexturePaths::UiFrame);
 	textures.Load(Assets::TextureID::CarouselArrow, TexturePaths::CarouselArrow);
 	textures.Load(Assets::TextureID::Checkbox, TexturePaths::Checkbox);
-	textures.Load(Assets::TextureID::SettingsButton, TexturePaths::SettingsButton);
 
 	namespace ShaderPaths = Assets::Paths::Shaders;
 	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);

@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 
@@ -18,12 +17,13 @@ namespace sf
 namespace UI
 {
 	// A modal yes / no dialog: dims the screen and shows a centred box with a
-	// message and two framed icon buttons (a tick and a cross). Drive it with
-	// Navigate(); poll TakeResult() for the answer (nullopt while still open).
+	// message and two buttons -- a tick and a cross, each on a checkbox sprite.
+	// Drive it with Navigate(); poll TakeResult() for the answer (nullopt while
+	// still open).
 	class ConfirmDialog
 	{
 	public:
-		ConfirmDialog(const sf::Font& messageFont, const sf::Texture& iconTexture, const sf::Texture& frameTexture);
+		ConfirmDialog(const sf::Font& messageFont, const sf::Texture& checkboxTexture);
 
 		void Show(const sf::String& message);
 
@@ -39,8 +39,7 @@ namespace UI
 		void Resolve(bool answer);
 		void DrawButton(sf::RenderTarget& target, bool yesSide, bool chosen) const;
 
-		const sf::Texture& iconTexture;
-		const sf::Texture& frameTexture;
+		const sf::Texture& checkboxTexture;
 
 		sf::Text messageText;
 
