@@ -14,15 +14,15 @@
 
 namespace
 {
-	constexpr unsigned int ButtonTextSize = 62;
+	constexpr unsigned int ButtonTextSize = 38;
 	constexpr sf::Vector2f ColumnTopLeft{ 240.f, 300.f };
-	constexpr float RowGap = 100.f;
+	constexpr float RowGap = 120.f;
 }
 
 OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 	: MenuScreen(shell)
 	, accent(accent)
-	, column(context.fonts.Get(Assets::FontID::Menu), ButtonTextSize,
+	, column(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	const LocalizationManager& text = context.localization;

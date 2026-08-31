@@ -6,7 +6,8 @@ namespace Assets
 	{
 		Main,
 		Loading,
-		Menu
+		Menu,
+		MenuList
 	};
 
 	enum class MusicID
@@ -68,6 +69,9 @@ namespace Assets
 
 			// Main-menu carousel entries. Pixel face with localisation coverage.
 			inline constexpr const char* Menu = "assets/fonts/pixel.ttf";
+
+			// Vertical menu lists (Options categories, later the in-game menus).
+			inline constexpr const char* MenuList = "assets/fonts/chispix-bold.ttf";
 		}
 
 		namespace Music

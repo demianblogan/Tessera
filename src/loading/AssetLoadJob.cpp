@@ -54,6 +54,7 @@ namespace Loading
 			{
 				fonts.Load(Assets::FontID::Main, Paths::Fonts::Main);
 				fonts.Load(Assets::FontID::Menu, Paths::Fonts::Menu);
+				fonts.Load(Assets::FontID::MenuList, Paths::Fonts::MenuList);
 			});
 
 		if (completed)
