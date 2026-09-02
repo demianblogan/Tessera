@@ -13,6 +13,8 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Angle.hpp>
 
+#include "Easing.h"
+
 namespace
 {
 	constexpr unsigned int LabelSize = 46;
@@ -47,11 +49,7 @@ namespace
 		return rowTop + rowHeight * 0.5f - (bounds.position.y + bounds.size.y * 0.5f);
 	}
 
-	[[nodiscard]] float EaseOutCubic(float t) noexcept
-	{
-		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
-		return 1.f - inv * inv * inv;
-	}
+	using UI::Easing::EaseOutCubic;
 
 	[[nodiscard]] sf::Color WithAlpha(sf::Color colour, std::uint8_t a) noexcept
 	{

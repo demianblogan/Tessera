@@ -18,7 +18,7 @@
 #include "../resources/Assets.h"
 #include "../ui/ColourUtils.h"
 #include "../ui/TextLayout.h"
-#include "MenuShell.h"
+#include "ScreenHost.h"
 
 namespace
 {
@@ -75,8 +75,8 @@ namespace
 	}
 }
 
-CreditsScreen::CreditsScreen(MenuShell& shell, sf::Color accent)
-	: MenuScreen(shell)
+CreditsScreen::CreditsScreen(ScreenHost& host, sf::Color accent)
+	: MenuScreen(host)
 	, accent(accent)
 	, panel(context.textures.Get(Assets::TextureID::UiFrame), PanelBounds, PanelSourceBorder, PanelTargetBorder)
 	, backLabel(context.fonts.Get(Assets::FontID::Menu), ButtonTextSize)
@@ -135,7 +135,7 @@ void CreditsScreen::Leave()
 	leaving = true;
 	pressTime = 0.f;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	shell.BeginBack();
+	host.BeginBack();
 }
 
 void CreditsScreen::HandleEvent(const sf::Event& event)

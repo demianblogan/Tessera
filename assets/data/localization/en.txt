@@ -9,10 +9,27 @@ main_menu.achievements = Achievements
 main_menu.credits      = Credits
 main_menu.quit         = Quit
 
-pause.title     = Pause
-pause.resume    = Resume Game
-pause.restart   = Restart Game
-pause.main_menu = Main Menu
+mode_select.title             = GAME MODES
+mode_select.campaign          = Campaign
+mode_select.other_modes       = Other Modes
+mode_select.back              = Back
+mode_select.start_campaign    = Start New Campaign
+mode_select.continue_campaign = Continue Campaign
+mode_select.select_level      = Select Level
+mode_select.marathon          = Marathon
+mode_select.sprint            = Sprint
+mode_select.ultra             = Ultra
+mode_select.zen               = Zen
+mode_select.versus            = Player vs Player
+mode_select.sub_back          = Back
+
+pause.title     = PAUSE
+pause.resume    = Resume
+pause.restart   = Restart
+pause.options   = Options
+pause.main_menu = Back to Main Menu
+pause.confirm_restart = Restart the level?
+pause.confirm_quit    = Leave the level?
 
 game_over.title      = Game Over
 game_over.score      = Your score: {score}

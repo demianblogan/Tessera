@@ -17,6 +17,7 @@
 #include <SFML/System/Angle.hpp>
 
 #include "ColourUtils.h"
+#include "Easing.h"
 #include "TetrominoPalette.h"
 #include "../rendering/NeonGlow.h"
 
@@ -71,26 +72,9 @@ namespace
 	using UI::ScaleRgb;
 	using UI::ToByte;
 
-	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
-	{
-		return a + (b - a) * t;
-	}
-
-	// Overshooting spring: 0 at t=0, 1 at t=1, wobbling past 1 on the way.
-	[[nodiscard]] float EaseOutElastic(float t) noexcept
-	{
-		if (t <= 0.f) return 0.f;
-		if (t >= 1.f) return 1.f;
-
-		constexpr float period = 2.f * 3.14159265f / 3.f;
-		return std::pow(2.f, -10.f * t) * std::sin((t * 10.f - 0.75f) * period) + 1.f;
-	}
-
-	[[nodiscard]] float EaseOutQuad(float t) noexcept
-	{
-		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
-		return 1.f - inv * inv;
-	}
+	using UI::Easing::EaseOutElastic;   // overshooting spring
+	using UI::Easing::EaseOutQuad;
+	using UI::Easing::Lerp;
 
 	void AppendQuad(sf::VertexArray& array, const sf::FloatRect& bounds, const sf::FloatRect& texture,
 		sf::Color topColour, sf::Color bottomColour)

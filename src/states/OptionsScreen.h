@@ -32,7 +32,7 @@ namespace sf
 class OptionsScreen final : public MenuScreen
 {
 public:
-	OptionsScreen(MenuShell& shell, sf::Color accent);
+	OptionsScreen(ScreenHost& host, sf::Color accent);
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;

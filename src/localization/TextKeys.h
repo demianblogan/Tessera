@@ -23,7 +23,11 @@ namespace TextKey
 		inline constexpr std::string_view Title    = "pause.title";
 		inline constexpr std::string_view Resume   = "pause.resume";
 		inline constexpr std::string_view Restart  = "pause.restart";
+		inline constexpr std::string_view Options  = "pause.options";
 		inline constexpr std::string_view MainMenu = "pause.main_menu";
+
+		inline constexpr std::string_view ConfirmRestart = "pause.confirm_restart";
+		inline constexpr std::string_view ConfirmQuit    = "pause.confirm_quit";
 	}
 
 	namespace GameOver
@@ -94,6 +98,28 @@ namespace TextKey
 	{
 		inline constexpr std::string_view Yes = "common.yes";
 		inline constexpr std::string_view No  = "common.no";
+	}
+
+	namespace ModeSelect
+	{
+		inline constexpr std::string_view Title      = "mode_select.title";
+		inline constexpr std::string_view Campaign   = "mode_select.campaign";
+		inline constexpr std::string_view OtherModes = "mode_select.other_modes";
+		inline constexpr std::string_view Back       = "mode_select.back";   // main column, short "Back"
+
+		// Campaign sub-list.
+		inline constexpr std::string_view StartCampaign    = "mode_select.start_campaign";
+		inline constexpr std::string_view ContinueCampaign = "mode_select.continue_campaign";
+		inline constexpr std::string_view SelectLevel      = "mode_select.select_level";
+
+		// Other Modes sub-list.
+		inline constexpr std::string_view Marathon = "mode_select.marathon";
+		inline constexpr std::string_view Sprint   = "mode_select.sprint";
+		inline constexpr std::string_view Ultra    = "mode_select.ultra";
+		inline constexpr std::string_view Zen      = "mode_select.zen";
+		inline constexpr std::string_view Versus   = "mode_select.versus";
+
+		inline constexpr std::string_view SubBack = "mode_select.sub_back";   // sub-list "Back"
 	}
 
 	namespace Credits

@@ -123,6 +123,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\rendering\NeonGlow.cpp" />
     <ClCompile Include="src\resources\ShaderManager.cpp" />
     <ClCompile Include="src\states\GameOverState.cpp" />
+    <ClCompile Include="src\states\PauseMenuScreen.cpp" />
     <ClCompile Include="src\states\PauseState.cpp" />
     <ClCompile Include="src\ui\Panel.cpp" />
     <ClCompile Include="src\utils\AppDataPath.cpp" />
@@ -181,9 +182,11 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\states\CompanySplashState.cpp" />
     <ClCompile Include="src\states\LoadingState.cpp" />
     <ClCompile Include="src\states\MenuShell.cpp" />
+    <ClCompile Include="src\states\ScreenHost.cpp" />
     <ClCompile Include="src\states\MenuScreen.cpp" />
     <ClCompile Include="src\states\MainMenuScreen.cpp" />
     <ClCompile Include="src\states\CreditsScreen.cpp" />
+    <ClCompile Include="src\states\ModeSelectScreen.cpp" />
     <ClCompile Include="src\states\OptionsScreen.cpp" />
     <ClCompile Include="src\states\SettingsCategoryPanel.cpp" />
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp" />
@@ -222,6 +225,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\rendering\NeonGlow.h" />
     <ClInclude Include="src\resources\ShaderManager.h" />
     <ClInclude Include="src\states\GameOverState.h" />
+    <ClInclude Include="src\states\PauseMenuScreen.h" />
     <ClInclude Include="src\states\PauseState.h" />
     <ClInclude Include="src\ui\Panel.h" />
     <ClInclude Include="src\utils\AppDataPath.h" />
@@ -268,6 +272,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\ui\Element.h" />
     <ClInclude Include="src\ui\CarouselMenu.h" />
     <ClInclude Include="src\ui\ColourUtils.h" />
+    <ClInclude Include="src\ui\Easing.h" />
     <ClInclude Include="src\ui\DropInTitle.h" />
     <ClInclude Include="src\ui\TetrominoPalette.h" />
     <ClInclude Include="src\ui\FpsCounter.h" />
@@ -287,9 +292,11 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\CompanySplashState.h" />
     <ClInclude Include="src\states\LoadingState.h" />
     <ClInclude Include="src\states\MenuShell.h" />
+    <ClInclude Include="src\states\ScreenHost.h" />
     <ClInclude Include="src\states\MenuScreen.h" />
     <ClInclude Include="src\states\MainMenuScreen.h" />
     <ClInclude Include="src\states\CreditsScreen.h" />
+    <ClInclude Include="src\states\ModeSelectScreen.h" />
     <ClInclude Include="src\states\OptionsScreen.h" />
     <ClInclude Include="src\states\OptionsCategoryPanel.h" />
     <ClInclude Include="src\states\SettingsCategoryPanel.h" />

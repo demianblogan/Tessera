@@ -13,7 +13,6 @@ namespace Assets
 	enum class MusicID
 	{
 		MainMenu,
-		Gameplay,
 		GameOver
 	};
 
@@ -57,7 +56,8 @@ namespace Assets
 		GhostTetromino,
 		NeonDilate,
 		NeonBlur,
-		MenuAurora
+		MenuAurora,
+		Mosaic
 	};
 
 	namespace Paths
@@ -80,7 +80,6 @@ namespace Assets
 		namespace Music
 		{
 			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
-			inline constexpr const char* Gameplay = "assets/audio/music/gameplay_music.ogg";
 			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 		}
 
@@ -136,6 +135,7 @@ namespace Assets
 			inline constexpr const char* NeonDilate = "assets/shaders/neon_dilate.frag";
 			inline constexpr const char* NeonBlur = "assets/shaders/neon_blur.frag";
 			inline constexpr const char* MenuAurora = "assets/shaders/menu_aurora.frag";
+			inline constexpr const char* Mosaic = "assets/shaders/mosaic.frag";
 		}
 	}
 }

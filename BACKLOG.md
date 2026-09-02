@@ -41,15 +41,45 @@ Cross-cutting decisions:
   landing effects, a custom UI framework, a settings menu, top-5 high scores,
   and shader-based CRT / blur / glow post-processing.
 
----
+### v1.3.0 — In-game menu & mode select
 
-## Released
+A new Pause screen built to the menu-shell standard, and a mode-select screen
+behind "Start Game". No gameplay-rules changes; Game Over untouched (its look
+follows the modes / campaign work).
+
+- **`states/ScreenHost`** — the screen swap + `ui/MenuHeader` + forward / back
+  transition + DualSense-lightbar handoff, extracted from `MenuShell` (now a
+  thin subclass supplying the animated menu background and the `MainMenuScreen`
+  home). Sub-screens take a `ScreenHost&`; the ring's backdrop shove goes
+  through `ScreenHost::OnNavigate`. A `HomeDrivesHeader()` / `OnHomeRebuilt()`
+  hook lets a host keep a persistent header on its home screen.
+- **Pause** (`states/PauseState : ScreenHost`, `states/PauseMenuScreen`) — on
+  pause, `GameplayState` snapshots the frame into a `RenderTexture`;
+  `assets/shaders/mosaic.frag` "solidifies" it (blur + large-pixel quantise +
+  darken) with a front that sweeps top-down on entry and bottom-up on Resume.
+  A "PAUSE" header (amber, the mode-select "Campaign" hue) rises from the top
+  edge as a left `ui/MenuButtonColumn` slides in low in the frame: Resume /
+  Restart / Options / Back to Main Menu, each in its own colour. Resume
+  reverses the whole animation before popping. Restart and Back to Main Menu
+  raise a `ui/ConfirmDialog`. Options opens over the frozen frame through the
+  shared `ScreenHost` transition; settings apply live.
+- **Mode select** (`states/ModeSelectScreen`) — "Start Game" now morphs into a
+  two-level column like Options → Controls: **Campaign** (Start New Campaign /
+  Continue Campaign / Select Level) and **Other Modes** (Marathon / Sprint /
+  Ultra / Zen / Player vs Player). Only Marathon is live; the rest are disabled
+  stubs for the versions that build them. `docs/CAMPAIGN_AND_MODES.md` holds the
+  concept.
+- **Gameplay music removed** — the old track did not fit; `MusicID::Gameplay`
+  and its asset are gone. A dynamic score is a v1.8.0 task.
+- **Cleanup** — `Lerp` / `SmoothStep` / `EaseOut*` deduplicated into
+  `ui/Easing.h` (were copy-pasted in ~10 TUs); three unused fonts
+  (`BarNewRomanPix*`, `EpilepsySans`) deleted; dead `ScreenHost::ShowScreen` /
+  `IsTransitioning` removed.
 
 ### v1.2.0 — Menu shell & Options
 
 Originally scoped as "Modern rules"; **re-scoped** to the menu shell and a
-complete Options screen (the SRS / guideline-rules work moved to v1.3.0). No
-gameplay-rules changes.
+complete Options screen. No gameplay-rules changes.
 
 - **Menu shell** (`states/MenuShell` hosting `states/MenuScreen`s;
   `MainMenuScreen` / `CreditsScreen` / `OptionsScreen`). Activating a ring
@@ -266,10 +296,6 @@ effects. Behaviour unchanged — relocation only.
   gets a `ControlSettings` (default keyboard bindings, not persisted — the
   rebinding UI + save/load land with the Options screen in v1.4.0).
 
----
-
-## Released
-
 ### v1.0.4 — SFML DLL post-build copy & persistence
 
 - Post-build step copies the config's four `sfml-*-3.dll` from `libs/SFML/bin/`
@@ -347,29 +373,37 @@ landed early in v1.2.0 (were pencilled for the old v1.5.0).
 
 ### Phase 2 — features
 
-Version numbers below shifted +1 after v1.2.0 was re-scoped. **The v1.3.0
-scope is still open — to be decided with the user.**
+The version order below is the user's, and overrides any earlier numbering. It
+was re-flowed at the start of v1.3.0 (the old "v1.3.0 — Modern rules" scope
+moved to v1.4.0; the old "v1.7.0 — In-game menu overhaul" was pulled forward
+and split — the Pause half became v1.3.0, Game Over waits for the modes work
+that defines it).
 
-- **v1.3.0 — Modern rules.** Buffer rows above the visible field + guideline
-  block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
-  delay + move reset; hold piece; 5-deep next queue; 7-bag confirmed as the
-  randomiser; guideline scoring (back-to-back, combo, soft/hard-drop points,
-  perfect clear); on-board callouts. Adds the Gameplay-settings toggles that
-  depend on this: ghost piece, hold piece, next-queue length, 7-bag vs random
-  (see Reminders).
-- **v1.4.0 — Game modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
+- **v1.4.0 — Gameplay rules & variety.** *(name TBD when it starts)* Buffer rows
+  above the visible field + guideline block-out / lock-out; SRS rotation + wall
+  kicks + T-spin detection; lock delay + move reset; hold piece; 5-deep next
+  queue; 7-bag confirmed as the randomiser; guideline scoring (back-to-back,
+  combo, soft/hard-drop points, perfect clear); on-board callouts. Adds the
+  Gameplay-settings toggles that depend on this: ghost piece, hold piece,
+  next-queue length, 7-bag vs random (see Reminders). The campaign rule
+  modifiers and how they relate to a challenge ladder are decided here too (see
+  `docs/CAMPAIGN_AND_MODES.md`).
+- **v1.5.0 — Solo modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
   per-mode records and extended stats. Wire real `StatisticsState` +
   `AchievementManager` in behind the disabled Records / Achievements ring
-  entries.
-- **v1.5.0 — Challenge ladder & achievements.** A ladder of short objective
-  stages with modifiers (fixed sequences, garbage starts, invisible blocks,
-  20G, big mode, "clear in N pieces"), escalating difficulty, per-stage stars;
-  `AchievementManager` port.
-- **v1.6.0 — Audio & HUD.** Dynamic-intensity music; a full gameplay SFX set;
-  a nine-slice HUD redesign.
-- **v1.7.0 — In-game menu overhaul.** Bring the Pause / Game Over screens up to
-  the menu shell's visual standard (they still use the old `MenuScreenState`
-  list style); reuse `MenuButtonColumn` / the shell transition.
+  entries. Fills in the `ModeSelectScreen` stubs that are solo.
+- **v1.6.0 — Campaign.** A ladder of ~12–16 short levels (~30 min total), each
+  with a score gate and one rule modifier, boss levels every 5th (AI duel),
+  1–3 stars per level, progress saved to `%LOCALAPPDATA%`. Improves the Game
+  Over screen for the campaign context. Absorbs the old "challenge ladder"
+  idea (or coexists — decided in v1.4.0).
+- **v1.7.0 — Local PvP + AI opponent.** Split-screen two-player on one machine
+  (both gamepads, or one keyboard + one gamepad — never both keyboard); a
+  garbage / attack model; a versus HUD and win condition. A heuristic AI
+  "virtual player" driving a `GameplaySession`, reused for a VS-AI mode and the
+  campaign boss levels.
+- **v1.8.0 — Audio & HUD.** Dynamic-intensity music; a full gameplay SFX set;
+  a nine-slice HUD redesign; gameplay music brought back.
 - **Localization implementation** — the UI scaffold shipped in v1.2.0; the
   actual multi-language load + first-run picker + live switch is **deferred to
   the last development version**, once the rest of the game is done (retranslating
@@ -379,7 +413,7 @@ scope is still open — to be decided with the user.**
   `button_background` / `game_background` etc. with art built to be
   nine-sliceable — the current frames aren't symmetric, so `NineSliceFrame`
   (added in v1.0.7) can't do much with them yet. New art unlocks the crisp
-  frames and the nine-slice HUD redesign (v1.5.0).
+  frames and the nine-slice HUD redesign (v1.8.0).
 - **v2.0.0 — Polish & docs.** Final polish, GitHub documentation, preview GIFs,
   release.
 
@@ -387,7 +421,7 @@ scope is still open — to be decided with the user.**
 
 ## Reminders
 
-- **Gameplay-settings toggles to add in v1.3.0**, once the mechanic each needs
+- **Gameplay-settings toggles to add in v1.4.0**, once the mechanic each needs
   exists: ghost piece, hold piece, next-queue length, 7-bag vs random. Extend
   `GameplayCategoryPanel` (rows + `GameSettings` fields, bump FormatVersion). If
   Gameplay grows past ~6 rows, split it into sub-sections.
@@ -398,6 +432,6 @@ scope is still open — to be decided with the user.**
 
 ## Deferred ideas
 
-- Garbage / attack model as groundwork for a future versus mode or AI opponent.
+- Garbage / attack model — now scheduled for v1.7.0 (Local PvP + AI).
 - Colorblind palettes and adjustable grid opacity.
 - Replays / seed sharing for Sprint and Ultra.

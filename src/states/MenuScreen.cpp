@@ -1,10 +1,10 @@
 #include "MenuScreen.h"
 
-#include "MenuShell.h"
+#include "ScreenHost.h"
 
-MenuScreen::MenuScreen(MenuShell& shell)
-	: shell(shell)
-	, context(shell.GetContext())
+MenuScreen::MenuScreen(ScreenHost& host)
+	: host(host)
+	, context(host.GetContext())
 {
-	// No code -- see MenuShell for the shared state screens draw on top of.
+	// No code -- see ScreenHost for the shared state screens draw on top of.
 }

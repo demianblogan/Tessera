@@ -265,6 +265,7 @@ Application::Application()
 	shaders.Load(Assets::ShaderID::NeonDilate, ShaderPaths::NeonDilate, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::NeonBlur, ShaderPaths::NeonBlur, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::MenuAurora, ShaderPaths::MenuAurora, sf::Shader::Type::Fragment);
+	shaders.Load(Assets::ShaderID::Mosaic, ShaderPaths::Mosaic, sf::Shader::Type::Fragment);
 
 	const std::filesystem::path loadingFontPath = Assets::Paths::Fonts::Loading;
 	fonts.Load(

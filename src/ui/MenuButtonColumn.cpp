@@ -8,6 +8,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 
 #include "ColourUtils.h"
+#include "Easing.h"
 #include "TetrominoPalette.h"
 
 namespace
@@ -38,27 +39,9 @@ namespace
 
 	constexpr float IdleDim = 0.6f;   // an unselected enabled button, vs the selected one
 
-	[[nodiscard]] float EaseOutCubic(float t) noexcept
-	{
-		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
-		return 1.f - inv * inv * inv;
-	}
-
-	[[nodiscard]] float EaseInCubic(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		return t * t * t;
-	}
-
-	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
-	{
-		return a + (b - a) * t;
-	}
-
-	[[nodiscard]] sf::Vector2f Lerp(sf::Vector2f a, sf::Vector2f b, float t) noexcept
-	{
-		return { Lerp(a.x, b.x, t), Lerp(a.y, b.y, t) };
-	}
+	using UI::Easing::EaseInCubic;
+	using UI::Easing::EaseOutCubic;
+	using UI::Easing::Lerp;
 
 	[[nodiscard]] sf::Vector2f QuadBezier(sf::Vector2f a, sf::Vector2f c, sf::Vector2f b, float t) noexcept
 	{
@@ -149,6 +132,24 @@ namespace UI
 		Begin();
 		introTime = 1e7f;   // past the end of the fly-in: settled, no animation
 		std::fill(swooshFired.begin(), swooshFired.end(), static_cast<char>(1));
+	}
+
+	sf::Vector2f MenuButtonColumn::EntryCentre(std::size_t index) const
+	{
+		if (index >= buttons.size())
+		{
+			return {};
+		}
+		return buttons[index].restCentre + renderShift;
+	}
+
+	float MenuButtonColumn::EntryHeight(std::size_t index) const
+	{
+		if (index >= buttons.size())
+		{
+			return 0.f;
+		}
+		return buttons[index].label.InkSize().y;
 	}
 
 	void MenuButtonColumn::PlayExit()

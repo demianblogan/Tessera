@@ -6,6 +6,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 
 #include "ColourUtils.h"
+#include "Easing.h"
 
 namespace
 {
@@ -18,21 +19,8 @@ namespace
 	constexpr float GlowIntensity = 0.55f;
 	constexpr float GlowBreathSpeed = 2.0f;
 
-	[[nodiscard]] float EaseOutCubic(float t) noexcept
-	{
-		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
-		return 1.f - inv * inv * inv;
-	}
-
-	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
-	{
-		return a + (b - a) * t;
-	}
-
-	[[nodiscard]] sf::Vector2f Lerp(sf::Vector2f a, sf::Vector2f b, float t) noexcept
-	{
-		return { Lerp(a.x, b.x, t), Lerp(a.y, b.y, t) };
-	}
+	using UI::Easing::EaseOutCubic;
+	using UI::Easing::Lerp;
 }
 
 namespace UI

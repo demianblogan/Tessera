@@ -18,6 +18,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../ui/Easing.h"
 #include "CompanySplashState.h"
 
 namespace
@@ -64,11 +65,7 @@ namespace
 		return TextKey::Loading::Interface;
 	}
 
-	[[nodiscard]] float EaseOutCubic(float t) noexcept
-	{
-		const float inverted = 1.f - t;
-		return 1.f - inverted * inverted * inverted;
-	}
+	using UI::Easing::EaseOutCubic;
 }
 
 LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
