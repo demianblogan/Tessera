@@ -45,6 +45,53 @@ Cross-cutting decisions:
 
 ## Released
 
+### v1.2.0 — Menu shell & Options
+
+Originally scoped as "Modern rules"; **re-scoped** to the menu shell and a
+complete Options screen (the SRS / guideline-rules work moved to v1.3.0). No
+gameplay-rules changes.
+
+- **Menu shell** (`states/MenuShell` hosting `states/MenuScreen`s;
+  `MainMenuScreen` / `CreditsScreen` / `OptionsScreen`). Activating a ring
+  entry: the title flies up, the entries disintegrate to pixels, and the chosen
+  entry morphs into the sub-screen header (`ui/MenuHeader` `RiseFrom` /
+  `SinkTo`); reversed on Back. The shell owns the shared ambient
+  (aurora / backdrop / sparks / version / lightbar). Back-out returns focus to
+  the entry you left from.
+- **Credits screen** — a 9-slice framed panel (`ui/NineSliceFrame`,
+  `assets/textures/ui/frame.png`): developer blurb, email, YouTube, source
+  link; a main-menu-style "Back to Main Menu" text button. Gold accent.
+- **Options screen** (`states/OptionsScreen`) — a left category column
+  (`ui/MenuButtonColumn`) with a right-hand panel that previews on hover and
+  opens in place, the column compacting around the open entry.
+  - **Gameplay** (teal) — Gamepad Vibration / Gamepad Lightbar / Screen Shake
+    toggles.
+  - **Graphics** (sky blue) — Screen Resolution + Window Mode carousels,
+    Vertical Sync / Show FPS / CRT Filter toggles; a `display/DisplayManager`
+    with deferred window recreation and letterboxing; Borderless locks the
+    resolution. FPS-limit and block-style settings cut from the game.
+  - **Audio** (green) — Sound / Music volume sliders (10 % steps).
+  - **Controls** (violet) — its own slide-in sub-page: **Keyboard** (rebind the
+    six gameplay keys; blink-to-capture, Escape / gamepad-B cancels, reserved
+    and clashing keys rejected with a flash; layout-independent key names via
+    `input/KeyName`) and **Gamepad** (read-only Xbox / PlayStation reference
+    table from button-prompt atlases).
+  - **Language** (rose) — slide-in sub-list, English live, the other four greyed
+    (UI scaffold; localisation itself deferred).
+  - Every panel: an Apply / Reset / Back row with dirty / at-defaults tracking
+    and an unsaved-changes dialog (`states/SettingsCategoryPanel` base,
+    `ui/ConfirmDialog`, `ui/OptionRow` + carousel / slider / toggle / key-bind
+    rows).
+- **Settings persistence** — `GameSettings` format 5: display, the graphics
+  toggles, volumes, the six rebindable scancodes, the three gameplay toggles.
+- **`haptics.json` lightbar map** — any `[r,g,b]` key; menus resolve their
+  focused item through `HapticSettings::LightbarFor` so the DualSense resting
+  colour is hand-calibratable. Menu navigation no longer flashes it; each
+  TESSERA title letter snaps it to its own colour on landing.
+- Gamepad rotation moved from the analog triggers to the shoulder buttons;
+  gamepad detection re-scans each frame while none is connected.
+- Quit-out-of-game removed from the main menu (only the "Quit" ring entry).
+
 ### v1.1.0 — Presentation
 
 The first feature version: a proper opening sequence, a rebuilt main menu, the
@@ -292,38 +339,41 @@ effects. Behaviour unchanged — relocation only.
 
 ### Phase 1b — port systems from ULA
 
-**Phase 1 is complete** (v1.0.1 – v1.0.9). **v1.1.0 — Presentation shipped**
-(see Released). Vibration / lightbar settings toggles were deferred to the
-v1.5.0 Options screen; `ScreenFade` transitions were dropped (the game is fast,
-transitions should feel instant).
+**Phase 1 is complete** (v1.0.1 – v1.0.9). **v1.1.0 — Presentation** and
+**v1.2.0 — Menu shell & Options** shipped (see Released). `ScreenFade`
+transitions were dropped (the game is fast, transitions should feel instant).
+The Options screen, `DisplayManager`, and the vibration / lightbar toggles
+landed early in v1.2.0 (were pencilled for the old v1.5.0).
 
 ### Phase 2 — features
 
-- **v1.2.0 — Modern rules.** Buffer rows above the visible field + guideline
+Version numbers below shifted +1 after v1.2.0 was re-scoped. **The v1.3.0
+scope is still open — to be decided with the user.**
+
+- **v1.3.0 — Modern rules.** Buffer rows above the visible field + guideline
   block-out / lock-out; SRS rotation + wall kicks + T-spin detection; lock
-  delay + move reset; hold piece; 5-deep next queue; guideline scoring
-  (back-to-back, combo, soft/hard-drop points, perfect clear); on-board
-  callouts.
-- **v1.3.0 — Game modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
+  delay + move reset; hold piece; 5-deep next queue; 7-bag confirmed as the
+  randomiser; guideline scoring (back-to-back, combo, soft/hard-drop points,
+  perfect clear); on-board callouts. Adds the Gameplay-settings toggles that
+  depend on this: ghost piece, hold piece, next-queue length, 7-bag vs random
+  (see Reminders).
+- **v1.4.0 — Game modes.** Marathon, Sprint (40 lines), Ultra (2 minutes), Zen;
   per-mode records and extended stats. Wire real `StatisticsState` +
   `AchievementManager` in behind the disabled Records / Achievements ring
   entries.
-- **v1.4.0 — Challenge ladder & achievements.** A ladder of short objective
+- **v1.5.0 — Challenge ladder & achievements.** A ladder of short objective
   stages with modifiers (fixed sequences, garbage starts, invisible blocks,
   20G, big mode, "clear in N pieces"), escalating difficulty, per-stage stars;
-  `AchievementManager` port; a real `CreditsState` behind the disabled Credits
-  entry.
-- **v1.5.0 — Localization & options.** Full localization (**final language list
-  decided here**); a complete Options screen (graphics / audio / controls /
-  gameplay / language — **discuss the setting list before building**), incl.
-  vibration / lightbar / reduce-motion / per-effect toggles; a letterboxing
-  `DisplayManager`.
+  `AchievementManager` port.
 - **v1.6.0 — Audio & HUD.** Dynamic-intensity music; a full gameplay SFX set;
-  a nine-slice HUD redesign. Fold `SettingsRowList` and `MenuList` into one
-  selection model (deferred since v1.0.7).
-- **v1.7.0 — In-game menu overhaul.** Bring the Pause / Game Over / Settings /
-  Records screens up to the main menu's visual standard (they still use the
-  old `MenuScreenState` list style).
+  a nine-slice HUD redesign.
+- **v1.7.0 — In-game menu overhaul.** Bring the Pause / Game Over screens up to
+  the menu shell's visual standard (they still use the old `MenuScreenState`
+  list style); reuse `MenuButtonColumn` / the shell transition.
+- **Localization implementation** — the UI scaffold shipped in v1.2.0; the
+  actual multi-language load + first-run picker + live switch is **deferred to
+  the last development version**, once the rest of the game is done (retranslating
+  churning strings mid-development is wasteful).
 - **Visual overhaul (spans the versions above).** The whole game look is to be
   raised substantially. Part of that: replace `panel_background` /
   `button_background` / `game_background` etc. with art built to be
@@ -337,9 +387,14 @@ transitions should feel instant).
 
 ## Reminders
 
-- Before building the expanded Options screen (v1.4.0), have an explicit
-  conversation about **which** settings to add and what goes in them.
-- Localization language list is a **v1.4.0** decision.
+- **Gameplay-settings toggles to add in v1.3.0**, once the mechanic each needs
+  exists: ghost piece, hold piece, next-queue length, 7-bag vs random. Extend
+  `GameplayCategoryPanel` (rows + `GameSettings` fields, bump FormatVersion). If
+  Gameplay grows past ~6 rows, split it into sub-sections.
+- Localization language list is settled: English, Spanish, German, Russian,
+  Ukrainian (UI scaffold in place; implementation deferred — see Planned).
+- `SettingsRowList` / `MenuList` were replaced by `MenuButtonColumn` +
+  `OptionRow` during v1.2.0 — the "fold into one selection model" TODO is done.
 
 ## Deferred ideas
 
