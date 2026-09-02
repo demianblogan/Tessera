@@ -13,6 +13,8 @@ Context::Context(
     ShaderManager& shaders,
     AudioPlayer& audioPlayer,
     AudioBalance& audioBalance,
+    HapticSettings& hapticSettings,
+    Display::DisplayManager& display,
     SettingsManager& settings,
     HighScoreManager& highScores,
     GamepadManager& gamepad,
@@ -21,6 +23,7 @@ Context::Context(
 )
     : stateMachine(stateMachine)
     , window(window)
+    , display(display)
     , fonts(fonts)
     , music(music)
     , soundBuffers(soundBuffers)
@@ -28,6 +31,7 @@ Context::Context(
     , shaders(shaders)
     , audioPlayer(audioPlayer)
     , audioBalance(audioBalance)
+    , hapticSettings(hapticSettings)
     , settings(settings)
     , highScores(highScores)
     , gamepad(gamepad)

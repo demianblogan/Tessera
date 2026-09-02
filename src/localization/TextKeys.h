@@ -37,22 +37,80 @@ namespace TextKey
 		inline constexpr std::string_view MainMenu  = "game_over.main_menu";
 	}
 
-	namespace Settings
+	namespace Options
 	{
-		inline constexpr std::string_view Title             = "settings.title";
-		inline constexpr std::string_view SectionGraphics   = "settings.section_graphics";
-		inline constexpr std::string_view SectionAudio      = "settings.section_audio";
-		inline constexpr std::string_view FooterReturn      = "settings.footer_return";
-		inline constexpr std::string_view VsyncOn           = "settings.vsync_on";
-		inline constexpr std::string_view VsyncOff          = "settings.vsync_off";
-		inline constexpr std::string_view ShowFpsOn         = "settings.show_fps_on";
-		inline constexpr std::string_view ShowFpsOff        = "settings.show_fps_off";
-		inline constexpr std::string_view FpsLimit          = "settings.fps_limit";
-		inline constexpr std::string_view FpsUnlimited      = "settings.fps_unlimited";
-		inline constexpr std::string_view BlockStyleOutline = "settings.block_style_outline";
-		inline constexpr std::string_view BlockStyleNoOutline = "settings.block_style_no_outline";
-		inline constexpr std::string_view Sounds            = "settings.sounds";
-		inline constexpr std::string_view Music             = "settings.music";
+		inline constexpr std::string_view Title    = "options.title";
+		inline constexpr std::string_view Gameplay = "options.gameplay";
+		inline constexpr std::string_view Graphics = "options.graphics";
+		inline constexpr std::string_view Audio    = "options.audio";
+		inline constexpr std::string_view Controls = "options.controls";
+		inline constexpr std::string_view Language = "options.language";
+		inline constexpr std::string_view Back     = "options.back";
+		inline constexpr std::string_view ComingSoon = "options.coming_soon";
+
+		inline constexpr std::string_view ControlsKeyboard = "options.controls_keyboard";
+		inline constexpr std::string_view ControlsGamepad  = "options.controls_gamepad";
+		inline constexpr std::string_view ControlsBack     = "options.controls_back";
+
+		inline constexpr std::string_view GameplayVibration = "options.gameplay_vibration";
+		inline constexpr std::string_view GameplayLightbar  = "options.gameplay_lightbar";
+		inline constexpr std::string_view GameplayShake     = "options.gameplay_shake";
+
+		inline constexpr std::string_view LanguageEnglish   = "options.language_english";
+		inline constexpr std::string_view LanguageSpanish   = "options.language_spanish";
+		inline constexpr std::string_view LanguageGerman    = "options.language_german";
+		inline constexpr std::string_view LanguageRussian   = "options.language_russian";
+		inline constexpr std::string_view LanguageUkrainian = "options.language_ukrainian";
+
+		inline constexpr std::string_view KeyMoveLeft  = "options.key_move_left";
+		inline constexpr std::string_view KeyMoveRight = "options.key_move_right";
+		inline constexpr std::string_view KeySoftDrop  = "options.key_soft_drop";
+		inline constexpr std::string_view KeyHardDrop  = "options.key_hard_drop";
+		inline constexpr std::string_view KeyRotateCw  = "options.key_rotate_cw";
+		inline constexpr std::string_view KeyRotateCcw = "options.key_rotate_ccw";
+		inline constexpr std::string_view KeyPause     = "options.key_pause";
+
+		inline constexpr std::string_view GamepadXbox        = "options.gamepad_xbox";
+		inline constexpr std::string_view GamepadPlayStation = "options.gamepad_playstation";
+
+		inline constexpr std::string_view Resolution     = "options.resolution";
+		inline constexpr std::string_view WindowMode     = "options.window_mode";
+		inline constexpr std::string_view Vsync          = "options.vsync";
+		inline constexpr std::string_view ShowFps        = "options.show_fps";
+		inline constexpr std::string_view CrtFilter      = "options.crt_filter";
+		inline constexpr std::string_view ModeFullscreen = "options.mode_fullscreen";
+		inline constexpr std::string_view ModeBorderless = "options.mode_borderless";
+		inline constexpr std::string_view ModeWindow     = "options.mode_window";
+		inline constexpr std::string_view Sound          = "options.sound";
+		inline constexpr std::string_view Music          = "options.music";
+		inline constexpr std::string_view Apply          = "options.apply";
+		inline constexpr std::string_view Reset          = "options.reset";
+		inline constexpr std::string_view BackButton     = "options.back_button";
+		inline constexpr std::string_view Unsaved        = "options.unsaved";
+		inline constexpr std::string_view BorderlessNote = "options.borderless_note";
+	}
+
+	namespace Common
+	{
+		inline constexpr std::string_view Yes = "common.yes";
+		inline constexpr std::string_view No  = "common.no";
+	}
+
+	namespace Credits
+	{
+		inline constexpr std::string_view Title      = "credits.title";
+		inline constexpr std::string_view Line1      = "credits.line_1";
+		inline constexpr std::string_view Line2      = "credits.line_2";
+		inline constexpr std::string_view Line3      = "credits.line_3";
+		inline constexpr std::string_view Line4      = "credits.line_4";
+		inline constexpr std::string_view Line5      = "credits.line_5";
+		inline constexpr std::string_view Line6      = "credits.line_6";
+		inline constexpr std::string_view Contact    = "credits.contact";
+		inline constexpr std::string_view Email      = "credits.email";
+		inline constexpr std::string_view YouTube    = "credits.youtube";
+		inline constexpr std::string_view Source     = "credits.source";
+		inline constexpr std::string_view Repository = "credits.repository";
+		inline constexpr std::string_view Back       = "credits.back";
 	}
 
 	namespace Stats

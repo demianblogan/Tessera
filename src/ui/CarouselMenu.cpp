@@ -17,6 +17,7 @@
 #include <SFML/System/Angle.hpp>
 
 #include "ColourUtils.h"
+#include "GlyphQuad.h"
 #include "TetrominoPalette.h"
 #include "../rendering/NeonGlow.h"
 
@@ -82,6 +83,14 @@ namespace
 	using UI::Desaturate;
 	using UI::MixToWhite;
 	using UI::ScaleRgb;
+
+	// Activation feedback on the front entry: a quick scale-punch and flash.
+	constexpr float ActivatePulseDuration = 0.18f;
+	constexpr float ActivatePulseScale = 0.15f;   // extra scale at the peak of the punch
+	constexpr float ActivatePulseFlash = 0.6f;    // how far toward white at the peak
+
+	// Disintegration: particles emitted per non-front entry when the ring exits.
+	constexpr int ExitDustPerEntry = 46;
 
 	// Press feedback (no pressed sprite -- faked with a squash, an inward
 	// nudge, a warm tint, and a quick orange ring).
@@ -160,32 +169,6 @@ namespace
 		const int m = static_cast<int>(modulus);
 		return static_cast<std::size_t>(((value % m) + m) % m);
 	}
-
-	// One glyph quad (two triangles) into `array`, in string-local space:
-	// `penX` is the pen origin, `offset` a local nudge (for the shadow).
-	void AppendGlyphQuad(sf::VertexArray& array, float penX, const sf::Glyph& glyph,
-		sf::Color topColour, sf::Color bottomColour, sf::Vector2f offset = {})
-	{
-		const sf::FloatRect bounds = glyph.bounds;
-		const sf::FloatRect tex(glyph.textureRect);
-
-		const float x0 = penX + bounds.position.x + offset.x;
-		const float x1 = x0 + bounds.size.x;
-		const float y0 = bounds.position.y + offset.y;
-		const float y1 = y0 + bounds.size.y;
-
-		const float u0 = tex.position.x;
-		const float u1 = tex.position.x + tex.size.x;
-		const float v0 = tex.position.y;
-		const float v1 = tex.position.y + tex.size.y;
-
-		array.append({ { x0, y0 }, topColour, { u0, v0 } });
-		array.append({ { x1, y0 }, topColour, { u1, v0 } });
-		array.append({ { x1, y1 }, bottomColour, { u1, v1 } });
-		array.append({ { x0, y0 }, topColour, { u0, v0 } });
-		array.append({ { x1, y1 }, bottomColour, { u1, v1 } });
-		array.append({ { x0, y1 }, bottomColour, { u0, v1 } });
-	}
 }
 
 namespace UI
@@ -197,7 +180,8 @@ namespace UI
 	{
 	}
 
-	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled)
+	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled,
+		std::optional<sf::Color> colour)
 	{
 		sf::Text label(font, text, characterSize);
 		const sf::FloatRect bounds = label.getLocalBounds();
@@ -205,9 +189,11 @@ namespace UI
 
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		Item item{ std::move(label), std::move(onActivate), {}, 0.f,
-			enabled ? UI::TetrominoColours[items.size() % UI::TetrominoColours.size()] : UI::DisabledEntryColour,
-			enabled };
+		const sf::Color entryColour = !enabled
+			? UI::DisabledEntryColour
+			: colour.value_or(UI::TetrominoColours[items.size() % UI::TetrominoColours.size()]);
+
+		Item item{ std::move(label), std::move(onActivate), {}, 0.f, entryColour, enabled };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
@@ -254,6 +240,25 @@ namespace UI
 	void CarouselMenu::SetCenter(sf::Vector2f newCenter)
 	{
 		center = newCenter;
+	}
+
+	void CarouselMenu::SetFrontImmediate(std::size_t index)
+	{
+		if (items.empty())
+		{
+			return;
+		}
+
+		frontIndex = static_cast<int>(index % items.size());
+		angle = static_cast<float>(frontIndex) * SlotStep();
+		rotateFrom = angle;
+		rotateTo = angle;
+		rotateTimer = 1.f;
+	}
+
+	std::size_t CarouselMenu::CurrentFrontIndex() const
+	{
+		return FrontItem();
 	}
 
 	void CarouselMenu::SetSwooshCallback(std::function<void(std::size_t)> callback)
@@ -349,6 +354,50 @@ namespace UI
 		}
 	}
 
+	void CarouselMenu::PulseActivate()
+	{
+		activatePulseTime = 0.f;
+	}
+
+	void CarouselMenu::StartExit()
+	{
+		if (exiting)
+		{
+			return;
+		}
+		exiting = true;
+
+		// Every entry except the front one (which the header takes over) bursts
+		// into pixels from where it currently sits.
+		for (std::size_t i = 0; i < items.size(); ++i)
+		{
+			if (i == FrontItem())
+			{
+				continue;
+			}
+
+			const Placement placement = PlacementOf(i);
+			const sf::Vector2f size = items[i].text.getLocalBounds().size * placement.scale;
+			dust.Emit(placement.position, size, items[i].colour, ExitDustPerEntry);
+		}
+	}
+
+	sf::Vector2f CarouselMenu::FrontEntryCentre() const
+	{
+		return items.empty() ? center : PlacementOf(FrontItem()).position;
+	}
+
+	float CarouselMenu::FrontEntryHeight() const
+	{
+		if (items.empty())
+		{
+			return 0.f;
+		}
+
+		const std::size_t front = FrontItem();
+		return items[front].text.getLocalBounds().size.y * PlacementOf(front).scale;
+	}
+
 	void CarouselMenu::Update(float deltaTime)
 	{
 		if (!started)
@@ -392,6 +441,8 @@ namespace UI
 
 		arrivalFlashTime += deltaTime;
 		breathTime += deltaTime;
+		activatePulseTime += deltaTime;
+		dust.Update(deltaTime);
 
 		for (float& pressTime : arrowPressTime)
 		{
@@ -450,6 +501,13 @@ namespace UI
 
 	void CarouselMenu::Render(sf::RenderTarget& target, bool frontHalf) const
 	{
+		// During the exit no entry is drawn: the front one is now the shell's
+		// header, the rest are pixels (see RenderBack).
+		if (exiting)
+		{
+			return;
+		}
+
 		struct Drawn { std::size_t index; Placement placement; };
 		std::vector<Drawn> drawList;
 
@@ -488,11 +546,18 @@ namespace UI
 		// 0 at the back of the ring, 1 at the front.
 		const float depthT = std::clamp((placement.depth + 1.f) * 0.5f, 0.f, 1.f);
 
+		// A quick punch-and-flash on the front entry when it is activated.
+		float pulse = 0.f;
+		if (index == FrontItem() && activatePulseTime < ActivatePulseDuration)
+		{
+			pulse = std::sin((1.f - activatePulseTime / ActivatePulseDuration) * Pi);
+		}
+
 		// The front entry breathes very slightly.
 		float scale = placement.scale;
 		if (index == FrontItem())
 		{
-			scale *= BreathScale();
+			scale *= BreathScale() * (1.f + ActivatePulseScale * pulse);
 		}
 
 		sf::Transform transform;
@@ -501,10 +566,10 @@ namespace UI
 		transform.translate({ 0.f, -item.inkCentreY });
 
 		sf::Color base = Desaturate(item.colour, (1.f - depthT) * EntryMaxDesaturate);
-		const float flash = ArrivalFlash(index);
-		if (flash > 0.f)
+		const float whiten = std::max(ArrivalFlash(index), ActivatePulseFlash * pulse);
+		if (whiten > 0.f)
 		{
-			base = MixToWhite(base, flash);
+			base = MixToWhite(base, whiten);
 		}
 
 		// Side / back entries are drawn as a smear of offset copies (a cheap
@@ -576,6 +641,12 @@ namespace UI
 
 	void CarouselMenu::RenderBack(sf::RenderTarget& target) const
 	{
+		if (exiting)
+		{
+			dust.Render(target);
+			return;
+		}
+
 		Render(target, false);
 	}
 
@@ -630,14 +701,14 @@ namespace UI
 
 	void CarouselMenu::RenderFront(sf::RenderTarget& target, NeonGlow* glow) const
 	{
-		if (glow != nullptr && IsReady())
+		if (glow != nullptr && IsReady() && !exiting)
 		{
 			DrawFrontGlow(target, *glow);
 		}
 
 		Render(target, true);
 
-		if (IsReady())
+		if (IsReady() && !exiting)
 		{
 			DrawArrow(target, -1);
 			DrawArrow(target, 1);

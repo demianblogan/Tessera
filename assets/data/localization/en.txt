@@ -22,20 +22,72 @@ game_over.save       = Save
 game_over.restart    = Restart
 game_over.main_menu  = Main Menu
 
-settings.title                  = Settings
-settings.section_graphics       = --- Graphics
-settings.section_audio          = --- Audio
-settings.footer_return          = ESC - RETURN TO MAIN MENU
-settings.vsync_on               = Vertical synchronization: ON
-settings.vsync_off              = Vertical synchronization: OFF
-settings.show_fps_on            = Show FPS: ON
-settings.show_fps_off           = Show FPS: OFF
-settings.fps_limit              = FPS limit:
-settings.fps_unlimited          = Unlimited
-settings.block_style_outline    = Block style: With outline
-settings.block_style_no_outline = Block style: Without outline
-settings.sounds                 = Sounds:
-settings.music                  = Music:
+options.title    = OPTIONS
+options.gameplay = Gameplay
+options.graphics = Graphics
+options.audio    = Audio
+options.controls = Controls
+options.language = Language
+options.back     = Back to Main Menu
+options.coming_soon = Coming soon.
+
+options.controls_keyboard = Keyboard
+options.controls_gamepad  = Gamepad
+options.controls_back     = Back
+
+options.gameplay_vibration = Gamepad Vibration:
+options.gameplay_lightbar  = Gamepad Lightbar:
+options.gameplay_shake     = Screen Shake:
+
+options.language_english   = English
+options.language_spanish   = Spanish
+options.language_german    = German
+options.language_russian   = Russian
+options.language_ukrainian = Ukrainian
+
+options.key_move_left   = Move Piece Left
+options.key_move_right  = Move Piece Right
+options.key_soft_drop   = Move Piece Down
+options.key_hard_drop   = Drop Piece
+options.key_rotate_cw   = Rotate Piece Right
+options.key_rotate_ccw  = Rotate Piece Left
+options.key_pause       = Pause
+
+options.gamepad_xbox        = XBOX
+options.gamepad_playstation = PlayStation
+
+options.resolution      = Screen Resolution:
+options.window_mode     = Window Mode:
+options.vsync           = Vertical Sync:
+options.show_fps        = Show FPS:
+options.crt_filter      = CRT Filter:
+options.mode_fullscreen = Fullscreen
+options.mode_borderless = Borderless
+options.mode_window     = Window
+options.sound           = Sound Volume:
+options.music           = Music Volume:
+options.apply           = Apply
+options.reset           = Reset
+options.back_button     = Back
+options.unsaved         = You have unsaved changes.\nSave them before leaving?
+options.borderless_note = You can't change the screen resolution in Borderless mode.
+
+common.yes = Yes
+common.no  = No
+
+credits.title      = CREDITS
+credits.line_1     = This game was developed by me, Demian Blogan.
+credits.line_2     = It was my second portfolio project in the world of IT.
+credits.line_3     = Version 1.0 began as a simple game with a lot of bugs and weird music.
+credits.line_4     = Over time, through many updates, I improved it into Version 2.0,
+credits.line_5     = adding more mechanics, modes, polish, and content.
+credits.line_6     = What you see now is the fully finished game.
+credits.contact    = If you would like to contact me:
+credits.email      = demianblogan@gmail.com
+credits.youtube    = My YouTube Channel: https://www.youtube.com/@BloganProgrammer
+credits.source     = Source code:
+credits.repository = github.com/demianblogan/Tessera
+credits.back       = Back to Main Menu
 
 stats.title         = TOP-{count} BEST PLAYERS
 stats.footer_return = ESC - RETURN TO MAIN MENU
@@ -50,4 +102,4 @@ loading.interface = Loading Interface...
 hud.next_piece = Next Tetromino
 hud.score      = Score: {score}
 hud.level      = Level: {level}
-hud.controls   = [←] [→] - Move    [↓] - Soft drop\n[↑] - Rotate CW    [Z] - Rotate CCW\n[Space] - Hard drop\n[ESC] - Pause
+hud.controls   = [←] [→] - Move    [↓] - Soft drop\n[Q] - Rotate left    [E] - Rotate right\n[Space] - Hard drop\n[ESC] - Pause

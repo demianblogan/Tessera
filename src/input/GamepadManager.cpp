@@ -6,7 +6,7 @@
 #include <SFML/Window/Joystick.hpp>
 
 #include "gamepad/GamepadHaptics.h"
-#include "gamepad/HapticProfiles.h"
+#include "gamepad/HapticPulse.h"
 
 namespace
 {
@@ -25,24 +25,24 @@ namespace
 	// How far a d-pad / stick has to move to count as a discrete direction.
 	constexpr float DirectionThreshold = 55.f;
 
-	// How far an analog trigger has to be pulled to count as pressed.
-	constexpr float TriggerThreshold = 40.f;
-
 	// The bottom face button: A on an Xbox pad (button 0), Cross on a
 	// DualShock / DualSense (button 1 -- button 0 there is Square). SFML
 	// exposes raw indices whose meaning depends on the controller.
 	constexpr unsigned int XboxHardDropButton = 0u;
 	constexpr unsigned int PlayStationHardDropButton = 1u;
 
-	// The analog triggers on a DualShock / DualSense also show up as buttons 6 / 7.
-	constexpr unsigned int PlayStationLeftTriggerButton = 6u;
-	constexpr unsigned int PlayStationRightTriggerButton = 7u;
+	// Shoulder buttons -- LB / RB (Xbox) and L1 / R1 (PlayStation) share these
+	// raw indices. Rotation is on the bumpers, not the triggers: a bumper is a
+	// crisp digital click, so the rotate feels immediate.
+	constexpr unsigned int LeftBumperButton = 4u;
+	constexpr unsigned int RightBumperButton = 5u;
 }
 
 namespace
 {
-	// A quick yellow flash on the lightbar for every menu move.
-	constexpr float MenuNavigationLightbarDuration = 0.14f;
+	// Used when no HapticSettings has been supplied, so the class still gives
+	// feedback standalone.
+	constexpr HapticSettings::Rumble FallbackMenuRumble{ 0.05f, 0.12f, 0.05f };
 }
 
 GamepadManager::GamepadManager()
@@ -53,6 +53,11 @@ GamepadManager::GamepadManager()
 void GamepadManager::SetHaptics(Haptics::GamepadHaptics* newHaptics) noexcept
 {
 	haptics = newHaptics;
+}
+
+void GamepadManager::SetHapticSettings(const HapticSettings* newHapticSettings) noexcept
+{
+	hapticSettings = newHapticSettings;
 }
 
 void GamepadManager::HandleEvent(const sf::Event& event)
@@ -83,18 +88,27 @@ void GamepadManager::HandleEvent(const sf::Event& event)
 
 void GamepadManager::Update()
 {
+	// Re-scan when we have no pad (or the one we had went away). SFML only
+	// refreshes its joystick registry during the window's event pump, so a
+	// controller that was already plugged in at start-up -- when the one-shot
+	// scan in the constructor ran -- would otherwise never be picked up.
+	if (!activeJoystick.has_value() || !sf::Joystick::isConnected(*activeJoystick))
+	{
+		RefreshConnection();
+	}
+
 	const unsigned int hardDropButton = (layout == Layout::PlayStation) ? PlayStationHardDropButton : XboxHardDropButton;
 	const bool hardDropDown = IsButtonPressed(hardDropButton);
 	hardDropEdge = hardDropDown && !wasHardDropDown;
 	wasHardDropDown = hardDropDown;
 
-	const bool rightTriggerDown = IsTriggerDown(true);
-	rotateClockwiseEdge = rightTriggerDown && !wasRightTriggerDown;
-	wasRightTriggerDown = rightTriggerDown;
+	const bool rightBumperDown = IsButtonPressed(RightBumperButton);
+	rotateClockwiseEdge = rightBumperDown && !wasRightBumperDown;
+	wasRightBumperDown = rightBumperDown;
 
-	const bool leftTriggerDown = IsTriggerDown(false);
-	rotateCounterClockwiseEdge = leftTriggerDown && !wasLeftTriggerDown;
-	wasLeftTriggerDown = leftTriggerDown;
+	const bool leftBumperDown = IsButtonPressed(LeftBumperButton);
+	rotateCounterClockwiseEdge = leftBumperDown && !wasLeftBumperDown;
+	wasLeftBumperDown = leftBumperDown;
 }
 
 GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::Event& event) const
@@ -103,8 +117,10 @@ GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::E
 
 	if (action != NavigationAction::None && haptics != nullptr)
 	{
-		HapticProfiles::Play(*haptics, HapticProfiles::MenuNavigation);
-		haptics->PulseLightbar(HapticProfiles::MenuLightbar, MenuNavigationLightbarDuration);
+		// A soft rumble tick only -- no lightbar flash, so the resting colour
+		// (the focused menu item's hue) stays put as the selection moves.
+		const HapticSettings::Rumble& rumble = hapticSettings != nullptr ? hapticSettings->menuNavigation : FallbackMenuRumble;
+		Haptics::Pulse(*haptics, rumble);
 	}
 
 	return action;
@@ -272,22 +288,4 @@ float GamepadManager::ReadAxis(sf::Joystick::Axis axis) const
 
 	const float position = sf::Joystick::getAxisPosition(*activeJoystick, axis);
 	return std::abs(position) <= StickDeadZone ? 0.f : position;
-}
-
-bool GamepadManager::IsTriggerDown(bool rightTrigger) const
-{
-	if (layout == Layout::PlayStation)
-	{
-		return IsButtonPressed(rightTrigger ? PlayStationRightTriggerButton : PlayStationLeftTriggerButton);
-	}
-
-	// Xbox / generic: both triggers share the Z axis, resting at 0 -- the right
-	// trigger pulls it negative, the left positive.
-	if (!activeJoystick.has_value() || !sf::Joystick::hasAxis(*activeJoystick, sf::Joystick::Axis::Z))
-	{
-		return false;
-	}
-
-	const float z = sf::Joystick::getAxisPosition(*activeJoystick, sf::Joystick::Axis::Z);
-	return rightTrigger ? (z < -TriggerThreshold) : (z > TriggerThreshold);
 }

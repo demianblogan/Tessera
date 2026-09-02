@@ -26,6 +26,10 @@ public:
 		float timer = 0.f;
 	};
 
+	// When false, TriggerShake() does nothing -- the "Screen Shake" gameplay
+	// setting, read once when a game starts.
+	void SetShakeEnabled(bool enabled) { shakeEnabled = enabled; }
+
 	void TriggerShake(float duration, float intensity);
 	void TriggerLandingFlash(const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& blocks);
 	void TriggerRowClear(const std::vector<int>& rows);
@@ -41,6 +45,7 @@ public:
 	[[nodiscard]] const std::vector<RowClearEffect>& GetRowClearEffects() const { return rowClearEffects; }
 
 private:
+	bool shakeEnabled = true;
 	float shakeTimer = 0.f;
 	float shakeDuration = 0.f;
 	float shakeIntensity = 0.f;

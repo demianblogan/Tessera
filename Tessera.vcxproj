@@ -130,6 +130,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\utils\SafeFileWrite.cpp" />
     <ClCompile Include="src\audio\AudioBalance.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
+    <ClCompile Include="src\config\HapticSettings.cpp" />
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
@@ -163,11 +164,11 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp" />
+    <ClCompile Include="src\input\KeyName.cpp" />
     <ClCompile Include="src\input\MenuInput.cpp" />
     <ClCompile Include="src\localization\LocalizationManager.cpp" />
     <ClCompile Include="src\states\GameplayState.cpp" />
-    <ClCompile Include="src\states\SettingsState.cpp" />
-    <ClCompile Include="src\states\SettingsRowList.cpp" />
+    <ClCompile Include="src\display\DisplayManager.cpp" />
     <ClCompile Include="src\app\Application.cpp" />
     <ClCompile Include="src\core\Context.cpp" />
     <ClCompile Include="src\core\State.cpp" />
@@ -179,7 +180,17 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\loading\AssetLoadJob.cpp" />
     <ClCompile Include="src\states\CompanySplashState.cpp" />
     <ClCompile Include="src\states\LoadingState.cpp" />
-    <ClCompile Include="src\states\MainMenuState.cpp" />
+    <ClCompile Include="src\states\MenuShell.cpp" />
+    <ClCompile Include="src\states\MenuScreen.cpp" />
+    <ClCompile Include="src\states\MainMenuScreen.cpp" />
+    <ClCompile Include="src\states\CreditsScreen.cpp" />
+    <ClCompile Include="src\states\OptionsScreen.cpp" />
+    <ClCompile Include="src\states\SettingsCategoryPanel.cpp" />
+    <ClCompile Include="src\states\GraphicsCategoryPanel.cpp" />
+    <ClCompile Include="src\states\KeyboardCategoryPanel.cpp" />
+    <ClCompile Include="src\states\GamepadCategoryPanel.cpp" />
+    <ClCompile Include="src\states\GameplayCategoryPanel.cpp" />
+    <ClCompile Include="src\states\AudioCategoryPanel.cpp" />
     <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
     <ClCompile Include="src\states\StatisticsState.cpp" />
@@ -191,7 +202,13 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\ui\GlowingCursor.cpp" />
     <ClCompile Include="src\ui\MenuAurora.cpp" />
     <ClCompile Include="src\ui\MenuBackdrop.cpp" />
+    <ClCompile Include="src\ui\MenuHeader.cpp" />
+    <ClCompile Include="src\ui\MenuLabel.cpp" />
+    <ClCompile Include="src\ui\MenuButtonColumn.cpp" />
+    <ClCompile Include="src\ui\OptionRow.cpp" />
+    <ClCompile Include="src\ui\ConfirmDialog.cpp" />
     <ClCompile Include="src\ui\MenuSparks.cpp" />
+    <ClCompile Include="src\ui\PixelDust.cpp" />
     <ClCompile Include="src\ui\Label.cpp" />
     <ClCompile Include="src\ui\Layout.cpp" />
     <ClCompile Include="src\ui\Slider.cpp" />
@@ -218,7 +235,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h" />
-    <ClInclude Include="src\input\gamepad\HapticProfiles.h" />
+    <ClInclude Include="src\input\gamepad\HapticPulse.h" />
+    <ClInclude Include="src\config\HapticSettings.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DS5State.h" />
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\DSW_Api.h" />
@@ -229,6 +247,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.h" />
     <ClInclude Include="src\input\InputBinding.h" />
     <ClInclude Include="src\input\InputHandler.h" />
+    <ClInclude Include="src\input\KeyName.h" />
     <ClInclude Include="src\input\MenuInput.h" />
     <ClInclude Include="src\localization\LocalizationManager.h" />
     <ClInclude Include="src\localization\TextKeys.h" />
@@ -237,8 +256,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\audio\AudioBalance.h" />
     <ClInclude Include="src\audio\AudioPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
-    <ClInclude Include="src\states\SettingsState.h" />
-    <ClInclude Include="src\states\SettingsRowList.h" />
+    <ClInclude Include="src\display\DisplayManager.h" />
+    <ClInclude Include="src\display\DisplayMode.h" />
     <ClInclude Include="src\app\Application.h" />
     <ClInclude Include="src\core\Context.h" />
     <ClInclude Include="src\core\GameVersion.h" />
@@ -255,12 +274,32 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\ui\GlowingCursor.h" />
     <ClInclude Include="src\ui\MenuAurora.h" />
     <ClInclude Include="src\ui\MenuBackdrop.h" />
+    <ClInclude Include="src\ui\GlyphQuad.h" />
+    <ClInclude Include="src\ui\MenuHeader.h" />
+    <ClInclude Include="src\ui\MenuLabel.h" />
+    <ClInclude Include="src\ui\MenuButtonColumn.h" />
+    <ClInclude Include="src\ui\OptionRow.h" />
+    <ClInclude Include="src\ui\ConfirmDialog.h" />
     <ClInclude Include="src\ui\MenuSparks.h" />
+    <ClInclude Include="src\ui\PixelDust.h" />
     <ClInclude Include="src\loading\AssetLoadJob.h" />
     <ClInclude Include="src\loading\LoadingProgress.h" />
     <ClInclude Include="src\states\CompanySplashState.h" />
     <ClInclude Include="src\states\LoadingState.h" />
-    <ClInclude Include="src\states\MainMenuState.h" />
+    <ClInclude Include="src\states\MenuShell.h" />
+    <ClInclude Include="src\states\MenuScreen.h" />
+    <ClInclude Include="src\states\MainMenuScreen.h" />
+    <ClInclude Include="src\states\CreditsScreen.h" />
+    <ClInclude Include="src\states\OptionsScreen.h" />
+    <ClInclude Include="src\states\OptionsCategoryPanel.h" />
+    <ClInclude Include="src\states\SettingsCategoryPanel.h" />
+    <ClInclude Include="src\states\GraphicsCategoryPanel.h" />
+    <ClInclude Include="src\states\KeyboardCategoryPanel.h" />
+    <ClInclude Include="src\states\GamepadCategoryPanel.h" />
+    <ClInclude Include="src\states\GameplayCategoryPanel.h" />
+    <ClInclude Include="src\states\ControlsPanelMetrics.h" />
+    <ClInclude Include="src\states\AudioCategoryPanel.h" />
+    <ClInclude Include="src\states\OptionsSfx.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\settings\SettingsManager.h" />
@@ -287,6 +326,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
     <None Include="assets\data\audio_balance.json" />
+    <None Include="assets\data\haptics.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

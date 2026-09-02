@@ -6,7 +6,8 @@ namespace Assets
 	{
 		Main,
 		Loading,
-		Menu
+		Menu,
+		MenuList
 	};
 
 	enum class MusicID
@@ -35,14 +36,18 @@ namespace Assets
 	enum class TextureID
 	{
 		BlockSpritesheetWithOutline,
-		BlockSpritesheetWithoutOutline,
 		ButtonBackground,
 		MenuBackground,
 		PanelBackground,
 		GameBackground,
 		CompanyLogo,
 		Cursor,
-		UiArrow
+		UiArrow,
+		UiFrame,
+		CarouselArrow,
+		Checkbox,
+		XboxGamepadLayout,
+		PlayStationGamepadLayout
 	};
 
 	enum class ShaderID
@@ -67,6 +72,9 @@ namespace Assets
 
 			// Main-menu carousel entries. Pixel face with localisation coverage.
 			inline constexpr const char* Menu = "assets/fonts/pixel.ttf";
+
+			// Vertical menu lists (Options categories, later the in-game menus).
+			inline constexpr const char* MenuList = "assets/fonts/chispix-bold.ttf";
 		}
 
 		namespace Music
@@ -95,7 +103,6 @@ namespace Assets
 		namespace Textures
 		{
 			inline constexpr const char* BlockSpritesheetWithOutline = "assets/textures/block_spritesheet_with_outline.png";
-			inline constexpr const char* BlockSpritesheetWithoutOutline = "assets/textures/block_spritesheet_without_outline.png";
 			inline constexpr const char* ButtonBackground = "assets/textures/button_background.png";
 			inline constexpr const char* MenuBackground = "assets/textures/menu_background.png";
 			inline constexpr const char* PanelBackground = "assets/textures/panel_background.png";
@@ -103,6 +110,17 @@ namespace Assets
 			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
 			inline constexpr const char* Cursor = "assets/textures/cursor.png";
 			inline constexpr const char* UiArrow = "assets/textures/ui/arrow.png";
+
+			// Ornate 9-slice panel border (corners stay crisp, edges tile).
+			inline constexpr const char* UiFrame = "assets/textures/ui/frame.png";
+
+			// Settings widgets.
+			inline constexpr const char* CarouselArrow = "assets/textures/ui/carusel_arrow.png";
+			inline constexpr const char* Checkbox = "assets/textures/ui/checkbox.png";   // two 26x26 sprites at x=0 and x=28
+
+			// Button-prompt atlases for the read-only Controls > Gamepad table.
+			inline constexpr const char* XboxGamepadLayout = "assets/textures/ui/xbox_gamepad_layout.png";
+			inline constexpr const char* PlayStationGamepadLayout = "assets/textures/ui/ps_gamepad_layout.png";
 		}
 
 		namespace Data

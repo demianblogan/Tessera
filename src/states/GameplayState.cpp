@@ -15,8 +15,9 @@
 #include "../gameplay/Board.h"
 #include "../input/GamepadManager.h"
 #include "../input/InputBinding.h"
+#include "../config/HapticSettings.h"
 #include "../input/gamepad/GamepadHaptics.h"
-#include "../input/gamepad/HapticProfiles.h"
+#include "../input/gamepad/HapticPulse.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../settings/SettingsManager.h"
@@ -35,10 +36,13 @@ GameplayState::GameplayState(Context& context)
 	, boardRenderer(context)
 	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, gameplayInput(gameplayActions)
+	, horizontalRepeater({ context.hapticSettings.delayedAutoShift, context.hapticSettings.autoRepeatRate })
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameBackground))
 {
 	SetUpInputBindings();
 	BuildHud();
+
+	effects.SetShakeEnabled(context.settings.GetSettings().screenShakeEnabled);
 
 	context.music.Get(Assets::MusicID::MainMenu).stop();
 
@@ -227,7 +231,7 @@ void GameplayState::Update(float deltaTime)
 	// Hold a green throb on the lightbar for as long as rows are clearing.
 	if (session.GetPhase() == GameplaySession::Phase::ClearingRows)
 	{
-		context.gamepadHaptics.PulseLightbar(HapticProfiles::RowClearLightbar, 0.2f);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.rowClearLightbar, 0.2f);
 	}
 
 	ReactToEvents(session.ConsumeEvents());
@@ -326,7 +330,7 @@ void GameplayState::ApplyHorizontalRepeat(float deltaTime)
 		// stay quiet while it's held there.
 		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
 		effects.TriggerShake(0.06f, 4.f);
-		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::WallHit);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.wallHit);
 		horizontalWasBlocked = true;
 	}
 }
@@ -376,7 +380,7 @@ void GameplayState::PerformHardDrop()
 
 	context.audioPlayer.Play(Assets::SoundID::DropPiece);
 	effects.TriggerShake(0.12f, 12.f);
-	HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::HardDrop);
+	Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.hardDrop);
 }
 
 void GameplayState::ReactToEvents(const GameplaySession::Events& events)
@@ -384,7 +388,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.landed)
 	{
 		effects.TriggerLandingFlash(events.landedBlocks);
-		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::PieceLanded);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
 	}
 
 	if (events.rowsDetected)
@@ -393,7 +397,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		effects.TriggerRowClear(events.detectedRows);
 
 		const bool isTetris = events.detectedRows.size() >= 4;
-		HapticProfiles::Play(context.gamepadHaptics, isTetris ? HapticProfiles::Tetris : HapticProfiles::RowCleared);
+		Haptics::Pulse(context.gamepadHaptics, isTetris ? context.hapticSettings.tetris : context.hapticSettings.rowCleared);
 	}
 
 	if (events.rowsCleared)
@@ -405,13 +409,13 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.leveledUp)
 	{
 		context.audioPlayer.Play(Assets::SoundID::NextLevel);
-		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::LevelUp);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.levelUp);
 	}
 
 	if (events.gameOver)
 	{
-		HapticProfiles::Play(context.gamepadHaptics, HapticProfiles::GameOver);
-		context.gamepadHaptics.PulseLightbar(HapticProfiles::GameOverLightbar, 0.9f, 3);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.gameOver);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.gameOverLightbar, 0.9f, 3);
 		RequestChange(std::make_unique<GameOverState>(context, session.GetScore()));
 	}
 }

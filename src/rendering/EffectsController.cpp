@@ -6,6 +6,11 @@
 
 void EffectsController::TriggerShake(float duration, float intensity)
 {
+	if (!shakeEnabled)
+	{
+		return;
+	}
+
 	shakeDuration = duration;
 	shakeTimer = duration;
 	shakeIntensity = intensity;

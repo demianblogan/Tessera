@@ -38,9 +38,11 @@ namespace UI
 
 		void Update(float deltaTime);
 		void Skip();   // jump straight to the settled title
+		void PlayExit();   // fly the whole word up off the screen and fade it out
 		void Render(sf::RenderTarget& target, NeonGlow* glow = nullptr) const;
 
 		[[nodiscard]] bool IsFinished() const;
+		[[nodiscard]] bool ExitComplete() const;
 
 	private:
 		struct Glyph
@@ -72,6 +74,10 @@ namespace UI
 		[[nodiscard]] Pose EvaluateGlyph(std::size_t index) const;
 		[[nodiscard]] sf::Vector2f RestingPosition(std::size_t index, const Pose& pose) const;
 
+		// 0 until PlayExit(), then ramps as the word lifts away / fades.
+		[[nodiscard]] float ExitLift() const;
+		[[nodiscard]] float ExitAlpha() const;
+
 		// One NeonGlow pass per letter (white silhouette + the letter's own
 		// tint -- NeonGlow's dilate discards source colour, so a shared pass
 		// can't be multi-coloured). The glow box is a single fixed size for
@@ -95,6 +101,9 @@ namespace UI
 		// Small vertical spring: every landing nudges the whole word.
 		float kickOffset = 0.f;
 		float kickVelocity = 0.f;
+
+		// < 0 until PlayExit(); then counts up while the word flies off.
+		float exitTime = -1.f;
 
 		std::function<void(std::size_t)> onLetterLand;
 	};

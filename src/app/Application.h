@@ -7,8 +7,10 @@
 
 #include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
+#include "../config/HapticSettings.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
+#include "../display/DisplayManager.h"
 #include "../input/GamepadManager.h"
 #include "../input/gamepad/GamepadHaptics.h"
 #include "../localization/LocalizationManager.h"
@@ -41,6 +43,7 @@ private:
 	// player switching to the gamepad.
 	static constexpr float GamepadUsageThreshold = 40.f;
 
+	Display::DisplayManager displayManager;
 	sf::RenderWindow window;
 
 	sf::RenderTexture renderTexture;
@@ -48,7 +51,9 @@ private:
 	sf::RenderTexture finalTexture;
 	ShaderManager shaders;
 
-	sf::View gameView;
+	// The 1920x1080 world the states render into (the render textures' view).
+	// The window's own view is the letterboxed fit computed by DisplayManager.
+	sf::View renderView;
 
 	StateMachine stateMachine;
 
@@ -60,6 +65,7 @@ private:
 	HighScoreManager highScores;
 
 	AudioBalance balance;
+	HapticSettings hapticSettings;
 	AudioPlayer audioPlayer;
 	GamepadManager gamepad;
 	Haptics::GamepadHaptics gamepadHaptics;

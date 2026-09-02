@@ -1,0 +1,45 @@
+{
+    "_comment": "Design-time feel tuning. Not a player setting. Edit and restart -- no rebuild. Missing keys fall back to the built-in defaults. Motors are 0..1, durations in seconds, colours [r, g, b] 0..255.",
+
+    "rumble": {
+        "menu_navigation":   { "low": 0.05, "high": 0.12, "duration": 0.05 },
+        "title_letter_base": { "low": 0.12, "high": 0.24, "duration": 0.05 },
+        "title_letter_grow": { "low": 0.40, "high": 0.50, "duration": 0.00 },
+        "menu_entry_fly_in": { "low": 0.28, "high": 0.42, "duration": 0.06 },
+
+        "piece_landed": { "low": 0.20, "high": 0.40, "duration": 0.06 },
+        "hard_drop":    { "low": 0.55, "high": 0.50, "duration": 0.12 },
+        "wall_hit":     { "low": 0.15, "high": 0.30, "duration": 0.05 },
+        "row_cleared":  { "low": 0.40, "high": 0.50, "duration": 0.16 },
+        "tetris":       { "low": 0.75, "high": 0.70, "duration": 0.28 },
+        "level_up":     { "low": 0.30, "high": 0.45, "duration": 0.10 },
+        "game_over":    { "low": 0.90, "high": 0.90, "duration": 0.50 }
+    },
+
+    "lightbar": {
+        "menu":      [255, 255, 0],
+        "row_clear": [0, 255, 0],
+        "game_over": [255, 0, 0],
+
+        "_menu_note": "DualSense resting colour per main-menu ring entry. Falls back to the on-screen hue if a key is missing.",
+        "menu_start_game":   [0, 240, 240],
+        "menu_options":      [255, 0, 60],
+        "menu_records":      [162, 0, 255],
+        "menu_achievements": [146, 150, 158],
+        "menu_credits":      [255, 162, 0],
+        "menu_quit":         [62, 65, 255],
+
+        "_options_note": "DualSense resting colour per Options category while it is focused.",
+        "options_gameplay":  [80, 210, 195],
+        "options_graphics":  [98, 194, 249],
+        "options_audio":     [74, 246, 125],
+        "options_controls":  [190, 130, 240],
+        "options_language":  [235, 110, 175]
+    },
+
+    "feel": {
+        "active_piece_glow": [120, 210, 255],
+        "delayed_auto_shift": 0.17,
+        "auto_repeat_rate": 0.03
+    }
+}

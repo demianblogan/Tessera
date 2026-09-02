@@ -52,7 +52,7 @@ public:
 	AudioPlayer(SoundBufferManager& soundBuffers, const AudioBalance& balance);
 
 	void Play(Assets::SoundID soundID, float pitch = 1.f);
-	void Restart(Assets::SoundID soundID);
+	void Restart(Assets::SoundID soundID, float pitch = 1.f);
 	void RemoveStoppedSounds();
 	void SetGlobalVolume(float volume);
 

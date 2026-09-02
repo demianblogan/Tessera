@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include <SFML/Graphics/Color.hpp>
@@ -9,6 +10,8 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
+
+#include "PixelDust.h"
 
 class NeonGlow;
 
@@ -35,9 +38,19 @@ namespace UI
 		CarouselMenu(const sf::Font& font, unsigned int characterSize, const sf::Texture& arrowTexture);
 
 		// A disabled entry (enabled == false) is greyed, has no glow, and cannot
-		// be activated -- but the ring still rotates through it.
-		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true);
+		// be activated -- but the ring still rotates through it. `colour`
+		// overrides the default per-slot tetromino hue.
+		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true,
+			std::optional<sf::Color> colour = std::nullopt);
 		void SetCenter(sf::Vector2f center);
+
+		// Put `index` at the front with no rotation animation. For rebuilding the
+		// ring already focused on a particular entry (e.g. returning from that
+		// entry's sub-screen). Call after the items are added.
+		void SetFrontImmediate(std::size_t index);
+
+		// The index of the entry currently at the front.
+		[[nodiscard]] std::size_t CurrentFrontIndex() const;
 
 		// Called with the entry index as that entry swishes in past the screen
 		// edge during the fly-in.
@@ -55,6 +68,20 @@ namespace UI
 		void RotateLeft();
 		void RotateRight();
 		void Activate();
+
+		// A quick scale-punch and flash on the front entry, to register a press
+		// before the transition proper begins.
+		void PulseActivate();
+
+		// Play the ring's exit: the front entry and its arrows stop drawing (the
+		// shell's header takes the entry's place) and every other entry bursts
+		// into pixels.
+		void StartExit();
+
+		// The front entry's on-screen centre and ink height, for handing off to
+		// the header at the start of a transition.
+		[[nodiscard]] sf::Vector2f FrontEntryCentre() const;
+		[[nodiscard]] float FrontEntryHeight() const;
 
 		// Mouse. The caller maps the pixel to view coordinates first.
 		enum class PointerHit { None, RotatedLeft, RotatedRight, Activated };
@@ -121,7 +148,11 @@ namespace UI
 		float rotateTimer = 1.f;     // >= 1 means settled
 
 		bool started = false;
+		bool exiting = false;        // playing the transition-out
 		float introTimer = 0.f;      // 0..1 across the fly-in
+
+		float activatePulseTime = 1000.f;   // seconds since PulseActivate(); large = no pulse
+		PixelDust dust;              // the disintegrating entries during the exit
 
 		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front
 		float breathTime = 0.f;            // drives the front entry's idle breath
