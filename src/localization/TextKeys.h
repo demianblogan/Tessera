@@ -23,6 +23,7 @@ namespace TextKey
 		inline constexpr std::string_view Title    = "pause.title";
 		inline constexpr std::string_view Resume   = "pause.resume";
 		inline constexpr std::string_view Restart  = "pause.restart";
+		inline constexpr std::string_view Options  = "pause.options";
 		inline constexpr std::string_view MainMenu = "pause.main_menu";
 	}
 

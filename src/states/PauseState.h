@@ -2,39 +2,51 @@
 
 #include <memory>
 
-#include "MenuScreenState.h"
+#include <SFML/Graphics/Color.hpp>
+
+#include "ScreenHost.h"
 
 namespace sf
 {
-	class Event;
+	class RenderTarget;
 	class RenderTexture;
 }
 
-class PauseState final : public MenuScreenState
+// The in-game pause host. Its background is the gameplay frame captured the
+// moment the game was paused, drawn through mosaic.frag so it "solidifies" into
+// large pixels top-down on entry and melts back bottom-up on Resume. Its home
+// screen is the PauseMenuScreen column; Options opens over the frozen frame
+// through the shared ScreenHost transition.
+class PauseState final : public ScreenHost
 {
 public:
-	// `frozenFrame` is a snapshot of the gameplay frame taken the moment the
-	// game was paused; the pause screen "solidifies" it into large pixels
-	// behind the menu. May be null (capture failed) -- then a plain dim overlay
-	// is used instead.
+	// The amber of the "Campaign" entry in the mode-select menu.
+	static constexpr sf::Color Accent{ 240, 180, 90 };
+
+	// `frozenFrame` may be null (capture failed) -- then a plain dim overlay is
+	// used instead of the mosaic.
 	PauseState(Context& context, std::unique_ptr<sf::RenderTexture> frozenFrame);
 	~PauseState() override;
 
 	void HandleEvent(const sf::Event& event) override;
-	void Update(float deltaTime) override;
-	void Render(sf::RenderTarget& target) override;
 
-	[[nodiscard]] Backdrop GetBackdrop() const override;
+	// Called by the pause menu column.
+	void RequestResume();
+	void RequestRestart();
+	void RequestQuitToMainMenu();
+
+	[[nodiscard]] Backdrop GetBackdrop() const override { return Backdrop::Opaque; }
+
+protected:
+	void UpdateBackground(float deltaTime) override;
+	void RenderBackground(sf::RenderTarget& target) override;
+	[[nodiscard]] std::unique_ptr<MenuScreen> BuildHomeScreen(std::size_t returnEntryIndex) override;
 
 private:
-	void OnBack() override;
-	void BeginResume();
-	void RenderFrozenBackdrop(sf::RenderTarget& target);
-
 	std::unique_ptr<sf::RenderTexture> frozenFrame;
 
-	// 0 = the frame is crisp, 1 = fully solidified. Sweeps 0 -> 1 on entry
-	// (top-down) and 1 -> 0 on Resume (bottom-up), then the state pops.
+	// 0 = the frame is crisp, 1 = fully solidified.
 	float reveal = 0.f;
 	bool resuming = false;
+	bool introRaised = false;   // has "PAUSE" + the column been brought in yet
 };

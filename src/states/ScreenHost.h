@@ -66,6 +66,12 @@ protected:
 	// The concrete host builds its first screen here (called from its ctor).
 	void SetInitialScreen(std::unique_ptr<MenuScreen> screen);
 
+	[[nodiscard]] MenuScreen* CurrentScreen() { return screen.get(); }
+
+	// The header. A concrete host may drive it directly for a title that is not
+	// tied to a forward transition (the pause "PAUSE").
+	[[nodiscard]] UI::MenuHeader& Header() { return header; }
+
 	virtual void UpdateBackground(float deltaTime) = 0;
 	virtual void RenderBackground(sf::RenderTarget& target) = 0;
 	// Drawn on top of the active screen and the header (MenuShell's version stamp).

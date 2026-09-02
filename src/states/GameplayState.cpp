@@ -439,7 +439,9 @@ void GameplayState::OpenPause()
 
 void GameplayState::Render(sf::RenderTarget& target)
 {
-	sf::View shakenView = target.getView();
+	const sf::View originalView = target.getView();
+
+	sf::View shakenView = originalView;
 	shakenView.move(effects.GetViewOffset());
 	target.setView(shakenView);
 
@@ -451,4 +453,8 @@ void GameplayState::Render(sf::RenderTarget& target)
 	controlsPanel->Render(target);
 
 	boardRenderer.RenderNextPreview(target, session, nextTetrominoPreviewPosition);
+
+	// Leave the view as we found it -- a state stacked on top of gameplay (the
+	// pause screen) must not inherit the shake offset.
+	target.setView(originalView);
 }

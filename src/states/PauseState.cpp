@@ -10,22 +10,21 @@
 #include <SFML/Graphics/RenderTexture.hpp>
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/System/String.hpp>
+#include <SFML/Window/Event.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../core/Context.h"
 #include "../display/DisplayManager.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
-#include "../ui/Label.h"
-#include "../ui/Spacer.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
+#include "PauseMenuScreen.h"
 
 namespace
 {
-	constexpr float MenuGap = 30.f;
-	constexpr unsigned int TitleSize = 220;
-
 	// "Solidified" look of the frozen frame.
 	constexpr float MosaicCellPx = 22.f;
 	constexpr float MosaicDarken = 0.58f;
@@ -33,55 +32,22 @@ namespace
 
 	// How long the frame takes to solidify (and, in reverse, to melt back).
 	constexpr float SolidifyDuration = 0.32f;
+
+	// Where the "PAUSE" header flies in from / out to: just above the top edge.
+	constexpr sf::Vector2f HeaderFrom{ 960.f, -150.f };
+	constexpr float HeaderFromHeight = 72.f;
 }
 
 PauseState::PauseState(Context& context, std::unique_ptr<sf::RenderTexture> frozenFrame)
-	: MenuScreenState(context)
+	: ScreenHost(context)
 	, frozenFrame(std::move(frozenFrame))
 {
-	rootLayout.SetGap(80.f);
-
-	rootLayout.Add(std::make_unique<UI::Spacer>(sf::Vector2f{ 0.f, 120.f }));
-
-	{
-		auto title = std::make_unique<UI::Label>(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Pause::Title), TitleSize);
-		title->SetFillColor(sf::Color::White);
-		rootLayout.Add(std::move(title));
-	}
-
-	{
-		auto layout = std::make_unique<UI::Layout>(UI::Layout::Orientation::Vertical);
-		layout->SetGap(MenuGap);
-		layout->SetHorizontalAlignment(UI::Layout::Alignment::Center);
-		menuLayout = layout.get();
-		rootLayout.Add(std::move(layout));
-	}
-
-	AddMenuItem(context.localization.GetText(TextKey::Pause::Resume), [this] { BeginResume(); });
-
-	AddMenuItem(context.localization.GetText(TextKey::Pause::Restart), [this]
-		{
-			RequestClear();
-			RequestPush(std::make_unique<GameplayState>(this->context));
-		});
-
-	AddMenuItem(context.localization.GetText(TextKey::Pause::MainMenu), [this]
-		{
-			RequestClear();
-			RequestPush(std::make_unique<MenuShell>(this->context));
-		});
-
-	RefreshLayout();
+	SetInitialScreen(std::make_unique<PauseMenuScreen>(*this, 0));
 }
 
 PauseState::~PauseState() = default;
 
-void PauseState::OnBack()
-{
-	BeginResume();
-}
-
-void PauseState::BeginResume()
+void PauseState::RequestResume()
 {
 	if (resuming)
 	{
@@ -90,21 +56,40 @@ void PauseState::BeginResume()
 
 	resuming = true;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.9f);
+	Header().SinkTo(HeaderFrom, HeaderFromHeight);
+	if (MenuScreen* screen = CurrentScreen())
+	{
+		screen->StartExit();
+	}
+}
+
+void PauseState::RequestRestart()
+{
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+	RequestClear();
+	RequestPush(std::make_unique<GameplayState>(context));
+}
+
+void PauseState::RequestQuitToMainMenu()
+{
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+	RequestClear();
+	RequestPush(std::make_unique<MenuShell>(context));
 }
 
 void PauseState::HandleEvent(const sf::Event& event)
 {
-	// Ignore input until the frame has finished solidifying, and once Resume is
+	// Ignore input until the frame has finished solidifying and once Resume is
 	// under way.
 	if (resuming || reveal < 1.f)
 	{
 		return;
 	}
 
-	MenuScreenState::HandleEvent(event);
+	ScreenHost::HandleEvent(event);
 }
 
-void PauseState::Update(float deltaTime)
+void PauseState::UpdateBackground(float deltaTime)
 {
 	const float step = deltaTime / SolidifyDuration;
 
@@ -115,18 +100,25 @@ void PauseState::Update(float deltaTime)
 		{
 			reveal = 0.f;
 			RequestPop();
-			return;
+		}
+		return;
+	}
+
+	reveal = std::min(1.f, reveal + step);
+
+	if (reveal >= 1.f && !introRaised)
+	{
+		introRaised = true;
+		Header().RiseFrom(HeaderFrom, HeaderFromHeight,
+			context.localization.GetText(TextKey::Pause::Title), Accent);
+		if (MenuScreen* screen = CurrentScreen())
+		{
+			screen->PlayIntro();
 		}
 	}
-	else
-	{
-		reveal = std::min(1.f, reveal + step);
-	}
-
-	MenuScreenState::Update(deltaTime);
 }
 
-void PauseState::RenderFrozenBackdrop(sf::RenderTarget& target)
+void PauseState::RenderBackground(sf::RenderTarget& target)
 {
 	if (!frozenFrame)
 	{
@@ -148,21 +140,7 @@ void PauseState::RenderFrozenBackdrop(sf::RenderTarget& target)
 	target.draw(frame, &mosaic);
 }
 
-void PauseState::Render(sf::RenderTarget& target)
+std::unique_ptr<MenuScreen> PauseState::BuildHomeScreen(std::size_t returnEntryIndex)
 {
-	RenderFrozenBackdrop(target);
-
-	// The menu belongs to the solidified state; hide it while the frame is
-	// still setting or melting back.
-	if (reveal >= 1.f && !resuming)
-	{
-		RenderMenu(target);
-	}
-}
-
-State::Backdrop PauseState::GetBackdrop() const
-{
-	// We draw the (frozen) game frame ourselves; no need for the app to render
-	// and blur the state below.
-	return Backdrop::Opaque;
+	return std::make_unique<PauseMenuScreen>(*this, returnEntryIndex);
 }

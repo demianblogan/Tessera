@@ -151,6 +151,24 @@ namespace UI
 		std::fill(swooshFired.begin(), swooshFired.end(), static_cast<char>(1));
 	}
 
+	sf::Vector2f MenuButtonColumn::EntryCentre(std::size_t index) const
+	{
+		if (index >= buttons.size())
+		{
+			return {};
+		}
+		return buttons[index].restCentre + renderShift;
+	}
+
+	float MenuButtonColumn::EntryHeight(std::size_t index) const
+	{
+		if (index >= buttons.size())
+		{
+			return 0.f;
+		}
+		return buttons[index].label.InkSize().y;
+	}
+
 	void MenuButtonColumn::PlayExit()
 	{
 		if (exitTime < 0.f)

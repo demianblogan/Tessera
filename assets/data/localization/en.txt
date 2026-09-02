@@ -23,10 +23,11 @@ mode_select.zen               = Zen
 mode_select.versus            = Player vs Player
 mode_select.sub_back          = Back
 
-pause.title     = Pause
-pause.resume    = Resume Game
-pause.restart   = Restart Game
-pause.main_menu = Main Menu
+pause.title     = PAUSE
+pause.resume    = Resume
+pause.restart   = Restart
+pause.options   = Options
+pause.main_menu = Back to Main Menu
 
 game_over.title      = Game Over
 game_over.score      = Your score: {score}

@@ -78,6 +78,11 @@ namespace UI
 		[[nodiscard]] std::size_t SelectedIndex() const { return selectedIndex; }
 		[[nodiscard]] std::size_t ButtonCount() const { return buttons.size(); }
 
+		// Resting on-screen centre / ink height of one entry (render shift
+		// included). For a header that rises from a specific entry.
+		[[nodiscard]] sf::Vector2f EntryCentre(std::size_t index) const;
+		[[nodiscard]] float EntryHeight(std::size_t index) const;
+
 		void SetCompact(bool compact, std::size_t activeIndex);
 
 		void Update(float deltaTime);
