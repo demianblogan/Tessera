@@ -13,6 +13,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../ui/Easing.h"
 #include "AudioCategoryPanel.h"
 #include "GameplayCategoryPanel.h"
 #include "GamepadCategoryPanel.h"
@@ -47,16 +48,8 @@ namespace
 	constexpr sf::Color ControlsColour{ 190, 130, 240 };   // violet
 	constexpr sf::Color LanguageColour{ 235, 110, 175 };   // rose
 
-	[[nodiscard]] float SmoothStep(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		return t * t * (3.f - 2.f * t);
-	}
-
-	[[nodiscard]] sf::Vector2f Lerp(sf::Vector2f a, sf::Vector2f b, float t) noexcept
-	{
-		return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
-	}
+	using UI::Easing::Lerp;
+	using UI::Easing::SmoothStep;
 
 	// The render shift that places a sub-list as a flyout beside `categoryRow`:
 	// roughly centred on that row, then pulled up to stay on screen and clear of

@@ -272,6 +272,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\ui\Element.h" />
     <ClInclude Include="src\ui\CarouselMenu.h" />
     <ClInclude Include="src\ui\ColourUtils.h" />
+    <ClInclude Include="src\ui\Easing.h" />
     <ClInclude Include="src\ui\DropInTitle.h" />
     <ClInclude Include="src\ui\TetrominoPalette.h" />
     <ClInclude Include="src\ui\FpsCounter.h" />

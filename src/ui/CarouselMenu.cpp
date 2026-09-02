@@ -17,6 +17,7 @@
 #include <SFML/System/Angle.hpp>
 
 #include "ColourUtils.h"
+#include "Easing.h"
 #include "GlyphQuad.h"
 #include "TetrominoPalette.h"
 #include "../rendering/NeonGlow.h"
@@ -128,22 +129,9 @@ namespace
 		return { { x, frontSlot.y }, scale, halfExtent };
 	}
 
-	[[nodiscard]] float Lerp(float a, float b, float t) noexcept
-	{
-		return a + (b - a) * t;
-	}
-
-	[[nodiscard]] float EaseOutCubic(float t) noexcept
-	{
-		const float inv = 1.f - std::clamp(t, 0.f, 1.f);
-		return 1.f - inv * inv * inv;
-	}
-
-	[[nodiscard]] float SmoothStep(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		return t * t * (3.f - 2.f * t);
-	}
+	using UI::Easing::EaseOutCubic;
+	using UI::Easing::Lerp;
+	using UI::Easing::SmoothStep;
 
 	[[nodiscard]] sf::Vector2f EllipsePos(sf::Vector2f center, float a) noexcept
 	{

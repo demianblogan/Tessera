@@ -7,6 +7,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
+#include "Easing.h"
 #include "TextLayout.h"
 
 namespace
@@ -25,13 +26,7 @@ namespace
 	const sf::Color ChosenText{ 255, 255, 255 };
 	const sf::Color IdleText{ 150, 156, 166 };
 
-	[[nodiscard]] float EaseOutBack(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		constexpr float c = 1.70158f;
-		const float inv = t - 1.f;
-		return 1.f + (c + 1.f) * inv * inv * inv + c * inv * inv;
-	}
+	using UI::Easing::EaseOutBack;
 }
 
 namespace UI

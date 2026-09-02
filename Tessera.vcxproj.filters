@@ -395,6 +395,9 @@
     <ClInclude Include="src\ui\ColourUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\Easing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ui\DropInTitle.h">
       <Filter>Header Files</Filter>
     </ClInclude>

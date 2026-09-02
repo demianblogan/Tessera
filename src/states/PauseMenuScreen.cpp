@@ -12,6 +12,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../ui/Easing.h"
 #include "PauseState.h"
 
 namespace
@@ -33,11 +34,7 @@ namespace
 	constexpr sf::Color OptionsColour{ 240, 60, 70 };     // the Options red
 	// "Back to Main Menu" keeps the default white.
 
-	[[nodiscard]] float SmoothStep(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		return t * t * (3.f - 2.f * t);
-	}
+	using UI::Easing::SmoothStep;
 }
 
 std::size_t PauseMenuScreen::OptionsRow()

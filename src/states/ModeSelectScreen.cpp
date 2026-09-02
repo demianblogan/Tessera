@@ -1,6 +1,5 @@
 #include "ModeSelectScreen.h"
 
-#include <algorithm>
 #include <memory>
 
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -14,6 +13,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../ui/Easing.h"
 #include "GameplayState.h"
 #include "ScreenHost.h"
 
@@ -36,16 +36,8 @@ namespace
 	constexpr sf::Color CampaignColour{ 240, 180, 90 };     // amber
 	constexpr sf::Color OtherModesColour{ 80, 200, 140 };   // emerald
 
-	[[nodiscard]] float SmoothStep(float t) noexcept
-	{
-		t = std::clamp(t, 0.f, 1.f);
-		return t * t * (3.f - 2.f * t);
-	}
-
-	[[nodiscard]] sf::Vector2f Lerp(sf::Vector2f a, sf::Vector2f b, float t) noexcept
-	{
-		return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
-	}
+	using UI::Easing::Lerp;
+	using UI::Easing::SmoothStep;
 
 	// The render shift that places a sub-list as a hover flyout: pushed right of
 	// the main column, top-aligned with it so the list always clears the header
