@@ -60,6 +60,9 @@
     <ClCompile Include="src\states\AudioCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\SettingsCategoryPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -279,6 +282,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\OptionsSfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\SettingsCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GraphicsCategoryPanel.h">
