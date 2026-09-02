@@ -42,6 +42,8 @@ GameplayState::GameplayState(Context& context)
 	SetUpInputBindings();
 	BuildHud();
 
+	effects.SetShakeEnabled(context.settings.GetSettings().screenShakeEnabled);
+
 	context.music.Get(Assets::MusicID::MainMenu).stop();
 
 	sf::Music& music = context.music.Get(Assets::MusicID::Gameplay);

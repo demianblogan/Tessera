@@ -30,6 +30,7 @@
         "menu_quit":         [62, 65, 255],
 
         "_options_note": "DualSense resting colour per Options category while it is focused.",
+        "options_gameplay":  [80, 210, 195],
         "options_graphics":  [98, 194, 249],
         "options_audio":     [74, 246, 125],
         "options_controls":  [190, 130, 240],

@@ -72,6 +72,9 @@
     <ClCompile Include="src\states\GamepadCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\GameplayCategoryPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\input\KeyName.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -300,6 +303,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GamepadCategoryPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\GameplayCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\ControlsPanelMetrics.h">

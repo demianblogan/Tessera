@@ -25,10 +25,10 @@ namespace sf
 // shrinks and dims around the open entry. The "OPTIONS" header above it is the
 // shell's, morphed from the menu entry.
 //
-// Graphics and Audio open settings panels in place. Controls and Language are
-// each their own sub-page: hovering one shows a dimmed flyout of its list to the
-// right, and activating it slides the category column off to the left while that
-// list slides into its place. Gameplay stays disabled.
+// Gameplay, Graphics and Audio open settings panels in place. Controls and
+// Language are each their own sub-page: hovering one shows a dimmed flyout of
+// its list to the right, and activating it slides the category column off to
+// the left while that list slides into its place.
 class OptionsScreen final : public MenuScreen
 {
 public:

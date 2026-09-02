@@ -14,6 +14,7 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "AudioCategoryPanel.h"
+#include "GameplayCategoryPanel.h"
 #include "GamepadCategoryPanel.h"
 #include "GraphicsCategoryPanel.h"
 #include "KeyboardCategoryPanel.h"
@@ -40,6 +41,7 @@ namespace
 	// Item order in the Controls sub-column.
 	enum ControlsItem : std::size_t { CtrlKeyboard = 0, CtrlGamepad = 1, CtrlBack = 2 };
 
+	constexpr sf::Color GameplayColour{ 80, 210, 195 };    // teal
 	constexpr sf::Color GraphicsColour{ 90, 200, 255 };    // sky blue
 	constexpr sf::Color AudioColour{ 120, 220, 130 };      // green
 	constexpr sf::Color ControlsColour{ 190, 130, 240 };   // violet
@@ -85,7 +87,7 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 {
 	const LocalizationManager& text = context.localization;
 
-	column.AddButton(text.GetText(TextKey::Options::Gameplay), nullptr, false);
+	column.AddButton(text.GetText(TextKey::Options::Gameplay), [this] { OpenCategory(Row::Gameplay); }, true, GameplayColour);
 	column.AddButton(text.GetText(TextKey::Options::Graphics), [this] { OpenCategory(Row::Graphics); }, true, GraphicsColour);
 	column.AddButton(text.GetText(TextKey::Options::Audio), [this] { OpenCategory(Row::Audio); }, true, AudioColour);
 	column.AddButton(text.GetText(TextKey::Options::Controls), [this] { OpenSub(Row::Controls); }, true, ControlsColour);
@@ -127,6 +129,7 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 	languageColumn.SetSelectionChangedCallback(subSelectionSound);
 	languageColumn.AppearInstantly();
 
+	panels[Row::Gameplay] = std::make_unique<GameplayCategoryPanel>(context, GameplayColour);
 	panels[Row::Graphics] = std::make_unique<GraphicsCategoryPanel>(context, GraphicsColour);
 	panels[Row::Audio] = std::make_unique<AudioCategoryPanel>(context, AudioColour);
 	controlsPanels[CtrlKeyboard] = std::make_unique<KeyboardCategoryPanel>(context, ControlsColour);
@@ -159,6 +162,7 @@ bool OptionsScreen::ExitFinished() const
 
 std::pair<std::string_view, sf::Color> OptionsScreen::CurrentLightbar() const
 {
+	if (openIndex == static_cast<std::size_t>(Row::Gameplay)) { return { "options_gameplay", GameplayColour }; }
 	if (openIndex == static_cast<std::size_t>(Row::Graphics)) { return { "options_graphics", GraphicsColour }; }
 	if (openIndex == static_cast<std::size_t>(Row::Audio)) { return { "options_audio", AudioColour }; }
 
@@ -171,6 +175,7 @@ std::pair<std::string_view, sf::Color> OptionsScreen::CurrentLightbar() const
 
 	switch (column.SelectedIndex())
 	{
+	case Row::Gameplay: return { "options_gameplay", GameplayColour };
 	case Row::Graphics: return { "options_graphics", GraphicsColour };
 	case Row::Audio:    return { "options_audio", AudioColour };
 	case Row::Controls: return { "options_controls", ControlsColour };

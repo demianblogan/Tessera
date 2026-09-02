@@ -35,6 +35,10 @@ options.controls_keyboard = Keyboard
 options.controls_gamepad  = Gamepad
 options.controls_back     = Back
 
+options.gameplay_vibration = Gamepad Vibration:
+options.gameplay_lightbar  = Gamepad Lightbar:
+options.gameplay_shake     = Screen Shake:
+
 options.language_english   = English
 options.language_spanish   = Spanish
 options.language_german    = German

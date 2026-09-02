@@ -8,6 +8,7 @@
 #include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
+#include "../input/gamepad/GamepadHaptics.h"
 #include "../utils/SafeFileWrite.h"
 
 SettingsManager::SettingsManager(const std::filesystem::path& filepath)
@@ -48,7 +49,10 @@ void SettingsManager::Load()
 		>> windowModeValue
 		>> resolutionWidth
 		>> resolutionHeight
-		>> keys[0] >> keys[1] >> keys[2] >> keys[3] >> keys[4] >> keys[5];
+		>> keys[0] >> keys[1] >> keys[2] >> keys[3] >> keys[4] >> keys[5]
+		>> parsed.gamepadVibrationEnabled
+		>> parsed.gamepadLightbarEnabled
+		>> parsed.screenShakeEnabled;
 
 	const auto scancodeInRange = [](int value)
 	{
@@ -112,6 +116,9 @@ void SettingsManager::Save() const
 		file << static_cast<int>(settings.controls.hardDrop) << '\n';
 		file << static_cast<int>(settings.controls.rotateClockwise) << '\n';
 		file << static_cast<int>(settings.controls.rotateCounterClockwise) << '\n';
+		file << settings.gamepadVibrationEnabled << '\n';
+		file << settings.gamepadLightbarEnabled << '\n';
+		file << settings.screenShakeEnabled << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));
@@ -142,6 +149,13 @@ void SettingsManager::Apply(Context& context) const
 	// The sound slider is stored on the AudioPlayer; per-sound balance is
 	// applied there per instance.
 	context.audioPlayer.SetGlobalVolume(settings.soundVolume * 10.f);
+
+	// --- Gameplay settings ---
+	// The gamepad feedback toggles take effect at once (even in the menus);
+	// screen shake is read by GameplayState when a game starts.
+
+	context.gamepadHaptics.SetVibrationEnabled(settings.gamepadVibrationEnabled);
+	context.gamepadHaptics.SetLightbarEnabled(settings.gamepadLightbarEnabled);
 }
 
 GameSettings& SettingsManager::GetSettings()

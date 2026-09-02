@@ -52,6 +52,10 @@ namespace TextKey
 		inline constexpr std::string_view ControlsGamepad  = "options.controls_gamepad";
 		inline constexpr std::string_view ControlsBack     = "options.controls_back";
 
+		inline constexpr std::string_view GameplayVibration = "options.gameplay_vibration";
+		inline constexpr std::string_view GameplayLightbar  = "options.gameplay_lightbar";
+		inline constexpr std::string_view GameplayShake     = "options.gameplay_shake";
+
 		inline constexpr std::string_view LanguageEnglish   = "options.language_english";
 		inline constexpr std::string_view LanguageSpanish   = "options.language_spanish";
 		inline constexpr std::string_view LanguageGerman    = "options.language_german";

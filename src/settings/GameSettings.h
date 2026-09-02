@@ -26,7 +26,7 @@ struct GameSettings
 {
     // Bumped whenever the on-disk settings layout changes. A file written by a
     // different version is preserved as .corrupt and replaced with defaults.
-    static constexpr int FormatVersion = 4;
+    static constexpr int FormatVersion = 5;
 
     // --- Graphics:
 
@@ -43,4 +43,10 @@ struct GameSettings
     // --- Controls:
 
     ControlSettings controls;
+
+    // --- Gameplay:
+
+    bool gamepadVibrationEnabled = true;
+    bool gamepadLightbarEnabled = true;
+    bool screenShakeEnabled = true;
 };
