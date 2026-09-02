@@ -66,6 +66,12 @@
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\KeyboardCategoryPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\KeyName.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\ui\OptionRow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -285,6 +291,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\SettingsCategoryPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\KeyboardCategoryPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\KeyName.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GraphicsCategoryPanel.h">

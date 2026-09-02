@@ -89,6 +89,15 @@ namespace
 		bar.setFillColor(colour);
 		target.draw(bar);
 	}
+
+	[[nodiscard]] sf::Color MixColour(sf::Color a, sf::Color b, float t) noexcept
+	{
+		t = std::clamp(t, 0.f, 1.f);
+		return {
+			static_cast<std::uint8_t>(a.r + (b.r - a.r) * t),
+			static_cast<std::uint8_t>(a.g + (b.g - a.g) * t),
+			static_cast<std::uint8_t>(a.b + (b.b - a.b) * t) };
+	}
 }
 
 namespace UI
@@ -576,5 +585,87 @@ namespace UI
 			CentredBar(target, centre, s * 0.62f, thickness, 45.f, symbol);
 			CentredBar(target, centre, s * 0.62f, thickness, -45.f, symbol);
 		}
+	}
+
+	// =====================================================================
+	// KeyBindRow
+	// =====================================================================
+
+	namespace
+	{
+		constexpr float BlinkSpeed = 9.f;
+		constexpr float FlashDuration = 0.5f;
+		constexpr float KeycapMinWidth = 150.f;
+	}
+
+	KeyBindRow::KeyBindRow(const sf::Font& fontRef, const sf::String& label, const sf::String& keyLabel)
+		: OptionRow(fontRef, label)
+		, keyText(fontRef, keyLabel, ValueSize)
+	{
+	}
+
+	void KeyBindRow::SetKeyLabel(const sf::String& text)
+	{
+		keyText.setString(text);
+	}
+
+	void KeyBindRow::SetCapturing(bool value)
+	{
+		capturing = value;
+		blink = 0.f;
+	}
+
+	void KeyBindRow::Flash(sf::Color colour)
+	{
+		flashColour = colour;
+		flashTime = 0.f;
+	}
+
+	void KeyBindRow::UpdateControl(float deltaTime)
+	{
+		blink += deltaTime;
+		flashTime += deltaTime;
+	}
+
+	bool KeyBindRow::HandlePointer(sf::Vector2f point, bool /*clicked*/)
+	{
+		return enabled && Bounds().contains(point);
+	}
+
+	void KeyBindRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
+	{
+		const sf::FloatRect area = ControlArea();
+		const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
+
+		const sf::FloatRect textBounds = keyText.getLocalBounds();
+		const float boxWidth = std::max(KeycapMinWidth, textBounds.size.x + 54.f);
+		const float boxHeight = height * 0.6f;
+
+		const float flashK = std::clamp(1.f - flashTime / FlashDuration, 0.f, 1.f);
+		const float blinkK = capturing
+			? 0.55f + 0.45f * std::sin(blink * BlinkSpeed)
+			: 1.f;
+		const std::uint8_t a = Alpha(panelAlpha, blinkK);
+
+		sf::Color outline = (capturing || selected) ? accent : sf::Color(120, 130, 145);
+		outline = MixColour(outline, flashColour, flashK);
+		sf::Color fill = MixColour(sf::Color(28, 32, 40), flashColour, flashK * 0.45f);
+
+		sf::RectangleShape box({ boxWidth, boxHeight });
+		box.setOrigin(box.getSize() * 0.5f);
+		box.setPosition(centre);
+		box.setFillColor(WithAlpha(fill, a));
+		box.setOutlineThickness(capturing ? 3.5f : 2.f);
+		box.setOutlineColor(WithAlpha(outline, a));
+		target.draw(box);
+
+		keyText.setOrigin({ textBounds.position.x + textBounds.size.x * 0.5f,
+			textBounds.position.y + textBounds.size.y * 0.5f });
+		keyText.setPosition(centre);
+		const sf::Color textColour = !enabled ? DisabledLabel
+			: capturing ? MixColour(sf::Color::White, accent, 0.4f)
+			: sf::Color::White;
+		keyText.setFillColor(WithAlpha(MixColour(textColour, flashColour, flashK * 0.7f), a));
+		target.draw(keyText);
 	}
 }

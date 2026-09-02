@@ -164,6 +164,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <ClCompile Include="src\input\InputBinding.cpp" />
+    <ClCompile Include="src\input\KeyName.cpp" />
     <ClCompile Include="src\input\MenuInput.cpp" />
     <ClCompile Include="src\localization\LocalizationManager.cpp" />
     <ClCompile Include="src\states\GameplayState.cpp" />
@@ -186,6 +187,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\states\OptionsScreen.cpp" />
     <ClCompile Include="src\states\SettingsCategoryPanel.cpp" />
     <ClCompile Include="src\states\GraphicsCategoryPanel.cpp" />
+    <ClCompile Include="src\states\KeyboardCategoryPanel.cpp" />
     <ClCompile Include="src\states\AudioCategoryPanel.cpp" />
     <ClCompile Include="src\states\MenuScreenState.cpp" />
     <ClCompile Include="src\settings\SettingsManager.cpp" />
@@ -243,6 +245,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="libs\DualSenseWindows\src\DualSenseWindows\DS_CRC32.h" />
     <ClInclude Include="src\input\InputBinding.h" />
     <ClInclude Include="src\input\InputHandler.h" />
+    <ClInclude Include="src\input\KeyName.h" />
     <ClInclude Include="src\input\MenuInput.h" />
     <ClInclude Include="src\localization\LocalizationManager.h" />
     <ClInclude Include="src\localization\TextKeys.h" />
@@ -289,6 +292,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\OptionsCategoryPanel.h" />
     <ClInclude Include="src\states\SettingsCategoryPanel.h" />
     <ClInclude Include="src\states\GraphicsCategoryPanel.h" />
+    <ClInclude Include="src\states\KeyboardCategoryPanel.h" />
     <ClInclude Include="src\states\AudioCategoryPanel.h" />
     <ClInclude Include="src\states\OptionsSfx.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />

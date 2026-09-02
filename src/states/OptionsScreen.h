@@ -53,6 +53,8 @@ private:
 	void CloseCategory();
 	void OpenControls();
 	void CloseControls();
+	void OpenKeyboard();
+	void CloseKeyboard();
 
 	void ApplyColumnShifts();
 	[[nodiscard]] bool CategoriesInteractive() const { return page == Page::Categories; }
@@ -62,7 +64,9 @@ private:
 	UI::MenuButtonColumn controlsColumn;
 
 	std::array<std::unique_ptr<OptionsCategoryPanel>, RowCount> panels{};
+	std::unique_ptr<OptionsCategoryPanel> keyboardPanel;
 	std::optional<std::size_t> openIndex;
+	bool keyboardOpen = false;
 	std::size_t previewIndex = 0;
 	float previewFade = 0.f;
 

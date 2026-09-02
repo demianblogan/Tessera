@@ -36,6 +36,9 @@ void SettingsManager::Load()
 	unsigned int resolutionWidth = 0;
 	unsigned int resolutionHeight = 0;
 
+	// The six rebindable gameplay keys, stored as raw scancode integers.
+	std::array<int, 6> keys{};
+
 	file >> formatVersion
 		>> parsed.verticalSyncEnabled
 		>> parsed.showFps
@@ -44,14 +47,21 @@ void SettingsManager::Load()
 		>> parsed.musicVolume
 		>> windowModeValue
 		>> resolutionWidth
-		>> resolutionHeight;
+		>> resolutionHeight
+		>> keys[0] >> keys[1] >> keys[2] >> keys[3] >> keys[4] >> keys[5];
+
+	const auto scancodeInRange = [](int value)
+	{
+		return value >= 0 && value < static_cast<int>(sf::Keyboard::ScancodeCount);
+	};
 
 	const bool fileIsUsable =
 		static_cast<bool>(file) &&
 		formatVersion == GameSettings::FormatVersion &&
 		windowModeValue >= 0 && windowModeValue <= 2 &&
 		parsed.soundVolume <= MaxVolumeStep &&
-		parsed.musicVolume <= MaxVolumeStep;
+		parsed.musicVolume <= MaxVolumeStep &&
+		std::all_of(keys.begin(), keys.end(), scancodeInRange);
 
 	if (!fileIsUsable)
 	{
@@ -63,6 +73,12 @@ void SettingsManager::Load()
 
 	parsed.display.windowMode = static_cast<Display::WindowMode>(windowModeValue);
 	parsed.display.resolution = { resolutionWidth, resolutionHeight };
+	parsed.controls.moveLeft = static_cast<sf::Keyboard::Scancode>(keys[0]);
+	parsed.controls.moveRight = static_cast<sf::Keyboard::Scancode>(keys[1]);
+	parsed.controls.softDrop = static_cast<sf::Keyboard::Scancode>(keys[2]);
+	parsed.controls.hardDrop = static_cast<sf::Keyboard::Scancode>(keys[3]);
+	parsed.controls.rotateClockwise = static_cast<sf::Keyboard::Scancode>(keys[4]);
+	parsed.controls.rotateCounterClockwise = static_cast<sf::Keyboard::Scancode>(keys[5]);
 	settings = parsed;
 }
 
@@ -90,6 +106,12 @@ void SettingsManager::Save() const
 		file << static_cast<int>(settings.display.windowMode) << '\n';
 		file << settings.display.resolution.x << '\n';
 		file << settings.display.resolution.y << '\n';
+		file << static_cast<int>(settings.controls.moveLeft) << '\n';
+		file << static_cast<int>(settings.controls.moveRight) << '\n';
+		file << static_cast<int>(settings.controls.softDrop) << '\n';
+		file << static_cast<int>(settings.controls.hardDrop) << '\n';
+		file << static_cast<int>(settings.controls.rotateClockwise) << '\n';
+		file << static_cast<int>(settings.controls.rotateCounterClockwise) << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));

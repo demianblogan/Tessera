@@ -35,6 +35,14 @@ options.controls_keyboard = Keyboard
 options.controls_gamepad  = Gamepad
 options.controls_back     = Back
 
+options.key_move_left  = Move Left
+options.key_move_right  = Move Right
+options.key_soft_drop   = Soft Drop
+options.key_hard_drop   = Hard Drop
+options.key_rotate_cw   = Rotate CW
+options.key_rotate_ccw  = Rotate CCW
+options.controls_hint   = Esc pauses and exits. Arrows, Enter and Esc run the menus and can't be rebound.
+
 options.resolution      = Screen Resolution:
 options.window_mode     = Window Mode:
 options.vsync           = Vertical Sync:

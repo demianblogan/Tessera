@@ -158,4 +158,32 @@ namespace UI
 		const sf::Texture& checkboxTexture;
 		std::function<void(bool)> onChange;
 	};
+
+	// Label + a "keycap" box showing the bound key. No arrows: the panel drives
+	// it -- activating the row puts the keycap into a blinking capture state, and
+	// Flash() pulses the box a colour (green accepted, amber invalid, red clash).
+	class KeyBindRow final : public OptionRow
+	{
+	public:
+		KeyBindRow(const sf::Font& font, const sf::String& label, const sf::String& keyLabel);
+
+		void Adjust(int /*direction*/) override {}
+		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+
+		void SetKeyLabel(const sf::String& text);
+		void SetCapturing(bool on);
+		void Flash(sf::Color colour);
+		[[nodiscard]] bool IsCapturing() const { return capturing; }
+
+	protected:
+		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
+		void UpdateControl(float deltaTime) override;
+
+	private:
+		mutable sf::Text keyText;
+		bool capturing = false;
+		float blink = 0.f;
+		float flashTime = 1000.f;
+		sf::Color flashColour{ sf::Color::White };
+	};
 }
