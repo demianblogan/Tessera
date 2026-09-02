@@ -73,6 +73,10 @@ private:
 	void PerformHardDrop();
 	void ReactToEvents(const GameplaySession::Events& events);
 
+	// Snapshot the current frame and hand it to a new PauseState, so the pause
+	// screen can "solidify" the frozen picture behind its menu.
+	void OpenPause();
+
 public:
 	explicit GameplayState(Context& context);
 

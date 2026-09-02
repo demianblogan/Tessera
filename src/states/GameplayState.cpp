@@ -6,7 +6,9 @@
 
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/RenderTexture.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/View.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../resources/Assets.h"
@@ -22,6 +24,7 @@
 #include "../localization/TextKeys.h"
 #include "../settings/SettingsManager.h"
 #include "../settings/GameSettings.h"
+#include "../display/DisplayManager.h"
 #include "PauseState.h"
 #include "GameOverState.h"
 
@@ -195,10 +198,7 @@ void GameplayState::SetUpInputBindings()
 	gameplayInput.Subscribe(GameplayAction::RotateClockwise, [this] { TryRotate(true); });
 	gameplayInput.Subscribe(GameplayAction::RotateCounterClockwise, [this] { TryRotate(false); });
 
-	gameplayInput.Subscribe(GameplayAction::Pause, [this]
-		{
-			RequestPush(std::make_unique<PauseState>(context));
-		});
+	gameplayInput.Subscribe(GameplayAction::Pause, [this] { OpenPause(); });
 }
 
 void GameplayState::HandleEvent(const sf::Event& event)
@@ -210,7 +210,7 @@ void GameplayState::HandleEvent(const sf::Event& event)
 	// actions are polled in Update via ApplyGamepadActions.
 	if (context.gamepad.IsPausePressed(event))
 	{
-		RequestPush(std::make_unique<PauseState>(context));
+		OpenPause();
 	}
 }
 
@@ -416,6 +416,25 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.gameOverLightbar, 0.9f, 3);
 		RequestChange(std::make_unique<GameOverState>(context, session.GetScore()));
 	}
+}
+
+void GameplayState::OpenPause()
+{
+	auto frame = std::make_unique<sf::RenderTexture>();
+
+	if (frame->resize(sf::Vector2u(Display::DisplayManager::VirtualSize)))
+	{
+		frame->setView(sf::View(sf::FloatRect({ 0.f, 0.f }, Display::DisplayManager::VirtualSize)));
+		frame->clear(sf::Color::Black);
+		Render(*frame);
+		frame->display();
+	}
+	else
+	{
+		frame.reset();   // capture failed -- PauseState falls back to a dim overlay
+	}
+
+	RequestPush(std::make_unique<PauseState>(context, std::move(frame)));
 }
 
 void GameplayState::Render(sf::RenderTarget& target)
