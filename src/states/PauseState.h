@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Vector2.hpp>
 
 #include "../ui/ConfirmDialog.h"
 #include "ScreenHost.h"
@@ -27,6 +29,9 @@ public:
 	// The amber of the "Campaign" entry in the mode-select menu.
 	static constexpr sf::Color Accent{ 240, 180, 90 };
 
+	// The Options red, for the header and OptionsScreen while it is open here.
+	static constexpr sf::Color OptionsAccent{ 240, 60, 70 };
+
 	// `frozenFrame` may be null (capture failed) -- then a plain dim overlay is
 	// used instead of the mosaic.
 	PauseState(Context& context, std::unique_ptr<sf::RenderTexture> frozenFrame);
@@ -40,6 +45,9 @@ public:
 	void RequestResume();
 	void RequestRestart();
 	void RequestQuitToMainMenu();
+	// `from` / `fromHeight` are the "Options" entry's on-screen box, for the
+	// header to rise out of it.
+	void OpenOptions(sf::Vector2f from, float fromHeight);
 
 	[[nodiscard]] Backdrop GetBackdrop() const override { return Backdrop::Opaque; }
 
@@ -47,6 +55,9 @@ protected:
 	void UpdateBackground(float deltaTime) override;
 	void RenderBackground(sf::RenderTarget& target) override;
 	[[nodiscard]] std::unique_ptr<MenuScreen> BuildHomeScreen(std::size_t returnEntryIndex) override;
+
+	[[nodiscard]] bool HomeDrivesHeader() const override { return true; }
+	void OnHomeRebuilt() override;
 
 private:
 	enum class PendingAction { None, Restart, QuitToMainMenu };

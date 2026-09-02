@@ -22,6 +22,7 @@
 #include "../resources/Assets.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
+#include "OptionsScreen.h"
 #include "PauseMenuScreen.h"
 
 namespace
@@ -81,6 +82,25 @@ void PauseState::RequestQuitToMainMenu()
 		context.localization.GetText(TextKey::Common::Yes),
 		context.localization.GetText(TextKey::Common::No));
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
+}
+
+void PauseState::OpenOptions(sf::Vector2f from, float fromHeight)
+{
+	BeginForward(std::make_unique<OptionsScreen>(*this, OptionsAccent),
+		context.localization.GetText(TextKey::Options::Title), OptionsAccent,
+		from, fromHeight, PauseMenuScreen::OptionsRow());
+}
+
+void PauseState::OnHomeRebuilt()
+{
+	// Back from Options: bring "PAUSE" down from the top again and slide the
+	// pause column back in.
+	Header().RiseFrom(HeaderFrom, HeaderFromHeight,
+		context.localization.GetText(TextKey::Pause::Title), Accent);
+	if (MenuScreen* screen = CurrentScreen())
+	{
+		screen->PlayIntro();
+	}
 }
 
 void PauseState::PerformPendingAction()

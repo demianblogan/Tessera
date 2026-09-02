@@ -121,12 +121,16 @@ void ScreenHost::AdvanceTransition(float deltaTime)
 		if (!mainRebuilt && screen && screen->ExitFinished())
 		{
 			auto home = BuildHomeScreen(returnEntryIndex);
-			header.SinkTo(home->HeaderReturnCentre(), home->HeaderReturnHeight());
+			if (!HomeDrivesHeader())
+			{
+				header.SinkTo(home->HeaderReturnCentre(), home->HeaderReturnHeight());
+			}
 			screen = std::move(home);
 			onSubScreen = false;
 			mainRebuilt = true;
+			OnHomeRebuilt();
 		}
-		if (mainRebuilt && header.IsIdle())
+		if (mainRebuilt && (header.IsIdle() || header.IsSettled()))
 		{
 			phase = Phase::Steady;
 		}

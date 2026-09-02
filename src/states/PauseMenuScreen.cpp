@@ -55,36 +55,27 @@ PauseMenuScreen::PauseMenuScreen(PauseState& owner, std::size_t focusRow)
 
 	column.AddButton(text.GetText(TextKey::Pause::Resume), [this] { pause.RequestResume(); }, true, ResumeColour);
 	column.AddButton(text.GetText(TextKey::Pause::Restart), [this] { pause.RequestRestart(); }, true, RestartColour);
-	// Options from pause is wired in a later step; a disabled stub until then.
-	column.AddButton(text.GetText(TextKey::Pause::Options), nullptr, false, OptionsColour);
+	column.AddButton(text.GetText(TextKey::Pause::Options),
+		[this] { pause.OpenOptions(column.EntryCentre(Row::Options), column.EntryHeight(Row::Options)); },
+		true, OptionsColour);
 	column.AddButton(text.GetText(TextKey::Pause::MainMenu), [this] { pause.RequestQuitToMainMenu(); }, true);   // white
 
 	column.SetLayout(ColumnTopLeft, RowGap);
+	column.AppearInstantly();
+
+	// Focus the row we return to (Options, when coming back from it) before
+	// wiring the selection sound, so rebuilding the screen is silent.
+	for (std::size_t i = 0; i < focusRow && i + 1 < column.ButtonCount(); ++i)
+	{
+		column.SelectNext();
+	}
+
 	column.SetSelectionChangedCallback([this](std::size_t)
 		{
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
 		});
-	column.AppearInstantly();
-
-	if (focusRow < column.ButtonCount())
-	{
-		for (std::size_t i = 0; i < focusRow; ++i)
-		{
-			column.SelectNext();
-		}
-	}
 
 	ApplySlide();
-}
-
-sf::Vector2f PauseMenuScreen::OptionsEntryCentre() const
-{
-	return column.EntryCentre(Row::Options);
-}
-
-float PauseMenuScreen::OptionsEntryHeight() const
-{
-	return column.EntryHeight(Row::Options);
 }
 
 void PauseMenuScreen::PlayIntro()

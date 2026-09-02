@@ -62,6 +62,12 @@ public:
 	// -- MenuShell shoves its drifting-tetromino backdrop. Default: nothing.
 	virtual void OnNavigate(float /*direction*/) {}
 
+	// A Back transition normally sinks the header away toward the returned-to
+	// entry. A host whose home screen carries its own persistent header (the
+	// pause "PAUSE") returns true here and re-raises it in OnHomeRebuilt().
+	[[nodiscard]] virtual bool HomeDrivesHeader() const { return false; }
+	virtual void OnHomeRebuilt() {}
+
 protected:
 	// The concrete host builds its first screen here (called from its ctor).
 	void SetInitialScreen(std::unique_ptr<MenuScreen> screen);

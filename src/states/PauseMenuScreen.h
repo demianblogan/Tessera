@@ -35,10 +35,6 @@ public:
 
 	[[nodiscard]] std::optional<sf::Color> LightbarColour() const override;
 
-	// On-screen centre / height of the "Options" entry, for the host header to
-	// rise from it when Options opens.
-	[[nodiscard]] sf::Vector2f OptionsEntryCentre() const;
-	[[nodiscard]] float OptionsEntryHeight() const;
 	[[nodiscard]] static std::size_t OptionsRow();
 
 private:
