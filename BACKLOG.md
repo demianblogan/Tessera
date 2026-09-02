@@ -41,11 +41,45 @@ Cross-cutting decisions:
   landing effects, a custom UI framework, a settings menu, top-5 high scores,
   and shader-based CRT / blur / glow post-processing.
 
+### v1.3.0 — In-game menu & mode select
+
+A new Pause screen built to the menu-shell standard, and a mode-select screen
+behind "Start Game". No gameplay-rules changes; Game Over untouched (its look
+follows the modes / campaign work).
+
+- **`states/ScreenHost`** — the screen swap + `ui/MenuHeader` + forward / back
+  transition + DualSense-lightbar handoff, extracted from `MenuShell` (now a
+  thin subclass supplying the animated menu background and the `MainMenuScreen`
+  home). Sub-screens take a `ScreenHost&`; the ring's backdrop shove goes
+  through `ScreenHost::OnNavigate`. A `HomeDrivesHeader()` / `OnHomeRebuilt()`
+  hook lets a host keep a persistent header on its home screen.
+- **Pause** (`states/PauseState : ScreenHost`, `states/PauseMenuScreen`) — on
+  pause, `GameplayState` snapshots the frame into a `RenderTexture`;
+  `assets/shaders/mosaic.frag` "solidifies" it (blur + large-pixel quantise +
+  darken) with a front that sweeps top-down on entry and bottom-up on Resume.
+  A "PAUSE" header (amber, the mode-select "Campaign" hue) rises from the top
+  edge as a left `ui/MenuButtonColumn` slides in low in the frame: Resume /
+  Restart / Options / Back to Main Menu, each in its own colour. Resume
+  reverses the whole animation before popping. Restart and Back to Main Menu
+  raise a `ui/ConfirmDialog`. Options opens over the frozen frame through the
+  shared `ScreenHost` transition; settings apply live.
+- **Mode select** (`states/ModeSelectScreen`) — "Start Game" now morphs into a
+  two-level column like Options → Controls: **Campaign** (Start New Campaign /
+  Continue Campaign / Select Level) and **Other Modes** (Marathon / Sprint /
+  Ultra / Zen / Player vs Player). Only Marathon is live; the rest are disabled
+  stubs for the versions that build them. `docs/CAMPAIGN_AND_MODES.md` holds the
+  concept.
+- **Gameplay music removed** — the old track did not fit; `MusicID::Gameplay`
+  and its asset are gone. A dynamic score is a v1.8.0 task.
+- **Cleanup** — `Lerp` / `SmoothStep` / `EaseOut*` deduplicated into
+  `ui/Easing.h` (were copy-pasted in ~10 TUs); three unused fonts
+  (`BarNewRomanPix*`, `EpilepsySans`) deleted; dead `ScreenHost::ShowScreen` /
+  `IsTransitioning` removed.
+
 ### v1.2.0 — Menu shell & Options
 
 Originally scoped as "Modern rules"; **re-scoped** to the menu shell and a
-complete Options screen (the SRS / guideline-rules work moved to v1.3.0). No
-gameplay-rules changes.
+complete Options screen. No gameplay-rules changes.
 
 - **Menu shell** (`states/MenuShell` hosting `states/MenuScreen`s;
   `MainMenuScreen` / `CreditsScreen` / `OptionsScreen`). Activating a ring
@@ -345,18 +379,6 @@ moved to v1.4.0; the old "v1.7.0 — In-game menu overhaul" was pulled forward
 and split — the Pause half became v1.3.0, Game Over waits for the modes work
 that defines it).
 
-- **v1.3.0 — In-game menu & mode select.** *(in progress)* A new Pause screen
-  built to the menu-shell standard: the gameplay frame freezes and "solidifies"
-  into large pixels top-down, a "PAUSE" header rises like the Options header, a
-  left `MenuButtonColumn` slides in (Resume / Restart / Options / Back to Main
-  Menu). Resume reverses the whole animation. Restart and Back to Main Menu each
-  raise a `ConfirmDialog`. Options is reachable from Pause, hosted over the
-  frozen board. To do this the shell's screen-hosting (screen swap + `MenuHeader`
-  + forward/back transition + lightbar) is extracted into a reusable `ScreenHost`
-  with a pluggable background. "Start Game" on the main menu now opens a
-  `ModeSelectScreen` (Marathon live; Start Campaign / Continue Campaign / Select
-  Level / Player vs Player as disabled stubs; Back). Gameplay music is removed
-  for now (to be redone). No gameplay-rules changes. Game Over screen untouched.
 - **v1.4.0 — Gameplay rules & variety.** *(name TBD when it starts)* Buffer rows
   above the visible field + guideline block-out / lock-out; SRS rotation + wall
   kicks + T-spin detection; lock delay + move reset; hold piece; 5-deep next
