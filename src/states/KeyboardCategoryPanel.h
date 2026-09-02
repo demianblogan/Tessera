@@ -5,7 +5,6 @@
 #include <optional>
 
 #include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/Text.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
 #include "../settings/GameSettings.h"
@@ -49,7 +48,6 @@ protected:
 	void AdjustRow(std::size_t index, int direction) override;
 	void ActivateRow(std::size_t index) override;
 	void RowClicked(std::size_t index) override;
-	void RenderExtra(sf::RenderTarget& target, float alpha) override;
 
 private:
 	static constexpr std::size_t ActionCount = 6;
@@ -68,6 +66,4 @@ private:
 
 	std::optional<std::size_t> capturingRow;
 	std::optional<sf::Keyboard::Scancode> captureIgnore;
-
-	sf::Text hint;
 };

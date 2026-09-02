@@ -634,12 +634,13 @@ namespace UI
 
 	void KeyBindRow::RenderControl(sf::RenderTarget& target, float panelAlpha) const
 	{
-		const sf::FloatRect area = ControlArea();
-		const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
-
 		const sf::FloatRect textBounds = keyText.getLocalBounds();
 		const float boxWidth = std::max(KeycapMinWidth, textBounds.size.x + 54.f);
 		const float boxHeight = height * 0.6f;
+
+		// Right-align the keycap so its inset from the frame mirrors the label's
+		// inset on the left (see OptionRow::Render, +26).
+		const sf::Vector2f centre{ left.x + width - 26.f - boxWidth * 0.5f, left.y + height * 0.5f };
 
 		const float flashK = std::clamp(1.f - flashTime / FlashDuration, 0.f, 1.f);
 		const float blinkK = capturing

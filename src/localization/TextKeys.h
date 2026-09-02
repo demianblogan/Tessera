@@ -51,7 +51,6 @@ namespace TextKey
 		inline constexpr std::string_view ControlsKeyboard = "options.controls_keyboard";
 		inline constexpr std::string_view ControlsGamepad  = "options.controls_gamepad";
 		inline constexpr std::string_view ControlsBack     = "options.controls_back";
-		inline constexpr std::string_view ControlsHint     = "options.controls_hint";
 
 		inline constexpr std::string_view KeyMoveLeft  = "options.key_move_left";
 		inline constexpr std::string_view KeyMoveRight = "options.key_move_right";

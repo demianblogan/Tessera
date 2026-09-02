@@ -1,11 +1,8 @@
 #include "KeyboardCategoryPanel.h"
 
-#include <algorithm>
 #include <array>
-#include <cstdint>
 #include <string_view>
 
-#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 
 #include "../audio/AudioPlayer.h"
@@ -19,10 +16,10 @@
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 600.f, 236.f }, { 1240.f, 672.f } };
-	constexpr float RowsTop = PanelBounds.position.y + 54.f;
-	constexpr float RowMargin = 92.f;
-	constexpr float RowHeight = 78.f;
+	constexpr sf::FloatRect PanelBounds{ { 600.f, 210.f }, { 1240.f, 760.f } };
+	constexpr float RowsTop = PanelBounds.position.y + 56.f;
+	constexpr float RowMargin = 96.f;
+	constexpr float RowHeight = 74.f;
 	constexpr float RowGap = 8.f;
 
 	constexpr sf::Color FlashAccept{ 90, 220, 130 };   // green
@@ -32,8 +29,6 @@ namespace
 
 KeyboardCategoryPanel::KeyboardCategoryPanel(Context& context, sf::Color accent)
 	: SettingsCategoryPanel(context, accent, PanelBounds)
-	, hint(context.fonts.Get(Assets::FontID::Main),
-		context.localization.GetText(TextKey::Options::ControlsHint), 22u)
 {
 	fields = {
 		&ControlSettings::moveLeft,
@@ -282,15 +277,4 @@ void KeyboardCategoryPanel::Close()
 bool KeyboardCategoryPanel::WantsToStayOpen() const
 {
 	return capturingRow.has_value() || SettingsCategoryPanel::WantsToStayOpen();
-}
-
-void KeyboardCategoryPanel::RenderExtra(sf::RenderTarget& target, float alpha)
-{
-	const sf::FloatRect panel = Panel();
-	const sf::FloatRect bounds = hint.getLocalBounds();
-	hint.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-	hint.setPosition({ panel.position.x + panel.size.x * 0.5f, panel.position.y + panel.size.y - 128.f });
-	hint.setFillColor(sf::Color(174, 156, 198,
-		static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f)));
-	target.draw(hint);
 }
