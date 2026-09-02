@@ -288,7 +288,7 @@ namespace UI
 		{
 			buttons[i].label.Update(deltaTime);
 			// Only the selected, settled button carries the idle wave.
-			buttons[i].label.SetWaveEnabled(settled && buttons[i].enabled && i == selectedIndex);
+			buttons[i].label.SetWaveEnabled(selectionHighlight && settled && buttons[i].enabled && i == selectedIndex);
 		}
 
 		if (started && introTime < 1e6f)
@@ -384,7 +384,7 @@ namespace UI
 				continue;
 			}
 
-			const bool isSelected = settled && button.enabled && i == selectedIndex;
+			const bool isSelected = selectionHighlight && settled && button.enabled && i == selectedIndex;
 
 			sf::Color colour = UI::DisabledEntryColour;
 			if (button.enabled)

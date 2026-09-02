@@ -34,6 +34,9 @@ namespace
 	// Row order in the category column.
 	enum Row : std::size_t { Gameplay = 0, Graphics = 1, Audio = 2, Controls = 3, Language = 4, Back = 5 };
 
+	// Item order in the Controls sub-column.
+	enum ControlsItem : std::size_t { CtrlKeyboard = 0, CtrlGamepad = 1, CtrlBack = 2 };
+
 	constexpr sf::Color GraphicsColour{ 90, 200, 255 };    // sky blue
 	constexpr sf::Color AudioColour{ 120, 220, 130 };      // green
 	constexpr sf::Color ControlsColour{ 190, 130, 240 };   // violet
@@ -240,6 +243,10 @@ void OptionsScreen::ApplyColumnShifts()
 	column.SetRenderShift(categoryShift);
 	controlsColumn.SetRenderShift(controlsShift);
 	controlsColumn.SetRenderDim(controlsDim);
+
+	// Nothing in the Controls column looks focused until it is the live page --
+	// as a hover flyout or mid-slide it is just a preview.
+	controlsColumn.SetSelectionHighlight(page == Page::Controls || page == Page::ToControls);
 }
 
 void OptionsScreen::HandleEvent(const sf::Event& event)
@@ -385,8 +392,17 @@ void OptionsScreen::Update(float deltaTime)
 
 	if (keyboardPanel)
 	{
-		keyboardPanel->SetVisibility(
-			keyboardOpen ? OptionsCategoryPanel::Visibility::Open : OptionsCategoryPanel::Visibility::Hidden, 1.f);
+		OptionsCategoryPanel::Visibility keyboardVisibility = OptionsCategoryPanel::Visibility::Hidden;
+		if (keyboardOpen)
+		{
+			keyboardVisibility = OptionsCategoryPanel::Visibility::Open;
+		}
+		else if (page == Page::Controls && controlsColumn.SelectedIndex() == CtrlKeyboard)
+		{
+			keyboardVisibility = OptionsCategoryPanel::Visibility::Preview;
+		}
+
+		keyboardPanel->SetVisibility(keyboardVisibility, 1.f);
 		keyboardPanel->Update(deltaTime);
 		if (keyboardOpen && keyboardPanel->WantsToClose())
 		{

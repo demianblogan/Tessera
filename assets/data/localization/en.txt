@@ -88,4 +88,4 @@ loading.interface = Loading Interface...
 hud.next_piece = Next Tetromino
 hud.score      = Score: {score}
 hud.level      = Level: {level}
-hud.controls   = [←] [→] - Move    [↓] - Soft drop\n[↑] - Rotate CW    [Z] - Rotate CCW\n[Space] - Hard drop\n[ESC] - Pause
+hud.controls   = [←] [→] - Move    [↓] - Soft drop\n[Q] - Rotate left    [E] - Rotate right\n[Space] - Hard drop\n[ESC] - Pause

@@ -14,8 +14,8 @@ struct ControlSettings
     sf::Keyboard::Scancode moveRight = sf::Keyboard::Scancode::Right;
     sf::Keyboard::Scancode softDrop = sf::Keyboard::Scancode::Down;
     sf::Keyboard::Scancode hardDrop = sf::Keyboard::Scancode::Space;
-    sf::Keyboard::Scancode rotateClockwise = sf::Keyboard::Scancode::Up;
-    sf::Keyboard::Scancode rotateCounterClockwise = sf::Keyboard::Scancode::Z;
+    sf::Keyboard::Scancode rotateClockwise = sf::Keyboard::Scancode::E;
+    sf::Keyboard::Scancode rotateCounterClockwise = sf::Keyboard::Scancode::Q;
     sf::Keyboard::Scancode pause = sf::Keyboard::Scancode::Escape;
 };
 

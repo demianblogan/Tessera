@@ -58,6 +58,12 @@ namespace UI
 		// "flyout" preview of the Controls sub-menu on hover.
 		void SetRenderShift(sf::Vector2f shift) { renderShift = shift; }
 		void SetRenderDim(float dim) { renderDim = dim; }
+
+		// When false, no button draws its selected state (glow / brightening /
+		// idle wave). The Options screen turns it off for the Controls column
+		// while it is only a hover preview, so nothing looks focused until the
+		// player actually steps into that sub-menu.
+		void SetSelectionHighlight(bool on) { selectionHighlight = on; }
 		[[nodiscard]] bool IsIntroDone() const;
 		[[nodiscard]] bool IsExitDone() const;
 
@@ -103,6 +109,7 @@ namespace UI
 
 		sf::Vector2f renderShift{ 0.f, 0.f };
 		float renderDim = 1.f;
+		bool selectionHighlight = true;
 
 		std::size_t selectedIndex = 0;
 		std::function<void(std::size_t)> onSelectionChanged;
