@@ -31,7 +31,6 @@ MenuShell::MenuShell(Context& context)
 			versionBounds.position.y + versionBounds.size.y
 		});
 
-	context.music.Get(Assets::MusicID::Gameplay).stop();
 	context.music.Get(Assets::MusicID::GameOver).stop();
 
 	sf::Music& menuMusic = context.music.Get(Assets::MusicID::MainMenu);

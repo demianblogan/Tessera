@@ -30,9 +30,8 @@ namespace
 		{ Assets::SoundID::RowCleared, "row_cleared" },
 	} };
 
-	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 3> MusicNames{ {
+	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 2> MusicNames{ {
 		{ Assets::MusicID::MainMenu, "main_menu_music" },
-		{ Assets::MusicID::Gameplay, "gameplay_music" },
 		{ Assets::MusicID::GameOver, "game_over_music" },
 	} };
 

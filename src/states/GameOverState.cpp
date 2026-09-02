@@ -118,8 +118,6 @@ GameOverState::GameOverState(Context& context, int finalScore)
 	RefreshSaveButton();
 	RefreshLayout();
 
-	context.music.Get(Assets::MusicID::Gameplay).stop();
-
 	sf::Music& music = context.music.Get(Assets::MusicID::GameOver);
 	if (music.getStatus() != sf::Music::Status::Playing)
 	{

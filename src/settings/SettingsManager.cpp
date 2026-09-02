@@ -136,7 +136,7 @@ void SettingsManager::Apply(Context& context) const
 
 	// Player slider (0-100) combined with each track's own balance coefficient.
 	const float musicSlider = settings.musicVolume * 10.f;
-	constexpr std::array musicIds{ Assets::MusicID::MainMenu, Assets::MusicID::Gameplay, Assets::MusicID::GameOver };
+	constexpr std::array musicIds{ Assets::MusicID::MainMenu, Assets::MusicID::GameOver };
 	for (const Assets::MusicID id : musicIds)
 	{
 		if (context.music.Contains(id))

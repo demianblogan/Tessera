@@ -13,7 +13,6 @@ namespace Assets
 	enum class MusicID
 	{
 		MainMenu,
-		Gameplay,
 		GameOver
 	};
 
@@ -81,7 +80,6 @@ namespace Assets
 		namespace Music
 		{
 			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
-			inline constexpr const char* Gameplay = "assets/audio/music/gameplay_music.ogg";
 			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 		}
 

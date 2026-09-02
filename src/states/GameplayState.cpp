@@ -47,13 +47,10 @@ GameplayState::GameplayState(Context& context)
 
 	effects.SetShakeEnabled(context.settings.GetSettings().screenShakeEnabled);
 
+	// Gameplay has no music for now -- the old track did not fit and a proper
+	// dynamic-intensity score is a v1.8.0 task (Audio & HUD). Silence the shell
+	// track on the way in.
 	context.music.Get(Assets::MusicID::MainMenu).stop();
-
-	// Gameplay music is intentionally silent for now -- the old track did not
-	// fit and a proper dynamic-intensity score lands in v1.8.0 (Audio & HUD).
-	// The MusicID::Gameplay asset stays loaded so it is a one-line change to
-	// bring back.
-	context.music.Get(Assets::MusicID::Gameplay).stop();
 }
 
 void GameplayState::BuildHud()
