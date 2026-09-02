@@ -2,6 +2,9 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 
 // Design-time "feel" tuning, loaded once from assets/data/haptics.json. Like
 // AudioBalance, this is authoring data, not a player setting -- the player-facing
@@ -64,6 +67,14 @@ public:
 	Colour menuLightbar{ 255, 255, 0 };       // yellow
 	Colour rowClearLightbar{ 0, 255, 0 };     // green
 	Colour gameOverLightbar{ 255, 0, 0 };     // red
+
+	// Every [r,g,b] entry under "lightbar" in the JSON, by its key. Menus look
+	// their focused item up here (keys like "menu_options", "options_graphics")
+	// to hand-calibrate the DualSense colour independently of the on-screen hue,
+	// since the diffuser shifts it. LightbarFor() returns `fallback` for a key
+	// the file does not set.
+	std::unordered_map<std::string, Colour> lightbarByKey;
+	[[nodiscard]] Colour LightbarFor(std::string_view key, Colour fallback) const;
 
 	// --- Other feel ---------------------------------------------------------
 

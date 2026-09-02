@@ -79,6 +79,12 @@ namespace
 	}
 }
 
+HapticSettings::Colour HapticSettings::LightbarFor(std::string_view key, Colour fallback) const
+{
+	const auto entry = lightbarByKey.find(std::string(key));
+	return entry != lightbarByKey.end() ? entry->second : fallback;
+}
+
 HapticSettings::HapticSettings(const std::filesystem::path& path)
 {
 	std::ifstream file(path);
@@ -121,6 +127,17 @@ HapticSettings::HapticSettings(const std::filesystem::path& path)
 		ReadColour(*lightbar, "menu", menuLightbar);
 		ReadColour(*lightbar, "row_clear", rowClearLightbar);
 		ReadColour(*lightbar, "game_over", gameOverLightbar);
+
+		// Keep every [r,g,b] entry by key, so menus can look their own up.
+		for (const auto& [key, value] : lightbar->items())
+		{
+			if (value.is_array() && value.size() == 3)
+			{
+				Colour colour{};
+				ReadColour(*lightbar, key, colour);
+				lightbarByKey[key] = colour;
+			}
+		}
 	}
 
 	if (const auto feel = data.find("feel"); feel != data.end() && feel->is_object())

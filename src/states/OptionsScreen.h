@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string_view>
+#include <utility>
 
 #include <SFML/Graphics/Color.hpp>
 
@@ -40,7 +42,7 @@ public:
 	void StartExit() override;
 	[[nodiscard]] bool ExitFinished() const override;
 
-	[[nodiscard]] std::optional<sf::Color> LightbarColour() const override { return accent; }
+	[[nodiscard]] std::optional<sf::Color> LightbarColour() const override;
 
 private:
 	static constexpr std::size_t RowCount = 6;
@@ -55,6 +57,9 @@ private:
 	void CloseControls();
 	void OpenControlsItem(std::size_t item);
 	void CloseControlsItem();
+
+	// The haptics.json key and on-screen fallback colour for whatever is focused.
+	[[nodiscard]] std::pair<std::string_view, sf::Color> CurrentLightbar() const;
 
 	void ApplyColumnShifts();
 	[[nodiscard]] bool CategoriesInteractive() const { return page == Page::Categories; }

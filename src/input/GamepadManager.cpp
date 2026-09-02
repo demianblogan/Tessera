@@ -40,13 +40,9 @@ namespace
 
 namespace
 {
-	// A quick flash on the lightbar for every menu move.
-	constexpr float MenuNavigationLightbarDuration = 0.14f;
-
 	// Used when no HapticSettings has been supplied, so the class still gives
 	// feedback standalone.
 	constexpr HapticSettings::Rumble FallbackMenuRumble{ 0.05f, 0.12f, 0.05f };
-	constexpr HapticSettings::Colour FallbackMenuLightbar{ 255, 255, 0 };
 }
 
 GamepadManager::GamepadManager()
@@ -121,11 +117,10 @@ GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::E
 
 	if (action != NavigationAction::None && haptics != nullptr)
 	{
+		// A soft rumble tick only -- no lightbar flash, so the resting colour
+		// (the focused menu item's hue) stays put as the selection moves.
 		const HapticSettings::Rumble& rumble = hapticSettings != nullptr ? hapticSettings->menuNavigation : FallbackMenuRumble;
-		const HapticSettings::Colour lightbar = hapticSettings != nullptr ? hapticSettings->menuLightbar : FallbackMenuLightbar;
-
 		Haptics::Pulse(*haptics, rumble);
-		Haptics::FlashLightbar(*haptics, lightbar, MenuNavigationLightbarDuration);
 	}
 
 	return action;

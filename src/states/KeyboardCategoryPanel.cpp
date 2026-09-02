@@ -8,6 +8,7 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../input/KeyName.h"
+#include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
@@ -257,6 +258,18 @@ bool KeyboardCategoryPanel::HandleEvent(const sf::Event& event)
 		{
 			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.7f);
 			EndCapture();
+			return true;
+		}
+
+		// Gamepad B / Circle cancels the capture too -- the pad's Escape, so a
+		// player with no keyboard is never stuck in this state.
+		if (event.getIf<sf::Event::JoystickButtonPressed>())
+		{
+			if (MenuInput::Resolve(event, context.gamepad) == MenuInput::Action::Back)
+			{
+				context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.7f);
+				EndCapture();
+			}
 			return true;
 		}
 

@@ -7,6 +7,7 @@
 #include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../config/HapticSettings.h"
 #include "../core/Context.h"
 #include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
@@ -115,6 +116,33 @@ void OptionsScreen::StartExit()
 bool OptionsScreen::ExitFinished() const
 {
 	return column.IsExitDone();
+}
+
+std::pair<std::string_view, sf::Color> OptionsScreen::CurrentLightbar() const
+{
+	if (openIndex == static_cast<std::size_t>(Row::Graphics)) { return { "options_graphics", GraphicsColour }; }
+	if (openIndex == static_cast<std::size_t>(Row::Audio)) { return { "options_audio", AudioColour }; }
+
+	if (page != Page::Categories)
+	{
+		return { "options_controls", ControlsColour };
+	}
+
+	switch (column.SelectedIndex())
+	{
+	case Row::Graphics: return { "options_graphics", GraphicsColour };
+	case Row::Audio:    return { "options_audio", AudioColour };
+	case Row::Controls: return { "options_controls", ControlsColour };
+	default:            return { "menu_options", accent };
+	}
+}
+
+std::optional<sf::Color> OptionsScreen::LightbarColour() const
+{
+	const auto [key, fallback] = CurrentLightbar();
+	const HapticSettings::Colour resolved =
+		context.hapticSettings.LightbarFor(key, { fallback.r, fallback.g, fallback.b });
+	return sf::Color(resolved.r, resolved.g, resolved.b);
 }
 
 void OptionsScreen::Leave()

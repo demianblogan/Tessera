@@ -19,7 +19,20 @@
     "lightbar": {
         "menu":      [255, 255, 0],
         "row_clear": [0, 255, 0],
-        "game_over": [255, 0, 0]
+        "game_over": [255, 0, 0],
+
+        "_menu_note": "DualSense resting colour per main-menu ring entry. Falls back to the on-screen hue if a key is missing.",
+        "menu_start_game":   [0, 240, 240],
+        "menu_options":      [240, 60, 70],
+        "menu_records":      [180, 60, 240],
+        "menu_achievements": [146, 150, 158],
+        "menu_credits":      [255, 194, 92],
+        "menu_quit":         [70, 110, 240],
+
+        "_options_note": "DualSense resting colour per Options category while it is focused.",
+        "options_graphics":  [90, 200, 255],
+        "options_audio":     [120, 220, 130],
+        "options_controls":  [190, 130, 240]
     },
 
     "feel": {

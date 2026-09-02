@@ -1,7 +1,9 @@
 #include "MainMenuScreen.h"
 
+#include <array>
 #include <cstddef>
 #include <memory>
+#include <string_view>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
@@ -16,6 +18,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../ui/TetrominoPalette.h"
 #include "CreditsScreen.h"
 #include "GameplayState.h"
 #include "MenuShell.h"
@@ -48,6 +51,15 @@ namespace
 	// per-slot tetromino colour.
 	constexpr sf::Color OptionsColour{ 240, 60, 70 };    // red
 	constexpr sf::Color CreditsColour{ 255, 194, 92 };   // warm gold
+
+	// haptics.json keys for the DualSense resting colour, one per ring entry
+	// in AddItem order. A missing key falls back to the on-screen hue.
+	constexpr std::array<std::string_view, 6> RingLightbarKeys{
+		"menu_start_game", "menu_options", "menu_records",
+		"menu_achievements", "menu_credits", "menu_quit" };
+
+	// How long each title letter tints the lightbar as it lands.
+	constexpr float LetterLightbarDuration = 0.22f;
 }
 
 MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t frontEntry)
@@ -71,6 +83,10 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 				base.lowMotor + grow.lowMotor * t,
 				base.highMotor + grow.highMotor * t,
 				base.duration);
+
+			// ...and the lightbar snaps to that letter's colour as it lands.
+			const sf::Color hue = UI::TetrominoColours[letter % UI::TetrominoColours.size()];
+			context.gamepadHaptics.PulseLightbar({ hue.r, hue.g, hue.b }, LetterLightbarDuration);
 		});
 
 	carousel.SetSwooshCallback([this](std::size_t entry)
@@ -261,5 +277,12 @@ std::optional<sf::Color> MainMenuScreen::LightbarColour() const
 		return std::nullopt;
 	}
 
-	return carousel.FrontColour();
+	// The on-screen hue is the fallback; haptics.json can override per entry.
+	const sf::Color screenHue = carousel.FrontColour();
+	const HapticSettings::Colour fallback{ screenHue.r, screenHue.g, screenHue.b };
+	const std::size_t index = carousel.CurrentFrontIndex();
+	const HapticSettings::Colour hue = index < RingLightbarKeys.size()
+		? context.hapticSettings.LightbarFor(RingLightbarKeys[index], fallback)
+		: fallback;
+	return sf::Color(hue.r, hue.g, hue.b);
 }
