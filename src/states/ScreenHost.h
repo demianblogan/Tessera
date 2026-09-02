@@ -41,11 +41,6 @@ public:
 
 	[[nodiscard]] Context& GetContext() { return context; }
 
-	// Swap the active screen with no transition. Deferred to the end of the
-	// current event / update step so a screen can call it from inside its own
-	// methods without being destroyed part-way through.
-	void ShowScreen(std::unique_ptr<MenuScreen> screen);
-
 	// Leave the host entirely (Start Game, quit-to-desktop, back to gameplay...).
 	void ExitTo(std::unique_ptr<State> state);
 
@@ -56,7 +51,6 @@ public:
 	void BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
 		sf::Vector2f fromCentre, float fromHeight, std::size_t entryIndex);
 	void BeginBack();
-	[[nodiscard]] bool IsTransitioning() const;
 
 	// A home screen reports navigation (ring rotation etc.) so the host can react
 	// -- MenuShell shoves its drifting-tetromino backdrop. Default: nothing.
@@ -90,14 +84,11 @@ protected:
 private:
 	enum class Phase { Steady, Forward, Back };
 
-	void ApplyPendingScreen();
 	void AdvanceTransition(float deltaTime);
 
 	UI::MenuHeader header;
 
 	std::unique_ptr<MenuScreen> screen;
-	std::unique_ptr<MenuScreen> pendingScreen;
-	bool screenChangePending = false;
 
 	Phase phase = Phase::Steady;
 	bool onSubScreen = false;

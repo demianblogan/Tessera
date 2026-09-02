@@ -41,20 +41,9 @@ void ScreenHost::SetInitialScreen(std::unique_ptr<MenuScreen> initial)
 	screen = std::move(initial);
 }
 
-void ScreenHost::ShowScreen(std::unique_ptr<MenuScreen> newScreen)
-{
-	pendingScreen = std::move(newScreen);
-	screenChangePending = true;
-}
-
 void ScreenHost::ExitTo(std::unique_ptr<State> state)
 {
 	RequestChange(std::move(state));
-}
-
-bool ScreenHost::IsTransitioning() const
-{
-	return phase != Phase::Steady;
 }
 
 void ScreenHost::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
@@ -138,31 +127,16 @@ void ScreenHost::AdvanceTransition(float deltaTime)
 	}
 }
 
-void ScreenHost::ApplyPendingScreen()
-{
-	if (!screenChangePending)
-	{
-		return;
-	}
-
-	screen = std::move(pendingScreen);
-	screenChangePending = false;
-}
-
 void ScreenHost::HandleEvent(const sf::Event& event)
 {
 	if (screen)
 	{
 		screen->HandleEvent(event);
 	}
-
-	ApplyPendingScreen();
 }
 
 void ScreenHost::Update(float deltaTime)
 {
-	ApplyPendingScreen();
-
 	UpdateBackground(deltaTime);
 
 	if (screen)
@@ -172,7 +146,6 @@ void ScreenHost::Update(float deltaTime)
 
 	header.Update(deltaTime);
 	AdvanceTransition(deltaTime);
-	ApplyPendingScreen();
 
 	if (screen)
 	{
