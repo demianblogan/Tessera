@@ -13,13 +13,11 @@
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
 #include "../ui/OptionRow.h"
+#include "ControlsPanelMetrics.h"
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 600.f, 210.f }, { 1240.f, 760.f } };
-	constexpr float RowsTop = PanelBounds.position.y + 56.f;
-	constexpr float RowMargin = 96.f;
-	constexpr float RowHeight = 74.f;
+	constexpr float RowHeight = 78.f;
 	constexpr float RowGap = 8.f;
 
 	constexpr sf::Color FlashAccept{ 90, 220, 130 };   // green
@@ -28,7 +26,7 @@ namespace
 }
 
 KeyboardCategoryPanel::KeyboardCategoryPanel(Context& context, sf::Color accent)
-	: SettingsCategoryPanel(context, accent, PanelBounds)
+	: SettingsCategoryPanel(context, accent, ControlsPanel::Bounds)
 {
 	fields = {
 		&ControlSettings::moveLeft,
@@ -60,7 +58,7 @@ void KeyboardCategoryPanel::BuildRows()
 		rows.push_back(std::move(row));
 	}
 
-	LayOutRows(RowsTop, RowMargin, RowHeight, RowGap);
+	LayOutRows(ControlsPanel::RowsTop, ControlsPanel::RowMargin, RowHeight, RowGap);
 	selectedRow = 0;
 	capturingRow.reset();
 	captureIgnore.reset();

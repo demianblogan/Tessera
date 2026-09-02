@@ -295,6 +295,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\GraphicsCategoryPanel.h" />
     <ClInclude Include="src\states\KeyboardCategoryPanel.h" />
     <ClInclude Include="src\states\GamepadCategoryPanel.h" />
+    <ClInclude Include="src\states\ControlsPanelMetrics.h" />
     <ClInclude Include="src\states\AudioCategoryPanel.h" />
     <ClInclude Include="src\states\OptionsSfx.h" />
     <ClInclude Include="src\states\MenuScreenState.h" />

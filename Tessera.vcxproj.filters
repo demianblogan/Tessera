@@ -302,6 +302,9 @@
     <ClInclude Include="src\states\GamepadCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\states\ControlsPanelMetrics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\input\KeyName.h">
       <Filter>Header Files</Filter>
     </ClInclude>

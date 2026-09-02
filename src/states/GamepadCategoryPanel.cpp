@@ -21,24 +21,25 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../ui/ColourUtils.h"
+#include "ControlsPanelMetrics.h"
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 616.f, 236.f }, { 1152.f, 636.f } };
+	constexpr sf::FloatRect PanelBounds = ControlsPanel::Bounds;
 	constexpr unsigned int PanelSourceBorder = 28u;
 	constexpr sf::Vector2f PanelTargetBorder{ 44.f, 44.f };
 
-	constexpr float LabelInset = 104.f;
-	constexpr float HeaderY = PanelBounds.position.y + 64.f;
-	constexpr float RowsTop = PanelBounds.position.y + 108.f;
-	constexpr float RowHeight = 52.f;
-	constexpr float XboxColumnX = PanelBounds.position.x + PanelBounds.size.x - 420.f;
-	constexpr float PlayStationColumnX = PanelBounds.position.x + PanelBounds.size.x - 168.f;
+	constexpr float LabelX = ControlsPanel::LabelX;
+	constexpr float RowsTop = ControlsPanel::RowsTop;
+	constexpr float RowHeight = 66.f;   // 7 rows fit the shared frame
+	constexpr float HeaderY = RowsTop - 44.f;
+	constexpr float PlayStationColumnX = PanelBounds.position.x + PanelBounds.size.x - 220.f;
+	constexpr float XboxColumnX = PlayStationColumnX - 310.f;
 	constexpr float IconScale = 3.0f;
-	constexpr sf::Vector2f IconBox{ 88.f, 42.f };
+	constexpr sf::Vector2f IconBox{ 76.f, 62.f };   // taller and narrower, so no icon overflows it
 
-	constexpr unsigned int LabelSize = 32u;
-	constexpr unsigned int HeaderSize = 28u;
+	constexpr unsigned int LabelSize = ControlsPanel::LabelSize;   // match the Keyboard screen
+	constexpr unsigned int HeaderSize = ControlsPanel::LabelSize;  // same size -> crisp pixel font
 	constexpr unsigned int BackSize = 46u;
 	constexpr sf::Vector2f BackBoxPadding{ 84.f, 52.f };
 
@@ -128,14 +129,32 @@ void GamepadCategoryPanel::LayOut()
 		const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
 		const sf::FloatRect bounds = rows[i].label.getLocalBounds();
 		rows[i].label.setOrigin({ bounds.position.x, bounds.position.y + bounds.size.y * 0.5f });
-		rows[i].label.setPosition({ panelBounds.position.x + LabelInset, centreY });
+		rows[i].label.setPosition({ LabelX, centreY });
 	}
 
 	CentreText(xboxHeader, { XboxColumnX, HeaderY });
 	CentreText(playStationHeader, { PlayStationColumnX, HeaderY });
 
+	// Keep the headers inside the frame if the pixel font renders them wide.
+	const float leftLimit = panelBounds.position.x + 54.f;
+	const float rightLimit = panelBounds.position.x + panelBounds.size.x - 54.f;
+	const auto clampInside = [&](sf::Text& text)
+	{
+		const sf::FloatRect box = text.getGlobalBounds();
+		if (box.position.x < leftLimit)
+		{
+			text.move({ leftLimit - box.position.x, 0.f });
+		}
+		else if (box.position.x + box.size.x > rightLimit)
+		{
+			text.move({ rightLimit - (box.position.x + box.size.x), 0.f });
+		}
+	};
+	clampInside(xboxHeader);
+	clampInside(playStationHeader);
+
 	backCentre = { panelBounds.position.x + panelBounds.size.x * 0.5f,
-		panelBounds.position.y + panelBounds.size.y - 92.f };
+		panelBounds.position.y + panelBounds.size.y - 100.f };
 	const sf::Vector2f ink = backButton.InkSize();
 	const sf::Vector2f box{ ink.x + BackBoxPadding.x, ink.y + BackBoxPadding.y };
 	backBox = { { backCentre.x - box.x * 0.5f, backCentre.y - box.y * 0.5f }, box };
