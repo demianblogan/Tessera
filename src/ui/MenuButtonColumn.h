@@ -76,6 +76,7 @@ namespace UI
 		PointerHit PointerPressed(sf::Vector2f point);
 
 		[[nodiscard]] std::size_t SelectedIndex() const { return selectedIndex; }
+		[[nodiscard]] std::size_t ButtonCount() const { return buttons.size(); }
 
 		void SetCompact(bool compact, std::size_t activeIndex);
 

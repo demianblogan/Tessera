@@ -25,9 +25,9 @@ namespace
 	constexpr sf::Vector2f ColumnTopLeft{ 130.f, 300.f };
 	constexpr float RowGap = 120.f;
 
-	constexpr float SubRowGap = 96.f;    // tighter spacing for a sub-list column
-	constexpr float FlyoutX = 470.f;     // the sub-list's x while it is a hover flyout
-	constexpr float FlyoutRise = 96.f;   // how far above the hovered row the flyout sits
+	constexpr float SubRowGap = 96.f;      // tighter spacing for a sub-list column
+	constexpr float FlyoutX = 470.f;       // the sub-list's x while it is a hover flyout
+	constexpr float FlyoutMinTop = 150.f;  // never let a flyout ride higher than this
 	constexpr float FlyoutDim = 0.42f;
 
 	constexpr float PreviewFadeDuration = 0.18f;
@@ -56,11 +56,20 @@ namespace
 		return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
 	}
 
-	// The render shift that places a sub-list as a flyout beside `categoryRow`.
-	[[nodiscard]] sf::Vector2f FlyoutShift(std::size_t categoryRow) noexcept
+	// The render shift that places a sub-list as a flyout beside `categoryRow`:
+	// roughly centred on that row, then pulled up to stay on screen and clear of
+	// the category column's own "Back to Main Menu" entry.
+	[[nodiscard]] sf::Vector2f FlyoutShift(std::size_t categoryRow, std::size_t itemCount) noexcept
 	{
-		return { FlyoutX - ColumnTopLeft.x,
-			static_cast<float>(categoryRow) * RowGap - FlyoutRise };
+		const float listHeight = static_cast<float>(itemCount) * SubRowGap;
+		const float rowY = ColumnTopLeft.y + static_cast<float>(categoryRow) * RowGap;
+		const float centredTop = rowY - listHeight * 0.5f + SubRowGap * 0.5f;
+
+		const float lastCategoryRowY = ColumnTopLeft.y + 5.f * RowGap;   // "Back to Main Menu"
+		const float maxTop = std::max(FlyoutMinTop, lastCategoryRowY - listHeight - 20.f);
+		const float top = std::clamp(centredTop, FlyoutMinTop, maxTop);
+
+		return { FlyoutX - ColumnTopLeft.x, top - ColumnTopLeft.y };
 	}
 }
 
@@ -284,7 +293,7 @@ void OptionsScreen::ApplyColumnShifts()
 	const bool onCategories = page == Page::Categories;
 	const auto configure = [&](UI::MenuButtonColumn& sub, std::size_t categoryRow)
 	{
-		const sf::Vector2f flyout = FlyoutShift(categoryRow);
+		const sf::Vector2f flyout = FlyoutShift(categoryRow, sub.ButtonCount());
 		const bool isActive = !onCategories && subRow == categoryRow;
 		const bool isFlyout = onCategories && column.SelectedIndex() == categoryRow;
 
