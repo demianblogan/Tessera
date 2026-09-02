@@ -46,13 +46,11 @@ GameplayState::GameplayState(Context& context)
 
 	context.music.Get(Assets::MusicID::MainMenu).stop();
 
-	sf::Music& music = context.music.Get(Assets::MusicID::Gameplay);
-	music.setLooping(true);
-
-	if (music.getStatus() != sf::Music::Status::Playing)
-	{
-		music.play();
-	}
+	// Gameplay music is intentionally silent for now -- the old track did not
+	// fit and a proper dynamic-intensity score lands in v1.8.0 (Audio & HUD).
+	// The MusicID::Gameplay asset stays loaded so it is a one-line change to
+	// bring back.
+	context.music.Get(Assets::MusicID::Gameplay).stop();
 }
 
 void GameplayState::BuildHud()
