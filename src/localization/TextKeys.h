@@ -25,6 +25,9 @@ namespace TextKey
 		inline constexpr std::string_view Restart  = "pause.restart";
 		inline constexpr std::string_view Options  = "pause.options";
 		inline constexpr std::string_view MainMenu = "pause.main_menu";
+
+		inline constexpr std::string_view ConfirmRestart = "pause.confirm_restart";
+		inline constexpr std::string_view ConfirmQuit    = "pause.confirm_quit";
 	}
 
 	namespace GameOver

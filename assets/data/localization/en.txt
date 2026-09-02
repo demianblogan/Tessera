@@ -28,6 +28,8 @@ pause.resume    = Resume
 pause.restart   = Restart
 pause.options   = Options
 pause.main_menu = Back to Main Menu
+pause.confirm_restart = Restart the level?
+pause.confirm_quit    = Leave the level?
 
 game_over.title      = Game Over
 game_over.score      = Your score: {score}

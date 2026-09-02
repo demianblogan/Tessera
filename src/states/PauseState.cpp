@@ -16,6 +16,7 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../display/DisplayManager.h"
+#include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
@@ -41,6 +42,7 @@ namespace
 PauseState::PauseState(Context& context, std::unique_ptr<sf::RenderTexture> frozenFrame)
 	: ScreenHost(context)
 	, frozenFrame(std::move(frozenFrame))
+	, confirmDialog(context.fonts.Get(Assets::FontID::Main))
 {
 	SetInitialScreen(std::make_unique<PauseMenuScreen>(*this, 0));
 }
@@ -65,16 +67,41 @@ void PauseState::RequestResume()
 
 void PauseState::RequestRestart()
 {
-	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	RequestClear();
-	RequestPush(std::make_unique<GameplayState>(context));
+	pendingAction = PendingAction::Restart;
+	confirmDialog.Show(context.localization.GetText(TextKey::Pause::ConfirmRestart),
+		context.localization.GetText(TextKey::Common::Yes),
+		context.localization.GetText(TextKey::Common::No));
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
 }
 
 void PauseState::RequestQuitToMainMenu()
 {
+	pendingAction = PendingAction::QuitToMainMenu;
+	confirmDialog.Show(context.localization.GetText(TextKey::Pause::ConfirmQuit),
+		context.localization.GetText(TextKey::Common::Yes),
+		context.localization.GetText(TextKey::Common::No));
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
+}
+
+void PauseState::PerformPendingAction()
+{
+	const PendingAction action = pendingAction;
+	pendingAction = PendingAction::None;
+
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
 	RequestClear();
-	RequestPush(std::make_unique<MenuShell>(context));
+
+	switch (action)
+	{
+	case PendingAction::Restart:
+		RequestPush(std::make_unique<GameplayState>(context));
+		break;
+	case PendingAction::QuitToMainMenu:
+		RequestPush(std::make_unique<MenuShell>(context));
+		break;
+	case PendingAction::None:
+		break;
+	}
 }
 
 void PauseState::HandleEvent(const sf::Event& event)
@@ -86,7 +113,38 @@ void PauseState::HandleEvent(const sf::Event& event)
 		return;
 	}
 
+	if (confirmDialog.IsOpen())
+	{
+		confirmDialog.Navigate(MenuInput::Resolve(event, context.gamepad));
+		return;
+	}
+
 	ScreenHost::HandleEvent(event);
+}
+
+void PauseState::Update(float deltaTime)
+{
+	confirmDialog.Update(deltaTime);
+	if (const std::optional<bool> answer = confirmDialog.TakeResult())
+	{
+		if (*answer)
+		{
+			PerformPendingAction();
+		}
+		else
+		{
+			pendingAction = PendingAction::None;
+			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.8f);
+		}
+	}
+
+	ScreenHost::Update(deltaTime);
+}
+
+void PauseState::Render(sf::RenderTarget& target)
+{
+	ScreenHost::Render(target);
+	confirmDialog.Render(target);
 }
 
 void PauseState::UpdateBackground(float deltaTime)

@@ -1,13 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <SFML/Graphics/Color.hpp>
 
+#include "../ui/ConfirmDialog.h"
 #include "ScreenHost.h"
 
 namespace sf
 {
+	class Event;
 	class RenderTarget;
 	class RenderTexture;
 }
@@ -16,7 +19,8 @@ namespace sf
 // moment the game was paused, drawn through mosaic.frag so it "solidifies" into
 // large pixels top-down on entry and melts back bottom-up on Resume. Its home
 // screen is the PauseMenuScreen column; Options opens over the frozen frame
-// through the shared ScreenHost transition.
+// through the shared ScreenHost transition. Restart and Back to Main Menu each
+// raise a yes / no confirmation.
 class PauseState final : public ScreenHost
 {
 public:
@@ -29,6 +33,8 @@ public:
 	~PauseState() override;
 
 	void HandleEvent(const sf::Event& event) override;
+	void Update(float deltaTime) override;
+	void Render(sf::RenderTarget& target) override;
 
 	// Called by the pause menu column.
 	void RequestResume();
@@ -43,7 +49,13 @@ protected:
 	[[nodiscard]] std::unique_ptr<MenuScreen> BuildHomeScreen(std::size_t returnEntryIndex) override;
 
 private:
+	enum class PendingAction { None, Restart, QuitToMainMenu };
+
+	void PerformPendingAction();
+
 	std::unique_ptr<sf::RenderTexture> frozenFrame;
+	UI::ConfirmDialog confirmDialog;
+	PendingAction pendingAction = PendingAction::None;
 
 	// 0 = the frame is crisp, 1 = fully solidified.
 	float reveal = 0.f;
