@@ -29,7 +29,8 @@ namespace
 {
 	// "Solidified" look of the frozen frame.
 	constexpr float MosaicCellPx = 22.f;
-	constexpr float MosaicDarken = 0.58f;
+	constexpr float MosaicBlurPx = 16.f;
+	constexpr float MosaicDarken = 0.5f;
 	constexpr float MosaicFrontSoft = 46.f;
 
 	// How long the frame takes to solidify (and, in reverse, to melt back).
@@ -210,6 +211,7 @@ void PauseState::RenderBackground(sf::RenderTarget& target)
 	mosaic.setUniform("texture", sf::Shader::CurrentTexture);
 	mosaic.setUniform("resolution", sf::Glsl::Vec2(Display::DisplayManager::VirtualSize));
 	mosaic.setUniform("cellPx", MosaicCellPx);
+	mosaic.setUniform("blurPx", MosaicBlurPx);
 	mosaic.setUniform("darken", MosaicDarken);
 	mosaic.setUniform("reveal", reveal);
 	mosaic.setUniform("frontSoft", MosaicFrontSoft);
