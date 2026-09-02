@@ -92,6 +92,15 @@ void GamepadManager::HandleEvent(const sf::Event& event)
 
 void GamepadManager::Update()
 {
+	// Re-scan when we have no pad (or the one we had went away). SFML only
+	// refreshes its joystick registry during the window's event pump, so a
+	// controller that was already plugged in at start-up -- when the one-shot
+	// scan in the constructor ran -- would otherwise never be picked up.
+	if (!activeJoystick.has_value() || !sf::Joystick::isConnected(*activeJoystick))
+	{
+		RefreshConnection();
+	}
+
 	const unsigned int hardDropButton = (layout == Layout::PlayStation) ? PlayStationHardDropButton : XboxHardDropButton;
 	const bool hardDropDown = IsButtonPressed(hardDropButton);
 	hardDropEdge = hardDropDown && !wasHardDropDown;

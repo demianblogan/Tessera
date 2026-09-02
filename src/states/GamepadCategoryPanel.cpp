@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <string_view>
 #include <utility>
@@ -23,39 +24,55 @@
 
 namespace
 {
-	constexpr sf::FloatRect PanelBounds{ { 560.f, 190.f }, { 1320.f, 812.f } };
+	constexpr sf::FloatRect PanelBounds{ { 616.f, 236.f }, { 1152.f, 636.f } };
 	constexpr unsigned int PanelSourceBorder = 28u;
 	constexpr sf::Vector2f PanelTargetBorder{ 44.f, 44.f };
 
-	constexpr float LabelInset = 118.f;
-	constexpr float HeaderY = PanelBounds.position.y + 84.f;
-	constexpr float RowsTop = PanelBounds.position.y + 146.f;
-	constexpr float RowHeight = 74.f;
-	constexpr float XboxColumnX = PanelBounds.position.x + PanelBounds.size.x - 470.f;
-	constexpr float PlayStationColumnX = PanelBounds.position.x + PanelBounds.size.x - 190.f;
-	constexpr float IconScale = 3.4f;
+	constexpr float LabelInset = 104.f;
+	constexpr float HeaderY = PanelBounds.position.y + 64.f;
+	constexpr float RowsTop = PanelBounds.position.y + 108.f;
+	constexpr float RowHeight = 52.f;
+	constexpr float XboxColumnX = PanelBounds.position.x + PanelBounds.size.x - 420.f;
+	constexpr float PlayStationColumnX = PanelBounds.position.x + PanelBounds.size.x - 168.f;
+	constexpr float IconScale = 3.0f;
+	constexpr sf::Vector2f IconBox{ 88.f, 42.f };
 
-	constexpr unsigned int LabelSize = 34u;
-	constexpr unsigned int HeaderSize = 30u;
+	constexpr unsigned int LabelSize = 32u;
+	constexpr unsigned int HeaderSize = 28u;
 	constexpr unsigned int BackSize = 46u;
 	constexpr sf::Vector2f BackBoxPadding{ 84.f, 52.f };
 
 	constexpr float FadeSpeed = 9.f;
+	constexpr float HighlightSpeed = 12.f;
 
-	// Sprite rects, identical in both atlases.
-	constexpr sf::IntRect FaceButtonA{ { 49, 48 }, { 13, 15 } };
-	constexpr sf::IntRect OptionsButton{ { 50, 114 }, { 11, 13 } };
-	constexpr sf::IntRect DpadLeft{ { 130, 99 }, { 11, 7 } };
-	constexpr sf::IntRect DpadRight{ { 146, 99 }, { 11, 7 } };
-	constexpr sf::IntRect DpadDown{ { 148, 82 }, { 7, 11 } };
-	constexpr sf::IntRect LeftBumper{ { 336, 49 }, { 15, 13 } };
-	constexpr sf::IntRect RightBumper{ { 336, 65 }, { 15, 13 } };
+	// Sprite rects in the atlases. The measured top-left is exact; the size gets
+	// +1 in each axis so the icon is not clipped on its right / bottom edge.
+	[[nodiscard]] constexpr sf::IntRect Sprite(int x, int y, int w, int h)
+	{
+		return sf::IntRect{ { x, y }, { w + 1, h + 1 } };
+	}
 
-	const sf::Color LabelColour{ 214, 220, 230 };
+	constexpr sf::IntRect FaceButtonA = Sprite(49, 48, 13, 15);
+	constexpr sf::IntRect OptionsButton = Sprite(50, 114, 11, 13);
+	constexpr sf::IntRect DpadLeft = Sprite(130, 99, 11, 7);
+	constexpr sf::IntRect DpadRight = Sprite(146, 99, 11, 7);
+	constexpr sf::IntRect DpadDown = Sprite(148, 82, 7, 11);
+	constexpr sf::IntRect LeftBumper = Sprite(336, 49, 15, 13);
+	constexpr sf::IntRect RightBumper = Sprite(336, 65, 15, 13);
+
+	const sf::Color LabelIdle{ 206, 213, 224 };
+	const sf::Color LabelHot{ 255, 255, 255 };
+	const sf::Color KeycapFill{ 28, 32, 40 };
+	const sf::Color KeycapEdge{ 120, 130, 145 };
 
 	[[nodiscard]] std::uint8_t Fade(float alpha, float extra = 1.f)
 	{
 		return static_cast<std::uint8_t>(std::clamp(alpha * extra, 0.f, 1.f) * 255.f);
+	}
+
+	[[nodiscard]] sf::Color WithAlpha(sf::Color colour, std::uint8_t a)
+	{
+		return { colour.r, colour.g, colour.b, a };
 	}
 
 	void CentreText(sf::Text& text, sf::Vector2f centre)
@@ -94,8 +111,8 @@ GamepadCategoryPanel::GamepadCategoryPanel(Context& context, sf::Color accent)
 	for (const Def& def : defs)
 	{
 		sf::Text label(font, text.GetText(def.key), LabelSize);
-		label.setFillColor(LabelColour);
-		rows.push_back(Row{ std::move(label), def.sprite, def.sprite });
+		// PlayStation atlas rects land later, once the real coordinates are known.
+		rows.push_back(Row{ std::move(label), def.sprite, def.sprite, 0.f });
 	}
 
 	backButton.SetText(text.GetText(TextKey::Options::BackButton));
@@ -118,7 +135,7 @@ void GamepadCategoryPanel::LayOut()
 	CentreText(playStationHeader, { PlayStationColumnX, HeaderY });
 
 	backCentre = { panelBounds.position.x + panelBounds.size.x * 0.5f,
-		panelBounds.position.y + panelBounds.size.y - 64.f };
+		panelBounds.position.y + panelBounds.size.y - 92.f };
 	const sf::Vector2f ink = backButton.InkSize();
 	const sf::Vector2f box{ ink.x + BackBoxPadding.x, ink.y + BackBoxPadding.y };
 	backBox = { { backCentre.x - box.x * 0.5f, backCentre.y - box.y * 0.5f }, box };
@@ -127,6 +144,8 @@ void GamepadCategoryPanel::LayOut()
 void GamepadCategoryPanel::Open()
 {
 	closeRequested = false;
+	focus = Focus::Rows;
+	selectedRow = 0;
 }
 
 void GamepadCategoryPanel::Close()
@@ -147,10 +166,39 @@ void GamepadCategoryPanel::SetVisibility(Visibility visibility, float previewFad
 	active = visibility == Visibility::Open;
 }
 
+void GamepadCategoryPanel::MoveSelection(int direction)
+{
+	if (focus == Focus::Rows)
+	{
+		const int next = static_cast<int>(selectedRow) + direction;
+		if (next < 0)
+		{
+			return;
+		}
+		if (next >= static_cast<int>(rows.size()))
+		{
+			focus = Focus::Back;
+			return;
+		}
+		selectedRow = static_cast<std::size_t>(next);
+	}
+	else if (direction < 0)
+	{
+		focus = Focus::Rows;
+		selectedRow = rows.empty() ? 0 : rows.size() - 1;
+	}
+}
+
 void GamepadCategoryPanel::Update(float deltaTime)
 {
 	alpha += (targetAlpha - alpha) * std::min(1.f, deltaTime * FadeSpeed);
 	backButton.Update(deltaTime);
+
+	for (std::size_t i = 0; i < rows.size(); ++i)
+	{
+		const float target = (active && focus == Focus::Rows && i == selectedRow) ? 1.f : 0.f;
+		rows[i].highlight += (target - rows[i].highlight) * std::min(1.f, deltaTime * HighlightSpeed);
+	}
 }
 
 bool GamepadCategoryPanel::HandleEvent(const sf::Event& event)
@@ -162,13 +210,42 @@ bool GamepadCategoryPanel::HandleEvent(const sf::Event& event)
 
 	switch (MenuInput::Resolve(event, context.gamepad))
 	{
+	case MenuInput::Action::Up:   MoveSelection(-1); return true;
+	case MenuInput::Action::Down: MoveSelection(1);  return true;
 	case MenuInput::Action::Confirm:
+		if (focus == Focus::Back)
+		{
+			closeRequested = true;
+			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
+		}
+		return true;
 	case MenuInput::Action::Back:
 		closeRequested = true;
 		context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
 		return true;
 	default:
 		break;
+	}
+
+	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
+	{
+		const sf::Vector2f point = context.window.mapPixelToCoords(moved->position);
+		for (std::size_t i = 0; i < rows.size(); ++i)
+		{
+			const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
+			const sf::FloatRect rowRect{ { panelBounds.position.x + 40.f, centreY - RowHeight * 0.5f },
+				{ panelBounds.size.x - 80.f, RowHeight } };
+			if (rowRect.contains(point))
+			{
+				focus = Focus::Rows;
+				selectedRow = i;
+			}
+		}
+		if (backBox.contains(point))
+		{
+			focus = Focus::Back;
+		}
+		return true;
 	}
 
 	if (const auto* clicked = event.getIf<sf::Event::MouseButtonPressed>())
@@ -199,24 +276,24 @@ void GamepadCategoryPanel::Render(sf::RenderTarget& target)
 	frame.Draw(target);
 
 	const sf::Color headerColour = UI::MixToWhite(accent, 0.55f);
-	xboxHeader.setFillColor(sf::Color(headerColour.r, headerColour.g, headerColour.b, a));
-	playStationHeader.setFillColor(sf::Color(headerColour.r, headerColour.g, headerColour.b, a));
+	xboxHeader.setFillColor(WithAlpha(headerColour, a));
+	playStationHeader.setFillColor(WithAlpha(headerColour, a));
 	target.draw(xboxHeader);
 	target.draw(playStationHeader);
 
-	// A faint divider between the two icon columns.
-	{
-		const float dividerX = (XboxColumnX + PlayStationColumnX) * 0.5f;
-		const float top = HeaderY - 6.f;
-		const float bottom = RowsTop + static_cast<float>(rows.size()) * RowHeight - RowHeight * 0.25f;
-		sf::RectangleShape divider({ 2.f, bottom - top });
-		divider.setPosition({ dividerX, top });
-		divider.setFillColor(sf::Color(accent.r, accent.g, accent.b, Fade(alpha, 0.28f)));
-		target.draw(divider);
-	}
-
 	const sf::Texture& xboxAtlas = context.textures.Get(Assets::TextureID::XboxGamepadLayout);
 	const sf::Texture& psAtlas = context.textures.Get(Assets::TextureID::PlayStationGamepadLayout);
+
+	const auto drawKeycap = [&](sf::Vector2f centre, bool hot)
+	{
+		sf::RectangleShape box(IconBox);
+		box.setOrigin(IconBox * 0.5f);
+		box.setPosition(centre);
+		box.setFillColor(WithAlpha(KeycapFill, a));
+		box.setOutlineThickness(2.f);
+		box.setOutlineColor(WithAlpha(hot ? accent : KeycapEdge, a));
+		target.draw(box);
+	};
 
 	const auto drawIcon = [&](const sf::Texture& atlas, sf::IntRect rect, sf::Vector2f centre)
 	{
@@ -224,35 +301,62 @@ void GamepadCategoryPanel::Render(sf::RenderTarget& target)
 		sprite.setTextureRect(rect);
 		sprite.setOrigin(sf::Vector2f(rect.size) * 0.5f);
 		sprite.setScale({ IconScale, IconScale });
-		sprite.setPosition(centre);
+		sprite.setPosition({ std::round(centre.x), std::round(centre.y) });
 		sprite.setColor(sf::Color(255, 255, 255, a));
 		target.draw(sprite);
 	};
 
 	for (std::size_t i = 0; i < rows.size(); ++i)
 	{
+		Row& row = rows[i];
 		const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
+		const float hi = row.highlight;
 
-		rows[i].label.setFillColor(sf::Color(LabelColour.r, LabelColour.g, LabelColour.b, a));
-		target.draw(rows[i].label);
+		if (hi > 0.01f)
+		{
+			sf::RectangleShape wash({ panelBounds.size.x - 80.f, RowHeight });
+			wash.setPosition({ panelBounds.position.x + 40.f, centreY - RowHeight * 0.5f });
+			wash.setFillColor(sf::Color(255, 255, 255, Fade(alpha, 0.08f * hi)));
+			target.draw(wash);
 
-		drawIcon(xboxAtlas, rows[i].xbox, { XboxColumnX, centreY });
-		drawIcon(psAtlas, rows[i].playStation, { PlayStationColumnX, centreY });
+			sf::RectangleShape bar({ 5.f, RowHeight });
+			bar.setPosition({ panelBounds.position.x + 40.f, centreY - RowHeight * 0.5f });
+			bar.setFillColor(WithAlpha(accent, Fade(alpha, hi)));
+			target.draw(bar);
+		}
+
+		const sf::Color labelColour{
+			static_cast<std::uint8_t>(LabelIdle.r + (LabelHot.r - LabelIdle.r) * hi),
+			static_cast<std::uint8_t>(LabelIdle.g + (LabelHot.g - LabelIdle.g) * hi),
+			static_cast<std::uint8_t>(LabelIdle.b + (LabelHot.b - LabelIdle.b) * hi) };
+		row.label.setFillColor(WithAlpha(labelColour, a));
+		target.draw(row.label);
+
+		const bool hot = hi > 0.5f;
+		drawKeycap({ XboxColumnX, centreY }, hot);
+		drawKeycap({ PlayStationColumnX, centreY }, hot);
+		drawIcon(xboxAtlas, row.xbox, { XboxColumnX, centreY });
+		drawIcon(psAtlas, row.playStation, { PlayStationColumnX, centreY });
 	}
 
 	// The lone Back button, focused look borrowed from the settings panels.
-	for (int band = 3; band >= 1; --band)
+	const bool backFocused = focus == Focus::Back;
+	if (backFocused)
 	{
-		const float inflate = static_cast<float>(band) * 5.f;
-		sf::RectangleShape halo({ backBox.size.x + 2.f * inflate, backBox.size.y + 2.f * inflate });
-		halo.setOrigin(halo.getSize() * 0.5f);
-		halo.setPosition(backCentre);
-		halo.setFillColor(sf::Color::Transparent);
-		halo.setOutlineThickness(3.f);
-		halo.setOutlineColor(sf::Color(accent.r, accent.g, accent.b,
-			static_cast<std::uint8_t>(frac * (70.f - static_cast<float>(band) * 16.f))));
-		target.draw(halo);
+		for (int band = 3; band >= 1; --band)
+		{
+			const float inflate = static_cast<float>(band) * 5.f;
+			sf::RectangleShape halo({ backBox.size.x + 2.f * inflate, backBox.size.y + 2.f * inflate });
+			halo.setOrigin(halo.getSize() * 0.5f);
+			halo.setPosition(backCentre);
+			halo.setFillColor(sf::Color::Transparent);
+			halo.setOutlineThickness(3.f);
+			halo.setOutlineColor(sf::Color(236, 240, 246,
+				static_cast<std::uint8_t>(frac * (70.f - static_cast<float>(band) * 16.f))));
+			target.draw(halo);
+		}
 	}
 
-	backButton.Draw(target, backCentre, 1.04f, UI::MixToWhite(sf::Color(236, 240, 246), 0.15f), alpha);
+	backButton.Draw(target, backCentre, backFocused ? 1.04f : 1.f,
+		backFocused ? sf::Color(255, 255, 255) : sf::Color(214, 220, 230), alpha);
 }

@@ -84,7 +84,7 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 
 	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenControlsItem(CtrlKeyboard); }, true, ControlsColour);
 	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsGamepad), [this] { OpenControlsItem(CtrlGamepad); }, true, ControlsColour);
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseControls(); }, true, ControlsColour);
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseControls(); }, true);   // plain white, like "Back to Main Menu"
 	controlsColumn.SetLayout(ColumnTopLeft, ControlsRowGap);
 	controlsColumn.SetSelectionChangedCallback([this](std::size_t)
 		{

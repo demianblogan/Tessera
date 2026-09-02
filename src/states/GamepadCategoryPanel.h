@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -24,7 +23,8 @@ namespace sf
 // Controls > Gamepad: a read-only reference table. Left column is the same list
 // of gameplay actions as the Keyboard screen (plus Pause); the two right columns
 // show the fixed Xbox and PlayStation buttons, drawn from the button-prompt
-// atlases. Nothing is editable, so the only control is a single Back button.
+// atlases. Nothing is editable -- rows can be highlighted but not activated --
+// so the only real control is a single Back button.
 class GamepadCategoryPanel final : public OptionsCategoryPanel
 {
 public:
@@ -40,14 +40,18 @@ public:
 	[[nodiscard]] bool WantsToClose() const override { return closeRequested; }
 
 private:
+	enum class Focus { Rows, Back };
+
 	struct Row
 	{
 		sf::Text label;
 		sf::IntRect xbox;          // sprite rect in the Xbox atlas
 		sf::IntRect playStation;   // sprite rect in the PlayStation atlas
+		float highlight = 0.f;
 	};
 
 	void LayOut();
+	void MoveSelection(int direction);
 
 	Context& context;
 	sf::Color accent;
@@ -61,6 +65,9 @@ private:
 	UI::MenuLabel backButton;
 	sf::Vector2f backCentre;
 	sf::FloatRect backBox;
+
+	Focus focus = Focus::Rows;
+	std::size_t selectedRow = 0;
 
 	float alpha = 0.f;
 	float targetAlpha = 0.f;
