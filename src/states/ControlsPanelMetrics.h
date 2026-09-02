@@ -12,6 +12,11 @@ namespace ControlsPanel
 	inline constexpr float RowMargin = 96.f;
 	inline constexpr float RowsTop = Bounds.position.y + 100.f;
 
+	// Row box height and the gap to the next row -- the pitch both panels step by.
+	inline constexpr float RowHeight = 78.f;
+	inline constexpr float RowGap = 8.f;
+	inline constexpr float RowPitch = RowHeight + RowGap;
+
 	// Where an action label starts, matching UI::OptionRow (row left + 26).
 	inline constexpr float LabelX = Bounds.position.x + RowMargin + 26.f;
 

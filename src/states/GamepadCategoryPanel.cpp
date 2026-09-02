@@ -31,8 +31,9 @@ namespace
 
 	constexpr float LabelX = ControlsPanel::LabelX;
 	constexpr float RowsTop = ControlsPanel::RowsTop;
-	constexpr float RowHeight = 66.f;   // 7 rows fit the shared frame
-	constexpr float HeaderY = RowsTop - 44.f;
+	constexpr float RowHeight = ControlsPanel::RowHeight;   // same list layout as the Keyboard panel
+	constexpr float RowPitch = ControlsPanel::RowPitch;
+	constexpr float HeaderY = RowsTop - 30.f;
 	constexpr float PlayStationColumnX = PanelBounds.position.x + PanelBounds.size.x - 220.f;
 	constexpr float XboxColumnX = PlayStationColumnX - 310.f;
 	constexpr float IconScale = 3.0f;
@@ -53,13 +54,21 @@ namespace
 		return sf::IntRect{ { x, y }, { w + 1, h + 1 } };
 	}
 
-	constexpr sf::IntRect FaceButtonA = Sprite(49, 48, 13, 15);
-	constexpr sf::IntRect OptionsButton = Sprite(50, 114, 11, 13);
-	constexpr sf::IntRect DpadLeft = Sprite(130, 99, 11, 7);
-	constexpr sf::IntRect DpadRight = Sprite(146, 99, 11, 7);
-	constexpr sf::IntRect DpadDown = Sprite(148, 82, 7, 11);
-	constexpr sf::IntRect LeftBumper = Sprite(336, 49, 15, 13);
-	constexpr sf::IntRect RightBumper = Sprite(336, 65, 15, 13);
+	// Xbox atlas.
+	constexpr sf::IntRect XFaceButton = Sprite(49, 48, 13, 15);
+	constexpr sf::IntRect XDpadLeft = Sprite(130, 99, 11, 7);
+	constexpr sf::IntRect XDpadRight = Sprite(146, 99, 11, 7);
+	constexpr sf::IntRect XDpadDown = Sprite(148, 82, 7, 11);
+	constexpr sf::IntRect XLeftBumper = Sprite(336, 49, 15, 13);
+	constexpr sf::IntRect XRightBumper = Sprite(336, 65, 15, 13);
+
+	// PlayStation atlas (a different layout, its own coordinates).
+	constexpr sf::IntRect PFaceButton = Sprite(49, 64, 13, 15);
+	constexpr sf::IntRect PDpadLeft = Sprite(370, 198, 12, 10);
+	constexpr sf::IntRect PDpadRight = Sprite(369, 166, 12, 10);
+	constexpr sf::IntRect PDpadDown = Sprite(372, 177, 7, 14);
+	constexpr sf::IntRect PLeftBumper = Sprite(369, 116, 13, 11);
+	constexpr sf::IntRect PRightBumper = Sprite(369, 132, 13, 11);
 
 	const sf::Color LabelIdle{ 206, 213, 224 };
 	const sf::Color LabelHot{ 255, 255, 255 };
@@ -98,22 +107,20 @@ GamepadCategoryPanel::GamepadCategoryPanel(Context& context, sf::Color accent)
 	const LocalizationManager& text = context.localization;
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
-	struct Def { std::string_view key; sf::IntRect sprite; };
-	const std::array<Def, 7> defs{ {
-		{ TextKey::Options::KeyMoveLeft,  DpadLeft },
-		{ TextKey::Options::KeyMoveRight, DpadRight },
-		{ TextKey::Options::KeySoftDrop,  DpadDown },
-		{ TextKey::Options::KeyHardDrop,  FaceButtonA },
-		{ TextKey::Options::KeyRotateCw,  RightBumper },
-		{ TextKey::Options::KeyRotateCcw, LeftBumper },
-		{ TextKey::Options::KeyPause,     OptionsButton } } };
+	struct Def { std::string_view key; sf::IntRect xbox; sf::IntRect playStation; };
+	const std::array<Def, 6> defs{ {
+		{ TextKey::Options::KeyMoveLeft,  XDpadLeft,    PDpadLeft },
+		{ TextKey::Options::KeyMoveRight, XDpadRight,   PDpadRight },
+		{ TextKey::Options::KeySoftDrop,  XDpadDown,    PDpadDown },
+		{ TextKey::Options::KeyHardDrop,  XFaceButton,  PFaceButton },
+		{ TextKey::Options::KeyRotateCw,  XRightBumper, PRightBumper },
+		{ TextKey::Options::KeyRotateCcw, XLeftBumper,  PLeftBumper } } };
 
 	rows.reserve(defs.size());
 	for (const Def& def : defs)
 	{
 		sf::Text label(font, text.GetText(def.key), LabelSize);
-		// PlayStation atlas rects land later, once the real coordinates are known.
-		rows.push_back(Row{ std::move(label), def.sprite, def.sprite, 0.f });
+		rows.push_back(Row{ std::move(label), def.xbox, def.playStation, 0.f });
 	}
 
 	backButton.SetText(text.GetText(TextKey::Options::BackButton));
@@ -126,7 +133,7 @@ void GamepadCategoryPanel::LayOut()
 {
 	for (std::size_t i = 0; i < rows.size(); ++i)
 	{
-		const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
+		const float centreY = RowsTop + static_cast<float>(i) * RowPitch + RowHeight * 0.5f;
 		const sf::FloatRect bounds = rows[i].label.getLocalBounds();
 		rows[i].label.setOrigin({ bounds.position.x, bounds.position.y + bounds.size.y * 0.5f });
 		rows[i].label.setPosition({ LabelX, centreY });
@@ -153,8 +160,9 @@ void GamepadCategoryPanel::LayOut()
 	clampInside(xboxHeader);
 	clampInside(playStationHeader);
 
+	// Same height as the Keyboard panel's Apply/Reset/Back row.
 	backCentre = { panelBounds.position.x + panelBounds.size.x * 0.5f,
-		panelBounds.position.y + panelBounds.size.y - 100.f };
+		panelBounds.position.y + panelBounds.size.y - 86.f };
 	const sf::Vector2f ink = backButton.InkSize();
 	const sf::Vector2f box{ ink.x + BackBoxPadding.x, ink.y + BackBoxPadding.y };
 	backBox = { { backCentre.x - box.x * 0.5f, backCentre.y - box.y * 0.5f }, box };
@@ -251,7 +259,7 @@ bool GamepadCategoryPanel::HandleEvent(const sf::Event& event)
 		const sf::Vector2f point = context.window.mapPixelToCoords(moved->position);
 		for (std::size_t i = 0; i < rows.size(); ++i)
 		{
-			const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
+			const float centreY = RowsTop + static_cast<float>(i) * RowPitch + RowHeight * 0.5f;
 			const sf::FloatRect rowRect{ { panelBounds.position.x + 40.f, centreY - RowHeight * 0.5f },
 				{ panelBounds.size.x - 80.f, RowHeight } };
 			if (rowRect.contains(point))
@@ -328,7 +336,7 @@ void GamepadCategoryPanel::Render(sf::RenderTarget& target)
 	for (std::size_t i = 0; i < rows.size(); ++i)
 	{
 		Row& row = rows[i];
-		const float centreY = RowsTop + static_cast<float>(i) * RowHeight + RowHeight * 0.5f;
+		const float centreY = RowsTop + static_cast<float>(i) * RowPitch + RowHeight * 0.5f;
 		const float hi = row.highlight;
 
 		if (hi > 0.01f)

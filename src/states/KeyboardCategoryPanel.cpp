@@ -17,8 +17,8 @@
 
 namespace
 {
-	constexpr float RowHeight = 78.f;
-	constexpr float RowGap = 8.f;
+	constexpr float RowHeight = ControlsPanel::RowHeight;
+	constexpr float RowGap = ControlsPanel::RowGap;
 
 	constexpr sf::Color FlashAccept{ 90, 220, 130 };   // green
 	constexpr sf::Color FlashInvalid{ 255, 170, 60 };  // amber -- reserved / menu key
