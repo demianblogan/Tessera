@@ -181,6 +181,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\states\CompanySplashState.cpp" />
     <ClCompile Include="src\states\LoadingState.cpp" />
     <ClCompile Include="src\states\MenuShell.cpp" />
+    <ClCompile Include="src\states\ScreenHost.cpp" />
     <ClCompile Include="src\states\MenuScreen.cpp" />
     <ClCompile Include="src\states\MainMenuScreen.cpp" />
     <ClCompile Include="src\states\CreditsScreen.cpp" />
@@ -288,6 +289,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\states\CompanySplashState.h" />
     <ClInclude Include="src\states\LoadingState.h" />
     <ClInclude Include="src\states\MenuShell.h" />
+    <ClInclude Include="src\states\ScreenHost.h" />
     <ClInclude Include="src\states\MenuScreen.h" />
     <ClInclude Include="src\states\MainMenuScreen.h" />
     <ClInclude Include="src\states\CreditsScreen.h" />

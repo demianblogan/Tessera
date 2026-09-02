@@ -20,9 +20,9 @@
 #include "../resources/Assets.h"
 #include "../ui/TetrominoPalette.h"
 #include "CreditsScreen.h"
-#include "MenuShell.h"
 #include "ModeSelectScreen.h"
 #include "OptionsScreen.h"
+#include "ScreenHost.h"
 #include "StatisticsState.h"
 
 namespace
@@ -63,8 +63,8 @@ namespace
 	constexpr float LetterLightbarDuration = 0.22f;
 }
 
-MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t frontEntry)
-	: MenuScreen(shell)
+MainMenuScreen::MainMenuScreen(ScreenHost& host, bool animate, std::size_t frontEntry)
+	: MenuScreen(host)
 	, title(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::MainMenu::Title), TitleCharSize)
 	, titleGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, entryGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -102,7 +102,7 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
 		[this]
 		{
-			this->shell.BeginForward(std::make_unique<ModeSelectScreen>(this->shell, ModeSelectColour),
+			this->host.BeginForward(std::make_unique<ModeSelectScreen>(this->host, ModeSelectColour),
 				context.localization.GetText(TextKey::ModeSelect::Title), ModeSelectColour,
 				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
 		},
@@ -110,18 +110,18 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
 		[this]
 		{
-			this->shell.BeginForward(std::make_unique<OptionsScreen>(this->shell, OptionsColour),
+			this->host.BeginForward(std::make_unique<OptionsScreen>(this->host, OptionsColour),
 				context.localization.GetText(TextKey::Options::Title), OptionsColour,
 				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
 		},
 		true, OptionsColour);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Records),
-		[this] { this->shell.ExitTo(std::make_unique<StatisticsState>(context)); });
+		[this] { this->host.ExitTo(std::make_unique<StatisticsState>(context)); });
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Achievements), nullptr, false);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Credits),
 		[this]
 		{
-			this->shell.BeginForward(std::make_unique<CreditsScreen>(this->shell, CreditsColour),
+			this->host.BeginForward(std::make_unique<CreditsScreen>(this->host, CreditsColour),
 				context.localization.GetText(TextKey::Credits::Title), CreditsColour,
 				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
 		},
@@ -161,12 +161,12 @@ bool MainMenuScreen::ExitFinished() const
 	return exiting && exitTimer >= ExitDuration && title.ExitComplete();
 }
 
-sf::Vector2f MainMenuScreen::FrontEntryCentre() const
+sf::Vector2f MainMenuScreen::HeaderReturnCentre() const
 {
 	return carousel.FrontEntryCentre();
 }
 
-float MainMenuScreen::FrontEntryHeight() const
+float MainMenuScreen::HeaderReturnHeight() const
 {
 	return carousel.FrontEntryHeight();
 }
@@ -203,13 +203,13 @@ void MainMenuScreen::HandleEvent(const sf::Event& event)
 	case MenuInput::Action::Left:
 	case MenuInput::Action::Up:
 		carousel.RotateLeft();
-		shell.Backdrop().Push(1.f);
+		host.OnNavigate(1.f);
 		context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchLow);
 		return;
 	case MenuInput::Action::Right:
 	case MenuInput::Action::Down:
 		carousel.RotateRight();
-		shell.Backdrop().Push(-1.f);
+		host.OnNavigate(-1.f);
 		context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchHigh);
 		return;
 	case MenuInput::Action::Confirm:
@@ -234,11 +234,11 @@ void MainMenuScreen::HandleEvent(const sf::Event& event)
 		switch (carousel.PointerPressed(context.window.mapPixelToCoords(pressed->position)))
 		{
 		case UI::CarouselMenu::PointerHit::RotatedLeft:
-			shell.Backdrop().Push(1.f);
+			host.OnNavigate(1.f);
 			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchLow);
 			break;
 		case UI::CarouselMenu::PointerHit::RotatedRight:
-			shell.Backdrop().Push(-1.f);
+			host.OnNavigate(-1.f);
 			context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, NavPitchHigh);
 			break;
 		case UI::CarouselMenu::PointerHit::Activated:

@@ -31,7 +31,7 @@ namespace sf
 class ModeSelectScreen final : public MenuScreen
 {
 public:
-	ModeSelectScreen(MenuShell& shell, sf::Color accent);
+	ModeSelectScreen(ScreenHost& host, sf::Color accent);
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;

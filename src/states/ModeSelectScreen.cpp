@@ -15,7 +15,7 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "GameplayState.h"
-#include "MenuShell.h"
+#include "ScreenHost.h"
 
 namespace
 {
@@ -58,8 +58,8 @@ namespace
 	}
 }
 
-ModeSelectScreen::ModeSelectScreen(MenuShell& shell, sf::Color accent)
-	: MenuScreen(shell)
+ModeSelectScreen::ModeSelectScreen(ScreenHost& host, sf::Color accent)
+	: MenuScreen(host)
 	, accent(accent)
 	, column(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -166,7 +166,7 @@ void ModeSelectScreen::Leave()
 
 	leaving = true;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	shell.BeginBack();
+	host.BeginBack();
 }
 
 void ModeSelectScreen::StartMarathon()
@@ -178,7 +178,7 @@ void ModeSelectScreen::StartMarathon()
 
 	leaving = true;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 1.05f);
-	shell.ExitTo(std::make_unique<GameplayState>(context));
+	host.ExitTo(std::make_unique<GameplayState>(context));
 }
 
 void ModeSelectScreen::OpenSub(std::size_t mainRow)

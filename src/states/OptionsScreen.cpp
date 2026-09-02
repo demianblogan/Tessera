@@ -18,7 +18,7 @@
 #include "GamepadCategoryPanel.h"
 #include "GraphicsCategoryPanel.h"
 #include "KeyboardCategoryPanel.h"
-#include "MenuShell.h"
+#include "ScreenHost.h"
 
 namespace
 {
@@ -75,8 +75,8 @@ namespace
 	}
 }
 
-OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
-	: MenuScreen(shell)
+OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
+	: MenuScreen(host)
 	, accent(accent)
 	, column(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
@@ -201,7 +201,7 @@ void OptionsScreen::Leave()
 
 	leaving = true;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	shell.BeginBack();
+	host.BeginBack();
 }
 
 void OptionsScreen::OpenCategory(std::size_t index)

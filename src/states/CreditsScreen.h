@@ -24,7 +24,7 @@ namespace sf
 class CreditsScreen final : public MenuScreen
 {
 public:
-	CreditsScreen(MenuShell& shell, sf::Color accent);
+	CreditsScreen(ScreenHost& host, sf::Color accent);
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
