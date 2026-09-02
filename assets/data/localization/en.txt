@@ -41,6 +41,10 @@ options.key_soft_drop   = Move Piece Down
 options.key_hard_drop   = Drop Piece
 options.key_rotate_cw   = Rotate Piece Right
 options.key_rotate_ccw  = Rotate Piece Left
+options.key_pause       = Pause
+
+options.gamepad_xbox        = XBOX
+options.gamepad_playstation = PlayStation
 
 options.resolution      = Screen Resolution:
 options.window_mode     = Window Mode:

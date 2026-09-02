@@ -25,18 +25,17 @@ namespace
 	// How far a d-pad / stick has to move to count as a discrete direction.
 	constexpr float DirectionThreshold = 55.f;
 
-	// How far an analog trigger has to be pulled to count as pressed.
-	constexpr float TriggerThreshold = 40.f;
-
 	// The bottom face button: A on an Xbox pad (button 0), Cross on a
 	// DualShock / DualSense (button 1 -- button 0 there is Square). SFML
 	// exposes raw indices whose meaning depends on the controller.
 	constexpr unsigned int XboxHardDropButton = 0u;
 	constexpr unsigned int PlayStationHardDropButton = 1u;
 
-	// The analog triggers on a DualShock / DualSense also show up as buttons 6 / 7.
-	constexpr unsigned int PlayStationLeftTriggerButton = 6u;
-	constexpr unsigned int PlayStationRightTriggerButton = 7u;
+	// Shoulder buttons -- LB / RB (Xbox) and L1 / R1 (PlayStation) share these
+	// raw indices. Rotation is on the bumpers, not the triggers: a bumper is a
+	// crisp digital click, so the rotate feels immediate.
+	constexpr unsigned int LeftBumperButton = 4u;
+	constexpr unsigned int RightBumperButton = 5u;
 }
 
 namespace
@@ -98,13 +97,13 @@ void GamepadManager::Update()
 	hardDropEdge = hardDropDown && !wasHardDropDown;
 	wasHardDropDown = hardDropDown;
 
-	const bool rightTriggerDown = IsTriggerDown(true);
-	rotateClockwiseEdge = rightTriggerDown && !wasRightTriggerDown;
-	wasRightTriggerDown = rightTriggerDown;
+	const bool rightBumperDown = IsButtonPressed(RightBumperButton);
+	rotateClockwiseEdge = rightBumperDown && !wasRightBumperDown;
+	wasRightBumperDown = rightBumperDown;
 
-	const bool leftTriggerDown = IsTriggerDown(false);
-	rotateCounterClockwiseEdge = leftTriggerDown && !wasLeftTriggerDown;
-	wasLeftTriggerDown = leftTriggerDown;
+	const bool leftBumperDown = IsButtonPressed(LeftBumperButton);
+	rotateCounterClockwiseEdge = leftBumperDown && !wasLeftBumperDown;
+	wasLeftBumperDown = leftBumperDown;
 }
 
 GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::Event& event) const
@@ -285,22 +284,4 @@ float GamepadManager::ReadAxis(sf::Joystick::Axis axis) const
 
 	const float position = sf::Joystick::getAxisPosition(*activeJoystick, axis);
 	return std::abs(position) <= StickDeadZone ? 0.f : position;
-}
-
-bool GamepadManager::IsTriggerDown(bool rightTrigger) const
-{
-	if (layout == Layout::PlayStation)
-	{
-		return IsButtonPressed(rightTrigger ? PlayStationRightTriggerButton : PlayStationLeftTriggerButton);
-	}
-
-	// Xbox / generic: both triggers share the Z axis, resting at 0 -- the right
-	// trigger pulls it negative, the left positive.
-	if (!activeJoystick.has_value() || !sf::Joystick::hasAxis(*activeJoystick, sf::Joystick::Axis::Z))
-	{
-		return false;
-	}
-
-	const float z = sf::Joystick::getAxisPosition(*activeJoystick, sf::Joystick::Axis::Z);
-	return rightTrigger ? (z < -TriggerThreshold) : (z > TriggerThreshold);
 }

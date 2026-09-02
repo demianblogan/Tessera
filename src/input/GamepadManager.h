@@ -54,8 +54,7 @@ public:
 	void HandleEvent(const sf::Event& event);
 
 	// Poll once per frame, before states read the gameplay queries below --
-	// computes the trigger press edges (triggers are analog axes, so an edge
-	// can only be found by comparing frames).
+	// computes the button press edges by comparing frames.
 	void Update();
 
 	// --- Menus (edge-triggered, from one event) ---
@@ -66,8 +65,8 @@ public:
 	[[nodiscard]] int GetHorizontalDirection() const;   // -1 / 0 / +1  (d-pad X or left stick X)
 	[[nodiscard]] bool IsSoftDropHeld() const;           // d-pad down or left stick down
 	[[nodiscard]] bool WasHardDropPressed() const noexcept;          // A / Cross, this frame
-	[[nodiscard]] bool WasRotateClockwisePressed() const noexcept;   // right trigger, this frame
-	[[nodiscard]] bool WasRotateCounterClockwisePressed() const noexcept; // left trigger, this frame
+	[[nodiscard]] bool WasRotateClockwisePressed() const noexcept;   // right bumper, this frame
+	[[nodiscard]] bool WasRotateCounterClockwisePressed() const noexcept; // left bumper, this frame
 
 	[[nodiscard]] bool IsConnected() const noexcept;
 	[[nodiscard]] bool IsInUse() const noexcept;
@@ -79,7 +78,6 @@ private:
 	[[nodiscard]] bool IsButtonPressed(unsigned int button) const;
 	[[nodiscard]] bool IsButtonInEvent(const sf::Event& event, unsigned int button) const;
 	[[nodiscard]] float ReadAxis(sf::Joystick::Axis axis) const;
-	[[nodiscard]] bool IsTriggerDown(bool rightTrigger) const;
 
 	[[nodiscard]] NavigationAction ComputeNavigationAction(const sf::Event& event) const;
 
@@ -91,8 +89,8 @@ private:
 	const HapticSettings* hapticSettings = nullptr;
 
 	bool wasHardDropDown = false;
-	bool wasRightTriggerDown = false;
-	bool wasLeftTriggerDown = false;
+	bool wasRightBumperDown = false;
+	bool wasLeftBumperDown = false;
 	bool hardDropEdge = false;
 	bool rotateClockwiseEdge = false;
 	bool rotateCounterClockwiseEdge = false;

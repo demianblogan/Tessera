@@ -45,7 +45,9 @@ namespace Assets
 		UiArrow,
 		UiFrame,
 		CarouselArrow,
-		Checkbox
+		Checkbox,
+		XboxGamepadLayout,
+		PlayStationGamepadLayout
 	};
 
 	enum class ShaderID
@@ -115,6 +117,10 @@ namespace Assets
 			// Settings widgets.
 			inline constexpr const char* CarouselArrow = "assets/textures/ui/carusel_arrow.png";
 			inline constexpr const char* Checkbox = "assets/textures/ui/checkbox.png";   // two 26x26 sprites at x=0 and x=28
+
+			// Button-prompt atlases for the read-only Controls > Gamepad table.
+			inline constexpr const char* XboxGamepadLayout = "assets/textures/ui/xbox_gamepad_layout.png";
+			inline constexpr const char* PlayStationGamepadLayout = "assets/textures/ui/ps_gamepad_layout.png";
 		}
 
 		namespace Data

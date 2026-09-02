@@ -13,6 +13,7 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "AudioCategoryPanel.h"
+#include "GamepadCategoryPanel.h"
 #include "GraphicsCategoryPanel.h"
 #include "KeyboardCategoryPanel.h"
 #include "MenuShell.h"
@@ -81,8 +82,8 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 			context.audioPlayer.Play(Assets::SoundID::MenuItemAppeared, 1.02f + 0.05f * static_cast<float>(index));
 		});
 
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenKeyboard(); }, true, ControlsColour);
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsGamepad), nullptr, false);
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenControlsItem(CtrlKeyboard); }, true, ControlsColour);
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsGamepad), [this] { OpenControlsItem(CtrlGamepad); }, true, ControlsColour);
 	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseControls(); }, true, ControlsColour);
 	controlsColumn.SetLayout(ColumnTopLeft, ControlsRowGap);
 	controlsColumn.SetSelectionChangedCallback([this](std::size_t)
@@ -93,7 +94,8 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 
 	panels[Row::Graphics] = std::make_unique<GraphicsCategoryPanel>(context, GraphicsColour);
 	panels[Row::Audio] = std::make_unique<AudioCategoryPanel>(context, AudioColour);
-	keyboardPanel = std::make_unique<KeyboardCategoryPanel>(context, ControlsColour);
+	controlsPanels[CtrlKeyboard] = std::make_unique<KeyboardCategoryPanel>(context, ControlsColour);
+	controlsPanels[CtrlGamepad] = std::make_unique<GamepadCategoryPanel>(context, ControlsColour);
 
 	previewIndex = Row::Graphics;   // the column starts focused on the first enabled row
 
@@ -167,7 +169,7 @@ void OptionsScreen::OpenControls()
 
 void OptionsScreen::CloseControls()
 {
-	if (page != Page::Controls || keyboardOpen)
+	if (page != Page::Controls || openControlsItem)
 	{
 		return;
 	}
@@ -177,28 +179,28 @@ void OptionsScreen::CloseControls()
 	context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
 }
 
-void OptionsScreen::OpenKeyboard()
+void OptionsScreen::OpenControlsItem(std::size_t item)
 {
-	if (page != Page::Controls || keyboardOpen || !keyboardPanel)
+	if (page != Page::Controls || openControlsItem || item >= controlsPanels.size() || !controlsPanels[item])
 	{
 		return;
 	}
 
-	keyboardOpen = true;
-	controlsColumn.SetCompact(true, 0);
-	keyboardPanel->Open();
+	openControlsItem = item;
+	controlsColumn.SetCompact(true, item);
+	controlsPanels[item]->Open();
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 1.05f);
 }
 
-void OptionsScreen::CloseKeyboard()
+void OptionsScreen::CloseControlsItem()
 {
-	if (!keyboardOpen)
+	if (!openControlsItem)
 	{
 		return;
 	}
 
-	keyboardPanel->Close();
-	keyboardOpen = false;
+	controlsPanels[*openControlsItem]->Close();
+	openControlsItem.reset();
 	controlsColumn.SetCompact(false, 0);
 	context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
 }
@@ -263,16 +265,16 @@ void OptionsScreen::HandleEvent(const sf::Event& event)
 
 	if (page == Page::Controls)
 	{
-		if (keyboardOpen)
+		if (openControlsItem)
 		{
-			OptionsCategoryPanel& panel = *keyboardPanel;
+			OptionsCategoryPanel& panel = *controlsPanels[*openControlsItem];
 			if (panel.HandleEvent(event))
 			{
 				return;
 			}
 			if (MenuInput::Resolve(event, context.gamepad) == MenuInput::Action::Back && !panel.WantsToStayOpen())
 			{
-				CloseKeyboard();
+				CloseControlsItem();
 			}
 			return;
 		}
@@ -390,24 +392,30 @@ void OptionsScreen::Update(float deltaTime)
 		CloseCategory();
 	}
 
-	if (keyboardPanel)
+	for (std::size_t i = 0; i < controlsPanels.size(); ++i)
 	{
-		OptionsCategoryPanel::Visibility keyboardVisibility = OptionsCategoryPanel::Visibility::Hidden;
-		if (keyboardOpen)
+		if (!controlsPanels[i])
 		{
-			keyboardVisibility = OptionsCategoryPanel::Visibility::Open;
-		}
-		else if (page == Page::Controls && controlsColumn.SelectedIndex() == CtrlKeyboard)
-		{
-			keyboardVisibility = OptionsCategoryPanel::Visibility::Preview;
+			continue;
 		}
 
-		keyboardPanel->SetVisibility(keyboardVisibility, 1.f);
-		keyboardPanel->Update(deltaTime);
-		if (keyboardOpen && keyboardPanel->WantsToClose())
+		OptionsCategoryPanel::Visibility visibility = OptionsCategoryPanel::Visibility::Hidden;
+		if (openControlsItem && *openControlsItem == i)
 		{
-			CloseKeyboard();
+			visibility = OptionsCategoryPanel::Visibility::Open;
 		}
+		else if (page == Page::Controls && !openControlsItem && controlsColumn.SelectedIndex() == i)
+		{
+			visibility = OptionsCategoryPanel::Visibility::Preview;
+		}
+
+		controlsPanels[i]->SetVisibility(visibility, previewFade);
+		controlsPanels[i]->Update(deltaTime);
+	}
+
+	if (openControlsItem && controlsPanels[*openControlsItem]->WantsToClose())
+	{
+		CloseControlsItem();
 	}
 }
 
@@ -429,8 +437,11 @@ void OptionsScreen::Render(sf::RenderTarget& target)
 		}
 	}
 
-	if (keyboardPanel)
+	for (const std::unique_ptr<OptionsCategoryPanel>& panel : controlsPanels)
 	{
-		keyboardPanel->Render(target);
+		if (panel)
+		{
+			panel->Render(target);
+		}
 	}
 }

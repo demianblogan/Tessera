@@ -253,6 +253,10 @@ Application::Application()
 	textures.Load(Assets::TextureID::UiFrame, TexturePaths::UiFrame);
 	textures.Load(Assets::TextureID::CarouselArrow, TexturePaths::CarouselArrow);
 	textures.Load(Assets::TextureID::Checkbox, TexturePaths::Checkbox);
+	textures.Load(Assets::TextureID::XboxGamepadLayout, TexturePaths::XboxGamepadLayout);
+	textures.Load(Assets::TextureID::PlayStationGamepadLayout, TexturePaths::PlayStationGamepadLayout);
+	textures.Get(Assets::TextureID::XboxGamepadLayout).setSmooth(true);
+	textures.Get(Assets::TextureID::PlayStationGamepadLayout).setSmooth(true);
 
 	namespace ShaderPaths = Assets::Paths::Shaders;
 	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);

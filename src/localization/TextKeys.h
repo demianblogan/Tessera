@@ -58,6 +58,10 @@ namespace TextKey
 		inline constexpr std::string_view KeyHardDrop  = "options.key_hard_drop";
 		inline constexpr std::string_view KeyRotateCw  = "options.key_rotate_cw";
 		inline constexpr std::string_view KeyRotateCcw = "options.key_rotate_ccw";
+		inline constexpr std::string_view KeyPause     = "options.key_pause";
+
+		inline constexpr std::string_view GamepadXbox        = "options.gamepad_xbox";
+		inline constexpr std::string_view GamepadPlayStation = "options.gamepad_playstation";
 
 		inline constexpr std::string_view Resolution     = "options.resolution";
 		inline constexpr std::string_view WindowMode     = "options.window_mode";

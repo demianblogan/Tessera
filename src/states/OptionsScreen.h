@@ -53,8 +53,8 @@ private:
 	void CloseCategory();
 	void OpenControls();
 	void CloseControls();
-	void OpenKeyboard();
-	void CloseKeyboard();
+	void OpenControlsItem(std::size_t item);
+	void CloseControlsItem();
 
 	void ApplyColumnShifts();
 	[[nodiscard]] bool CategoriesInteractive() const { return page == Page::Categories; }
@@ -64,9 +64,9 @@ private:
 	UI::MenuButtonColumn controlsColumn;
 
 	std::array<std::unique_ptr<OptionsCategoryPanel>, RowCount> panels{};
-	std::unique_ptr<OptionsCategoryPanel> keyboardPanel;
+	std::array<std::unique_ptr<OptionsCategoryPanel>, 2> controlsPanels{};   // 0 = Keyboard, 1 = Gamepad
 	std::optional<std::size_t> openIndex;
-	bool keyboardOpen = false;
+	std::optional<std::size_t> openControlsItem;
 	std::size_t previewIndex = 0;
 	float previewFade = 0.f;
 
