@@ -23,16 +23,17 @@
 
         "_menu_note": "DualSense resting colour per main-menu ring entry. Falls back to the on-screen hue if a key is missing.",
         "menu_start_game":   [0, 240, 240],
-        "menu_options":      [240, 60, 70],
-        "menu_records":      [180, 60, 240],
+        "menu_options":      [255, 0, 60],
+        "menu_records":      [162, 0, 255],
         "menu_achievements": [146, 150, 158],
-        "menu_credits":      [255, 194, 92],
-        "menu_quit":         [70, 110, 240],
+        "menu_credits":      [255, 162, 0],
+        "menu_quit":         [62, 65, 255],
 
         "_options_note": "DualSense resting colour per Options category while it is focused.",
-        "options_graphics":  [90, 200, 255],
-        "options_audio":     [120, 220, 130],
-        "options_controls":  [190, 130, 240]
+        "options_graphics":  [98, 194, 249],
+        "options_audio":     [74, 246, 125],
+        "options_controls":  [190, 130, 240],
+        "options_language":  [235, 110, 175]
     },
 
     "feel": {

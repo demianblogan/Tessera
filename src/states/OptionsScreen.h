@@ -25,10 +25,10 @@ namespace sf
 // shrinks and dims around the open entry. The "OPTIONS" header above it is the
 // shell's, morphed from the menu entry.
 //
-// Graphics and Audio open settings panels in place. Controls is its own page:
-// hovering it shows a dimmed flyout of Keyboard / Gamepad / Back to its right,
-// and activating it slides the category column off to the left while that
-// three-button column slides into its place. Gameplay and Language are disabled.
+// Graphics and Audio open settings panels in place. Controls and Language are
+// each their own sub-page: hovering one shows a dimmed flyout of its list to the
+// right, and activating it slides the category column off to the left while that
+// list slides into its place. Gameplay stays disabled.
 class OptionsScreen final : public MenuScreen
 {
 public:
@@ -47,26 +47,29 @@ public:
 private:
 	static constexpr std::size_t RowCount = 6;
 
-	// Which column has the focus, and the horizontal slide between them.
-	enum class Page { Categories, ToControls, Controls, ToCategories };
+	// The category column, or one of the sub-lists, and the slide between them.
+	enum class Page { Categories, ToSub, Sub, ToCategories };
 
 	void Leave();
 	void OpenCategory(std::size_t index);
 	void CloseCategory();
-	void OpenControls();
-	void CloseControls();
+	void OpenSub(std::size_t categoryRow);   // categoryRow == Controls or Language
+	void CloseSub();
 	void OpenControlsItem(std::size_t item);
 	void CloseControlsItem();
+
+	[[nodiscard]] UI::MenuButtonColumn& SubColumnFor(std::size_t categoryRow);
+	[[nodiscard]] UI::MenuButtonColumn& ActiveSubColumn() { return SubColumnFor(subRow); }
 
 	// The haptics.json key and on-screen fallback colour for whatever is focused.
 	[[nodiscard]] std::pair<std::string_view, sf::Color> CurrentLightbar() const;
 
 	void ApplyColumnShifts();
-	[[nodiscard]] bool CategoriesInteractive() const { return page == Page::Categories; }
 
 	sf::Color accent;
 	UI::MenuButtonColumn column;
 	UI::MenuButtonColumn controlsColumn;
+	UI::MenuButtonColumn languageColumn;
 
 	std::array<std::unique_ptr<OptionsCategoryPanel>, RowCount> panels{};
 	std::array<std::unique_ptr<OptionsCategoryPanel>, 2> controlsPanels{};   // 0 = Keyboard, 1 = Gamepad
@@ -76,7 +79,8 @@ private:
 	float previewFade = 0.f;
 
 	Page page = Page::Categories;
-	float pageT = 0.f;   // 0..1 progress through a slide
+	std::size_t subRow = 0;   // which category row (Controls / Language) the sub-page belongs to
+	float pageT = 0.f;        // 0..1 progress through a slide
 
 	bool leaving = false;
 };

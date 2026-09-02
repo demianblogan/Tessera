@@ -25,8 +25,9 @@ namespace
 	constexpr sf::Vector2f ColumnTopLeft{ 130.f, 300.f };
 	constexpr float RowGap = 120.f;
 
-	constexpr float ControlsRowGap = 96.f;   // tighter spacing for the 3-button column
-	constexpr sf::Vector2f FlyoutTopLeft{ 470.f, 564.f };
+	constexpr float SubRowGap = 96.f;    // tighter spacing for a sub-list column
+	constexpr float FlyoutX = 470.f;     // the sub-list's x while it is a hover flyout
+	constexpr float FlyoutRise = 96.f;   // how far above the hovered row the flyout sits
 	constexpr float FlyoutDim = 0.42f;
 
 	constexpr float PreviewFadeDuration = 0.18f;
@@ -42,6 +43,7 @@ namespace
 	constexpr sf::Color GraphicsColour{ 90, 200, 255 };    // sky blue
 	constexpr sf::Color AudioColour{ 120, 220, 130 };      // green
 	constexpr sf::Color ControlsColour{ 190, 130, 240 };   // violet
+	constexpr sf::Color LanguageColour{ 235, 110, 175 };   // rose
 
 	[[nodiscard]] float SmoothStep(float t) noexcept
 	{
@@ -53,6 +55,13 @@ namespace
 	{
 		return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
 	}
+
+	// The render shift that places a sub-list as a flyout beside `categoryRow`.
+	[[nodiscard]] sf::Vector2f FlyoutShift(std::size_t categoryRow) noexcept
+	{
+		return { FlyoutX - ColumnTopLeft.x,
+			static_cast<float>(categoryRow) * RowGap - FlyoutRise };
+	}
 }
 
 OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
@@ -62,14 +71,16 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, controlsColumn(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, languageColumn(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
+		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	const LocalizationManager& text = context.localization;
 
 	column.AddButton(text.GetText(TextKey::Options::Gameplay), nullptr, false);
 	column.AddButton(text.GetText(TextKey::Options::Graphics), [this] { OpenCategory(Row::Graphics); }, true, GraphicsColour);
 	column.AddButton(text.GetText(TextKey::Options::Audio), [this] { OpenCategory(Row::Audio); }, true, AudioColour);
-	column.AddButton(text.GetText(TextKey::Options::Controls), [this] { OpenControls(); }, true, ControlsColour);
-	column.AddButton(text.GetText(TextKey::Options::Language), nullptr, false);
+	column.AddButton(text.GetText(TextKey::Options::Controls), [this] { OpenSub(Row::Controls); }, true, ControlsColour);
+	column.AddButton(text.GetText(TextKey::Options::Language), [this] { OpenSub(Row::Language); }, true, LanguageColour);
 	column.AddButton(text.GetText(TextKey::Options::Back), [this] { Leave(); }, true);   // white
 
 	column.SetLayout(ColumnTopLeft, RowGap);
@@ -83,15 +94,29 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 			context.audioPlayer.Play(Assets::SoundID::MenuItemAppeared, 1.02f + 0.05f * static_cast<float>(index));
 		});
 
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenControlsItem(CtrlKeyboard); }, true, ControlsColour);
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsGamepad), [this] { OpenControlsItem(CtrlGamepad); }, true, ControlsColour);
-	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseControls(); }, true);   // plain white, like "Back to Main Menu"
-	controlsColumn.SetLayout(ColumnTopLeft, ControlsRowGap);
-	controlsColumn.SetSelectionChangedCallback([this](std::size_t)
+	const auto subSelectionSound = [this](std::size_t)
 		{
 			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
-		});
+		};
+
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenControlsItem(CtrlKeyboard); }, true, ControlsColour);
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsGamepad), [this] { OpenControlsItem(CtrlGamepad); }, true, ControlsColour);
+	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseSub(); }, true);   // plain white
+	controlsColumn.SetLayout(ColumnTopLeft, SubRowGap);
+	controlsColumn.SetSelectionChangedCallback(subSelectionSound);
 	controlsColumn.AppearInstantly();
+
+	// Language: only English is live for now; localisation lands in a later version.
+	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageEnglish),
+		[this] { context.audioPlayer.Play(Assets::SoundID::MenuItemPressed); }, true, LanguageColour);
+	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageSpanish), nullptr, false);
+	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageGerman), nullptr, false);
+	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageRussian), nullptr, false);
+	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageUkrainian), nullptr, false);
+	languageColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseSub(); }, true);   // plain white
+	languageColumn.SetLayout(ColumnTopLeft, SubRowGap);
+	languageColumn.SetSelectionChangedCallback(subSelectionSound);
+	languageColumn.AppearInstantly();
 
 	panels[Row::Graphics] = std::make_unique<GraphicsCategoryPanel>(context, GraphicsColour);
 	panels[Row::Audio] = std::make_unique<AudioCategoryPanel>(context, AudioColour);
@@ -101,6 +126,11 @@ OptionsScreen::OptionsScreen(MenuShell& shell, sf::Color accent)
 	previewIndex = Row::Graphics;   // the column starts focused on the first enabled row
 
 	ApplyColumnShifts();
+}
+
+UI::MenuButtonColumn& OptionsScreen::SubColumnFor(std::size_t categoryRow)
+{
+	return categoryRow == Row::Language ? languageColumn : controlsColumn;
 }
 
 void OptionsScreen::PlayIntro()
@@ -125,7 +155,9 @@ std::pair<std::string_view, sf::Color> OptionsScreen::CurrentLightbar() const
 
 	if (page != Page::Categories)
 	{
-		return { "options_controls", ControlsColour };
+		return subRow == Row::Language
+			? std::pair<std::string_view, sf::Color>{ "options_language", LanguageColour }
+			: std::pair<std::string_view, sf::Color>{ "options_controls", ControlsColour };
 	}
 
 	switch (column.SelectedIndex())
@@ -133,6 +165,7 @@ std::pair<std::string_view, sf::Color> OptionsScreen::CurrentLightbar() const
 	case Row::Graphics: return { "options_graphics", GraphicsColour };
 	case Row::Audio:    return { "options_audio", AudioColour };
 	case Row::Controls: return { "options_controls", ControlsColour };
+	case Row::Language: return { "options_language", LanguageColour };
 	default:            return { "menu_options", accent };
 	}
 }
@@ -183,21 +216,22 @@ void OptionsScreen::CloseCategory()
 	context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, 0.78f);
 }
 
-void OptionsScreen::OpenControls()
+void OptionsScreen::OpenSub(std::size_t categoryRow)
 {
 	if (page != Page::Categories)
 	{
 		return;
 	}
 
-	page = Page::ToControls;
+	subRow = categoryRow;
+	page = Page::ToSub;
 	pageT = 0.f;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 1.05f);
 }
 
-void OptionsScreen::CloseControls()
+void OptionsScreen::CloseSub()
 {
-	if (page != Page::Controls || openControlsItem)
+	if (page != Page::Sub || openControlsItem)
 	{
 		return;
 	}
@@ -209,7 +243,8 @@ void OptionsScreen::CloseControls()
 
 void OptionsScreen::OpenControlsItem(std::size_t item)
 {
-	if (page != Page::Controls || openControlsItem || item >= controlsPanels.size() || !controlsPanels[item])
+	if (page != Page::Sub || subRow != Row::Controls || openControlsItem
+		|| item >= controlsPanels.size() || !controlsPanels[item])
 	{
 		return;
 	}
@@ -235,48 +270,40 @@ void OptionsScreen::CloseControlsItem()
 
 void OptionsScreen::ApplyColumnShifts()
 {
-	const bool hoveringControls = column.SelectedIndex() == Row::Controls;
-	const sf::Vector2f flyoutShift = FlyoutTopLeft - ColumnTopLeft;
-
-	sf::Vector2f categoryShift{ 0.f, 0.f };
-	sf::Vector2f controlsShift = flyoutShift;
-	float controlsDim = FlyoutDim;
-
+	float slide = 0.f;   // 0 = category column fully in, 1 = the sub-list fully in
 	switch (page)
 	{
-	case Page::Categories:
-		controlsDim = hoveringControls ? FlyoutDim : 0.f;
-		break;
-	case Page::ToControls:
-	{
-		const float e = SmoothStep(pageT);
-		categoryShift = { ColumnExitShiftX * e, 0.f };
-		controlsShift = Lerp(flyoutShift, { 0.f, 0.f }, e);
-		controlsDim = FlyoutDim + (1.f - FlyoutDim) * e;
-		break;
-	}
-	case Page::Controls:
-		categoryShift = { ColumnExitShiftX, 0.f };
-		controlsShift = { 0.f, 0.f };
-		controlsDim = 1.f;
-		break;
-	case Page::ToCategories:
-	{
-		const float e = SmoothStep(pageT);
-		categoryShift = { ColumnExitShiftX * (1.f - e), 0.f };
-		controlsShift = Lerp({ 0.f, 0.f }, flyoutShift, e);
-		controlsDim = 1.f - (1.f - FlyoutDim) * e;
-		break;
-	}
+	case Page::Categories:   slide = 0.f; break;
+	case Page::ToSub:        slide = SmoothStep(pageT); break;
+	case Page::Sub:          slide = 1.f; break;
+	case Page::ToCategories: slide = 1.f - SmoothStep(pageT); break;
 	}
 
-	column.SetRenderShift(categoryShift);
-	controlsColumn.SetRenderShift(controlsShift);
-	controlsColumn.SetRenderDim(controlsDim);
+	column.SetRenderShift({ ColumnExitShiftX * slide, 0.f });
 
-	// Nothing in the Controls column looks focused until it is the live page --
-	// as a hover flyout or mid-slide it is just a preview.
-	controlsColumn.SetSelectionHighlight(page == Page::Controls || page == Page::ToControls);
+	const bool onCategories = page == Page::Categories;
+	const auto configure = [&](UI::MenuButtonColumn& sub, std::size_t categoryRow)
+	{
+		const sf::Vector2f flyout = FlyoutShift(categoryRow);
+		const bool isActive = !onCategories && subRow == categoryRow;
+		const bool isFlyout = onCategories && column.SelectedIndex() == categoryRow;
+
+		if (isActive)
+		{
+			sub.SetRenderShift(Lerp(flyout, { 0.f, 0.f }, slide));
+			sub.SetRenderDim(FlyoutDim + (1.f - FlyoutDim) * slide);
+		}
+		else
+		{
+			sub.SetRenderShift(flyout);
+			sub.SetRenderDim(isFlyout ? FlyoutDim : 0.f);
+		}
+
+		// Focused look only once it is the live page, not as a flyout / mid-slide.
+		sub.SetSelectionHighlight(isActive && (page == Page::Sub || page == Page::ToSub));
+	};
+	configure(controlsColumn, Row::Controls);
+	configure(languageColumn, Row::Language);
 }
 
 void OptionsScreen::HandleEvent(const sf::Event& event)
@@ -286,12 +313,12 @@ void OptionsScreen::HandleEvent(const sf::Event& event)
 		return;
 	}
 
-	if (page == Page::ToControls || page == Page::ToCategories)
+	if (page == Page::ToSub || page == Page::ToCategories)
 	{
 		return;   // no input mid-slide
 	}
 
-	if (page == Page::Controls)
+	if (page == Page::Sub)
 	{
 		if (openControlsItem)
 		{
@@ -307,24 +334,25 @@ void OptionsScreen::HandleEvent(const sf::Event& event)
 			return;
 		}
 
+		UI::MenuButtonColumn& sub = ActiveSubColumn();
 		switch (MenuInput::Resolve(event, context.gamepad))
 		{
-		case MenuInput::Action::Up:      controlsColumn.SelectPrevious(); return;
-		case MenuInput::Action::Down:    controlsColumn.SelectNext();     return;
-		case MenuInput::Action::Confirm: controlsColumn.Activate();       return;
-		case MenuInput::Action::Back:    CloseControls();                 return;
-		default:                                                          break;
+		case MenuInput::Action::Up:      sub.SelectPrevious(); return;
+		case MenuInput::Action::Down:    sub.SelectNext();     return;
+		case MenuInput::Action::Confirm: sub.Activate();       return;
+		case MenuInput::Action::Back:    CloseSub();           return;
+		default:                                               break;
 		}
 
 		if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 		{
-			controlsColumn.PointerMoved(context.window.mapPixelToCoords(moved->position));
+			sub.PointerMoved(context.window.mapPixelToCoords(moved->position));
 		}
 		else if (const auto* clicked = event.getIf<sf::Event::MouseButtonPressed>())
 		{
 			if (clicked->button == sf::Mouse::Button::Left)
 			{
-				controlsColumn.PointerPressed(context.window.mapPixelToCoords(clicked->position));
+				sub.PointerPressed(context.window.mapPixelToCoords(clicked->position));
 			}
 		}
 		return;
@@ -371,14 +399,15 @@ void OptionsScreen::Update(float deltaTime)
 {
 	column.Update(deltaTime);
 	controlsColumn.Update(deltaTime);
+	languageColumn.Update(deltaTime);
 
-	if (page == Page::ToControls || page == Page::ToCategories)
+	if (page == Page::ToSub || page == Page::ToCategories)
 	{
 		pageT += deltaTime / SlideDuration;
 		if (pageT >= 1.f)
 		{
 			pageT = 0.f;
-			page = (page == Page::ToControls) ? Page::Controls : Page::Categories;
+			page = (page == Page::ToSub) ? Page::Sub : Page::Categories;
 		}
 	}
 
@@ -420,6 +449,7 @@ void OptionsScreen::Update(float deltaTime)
 		CloseCategory();
 	}
 
+	const bool controlsLive = page == Page::Sub && subRow == Row::Controls;
 	for (std::size_t i = 0; i < controlsPanels.size(); ++i)
 	{
 		if (!controlsPanels[i])
@@ -432,7 +462,7 @@ void OptionsScreen::Update(float deltaTime)
 		{
 			visibility = OptionsCategoryPanel::Visibility::Open;
 		}
-		else if (page == Page::Controls && !openControlsItem && controlsColumn.SelectedIndex() == i)
+		else if (controlsLive && !openControlsItem && controlsColumn.SelectedIndex() == i)
 		{
 			visibility = OptionsCategoryPanel::Visibility::Preview;
 		}
@@ -451,11 +481,17 @@ void OptionsScreen::Render(sf::RenderTarget& target)
 {
 	column.Render(target);
 
-	const bool showControls = page != Page::Categories || column.SelectedIndex() == Row::Controls;
-	if (showControls)
+	const auto renderSub = [&](UI::MenuButtonColumn& sub, std::size_t categoryRow)
 	{
-		controlsColumn.Render(target);
-	}
+		const bool asPage = page != Page::Categories && subRow == categoryRow;
+		const bool asFlyout = page == Page::Categories && column.SelectedIndex() == categoryRow;
+		if (asPage || asFlyout)
+		{
+			sub.Render(target);
+		}
+	};
+	renderSub(controlsColumn, Row::Controls);
+	renderSub(languageColumn, Row::Language);
 
 	for (const std::unique_ptr<OptionsCategoryPanel>& panel : panels)
 	{
