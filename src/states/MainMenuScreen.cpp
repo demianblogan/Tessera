@@ -20,8 +20,8 @@
 #include "../resources/Assets.h"
 #include "../ui/TetrominoPalette.h"
 #include "CreditsScreen.h"
-#include "GameplayState.h"
 #include "MenuShell.h"
+#include "ModeSelectScreen.h"
 #include "OptionsScreen.h"
 #include "StatisticsState.h"
 
@@ -49,6 +49,7 @@ namespace
 
 	// A couple of ring entries pin their own hue rather than taking the
 	// per-slot tetromino colour.
+	constexpr sf::Color ModeSelectColour{ 80, 200, 140 };   // emerald
 	constexpr sf::Color OptionsColour{ 240, 60, 70 };    // red
 	constexpr sf::Color CreditsColour{ 255, 194, 92 };   // warm gold
 
@@ -99,7 +100,13 @@ MainMenuScreen::MainMenuScreen(MenuShell& shell, bool animate, std::size_t front
 	// Ring order; Achievements is still a disabled placeholder.
 	carousel.SetCenter(TitleCenter);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::StartGame),
-		[this] { this->shell.ExitTo(std::make_unique<GameplayState>(context)); });
+		[this]
+		{
+			this->shell.BeginForward(std::make_unique<ModeSelectScreen>(this->shell, ModeSelectColour),
+				context.localization.GetText(TextKey::ModeSelect::Title), ModeSelectColour,
+				carousel.FrontEntryCentre(), carousel.FrontEntryHeight(), carousel.CurrentFrontIndex());
+		},
+		true, ModeSelectColour);
 	carousel.AddItem(context.localization.GetText(TextKey::MainMenu::Options),
 		[this]
 		{
