@@ -23,8 +23,10 @@ namespace sf
 // shrinks and dims around the open entry. The "OPTIONS" header above it is the
 // shell's, morphed from the menu entry.
 //
-// Phase 1 of the content: Graphics and Audio open placeholder panels; Gameplay,
-// Controls and Language are disabled.
+// Graphics and Audio open settings panels in place. Controls is its own page:
+// hovering it shows a dimmed flyout of Keyboard / Gamepad / Back to its right,
+// and activating it slides the category column off to the left while that
+// three-button column slides into its place. Gameplay and Language are disabled.
 class OptionsScreen final : public MenuScreen
 {
 public:
@@ -43,17 +45,29 @@ public:
 private:
 	static constexpr std::size_t RowCount = 6;
 
+	// Which column has the focus, and the horizontal slide between them.
+	enum class Page { Categories, ToControls, Controls, ToCategories };
+
 	void Leave();
 	void OpenCategory(std::size_t index);
 	void CloseCategory();
+	void OpenControls();
+	void CloseControls();
+
+	void ApplyColumnShifts();
+	[[nodiscard]] bool CategoriesInteractive() const { return page == Page::Categories; }
 
 	sf::Color accent;
 	UI::MenuButtonColumn column;
+	UI::MenuButtonColumn controlsColumn;
 
 	std::array<std::unique_ptr<OptionsCategoryPanel>, RowCount> panels{};
 	std::optional<std::size_t> openIndex;
 	std::size_t previewIndex = 0;
 	float previewFade = 0.f;
+
+	Page page = Page::Categories;
+	float pageT = 0.f;   // 0..1 progress through a slide
 
 	bool leaving = false;
 };

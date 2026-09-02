@@ -48,6 +48,10 @@ namespace TextKey
 		inline constexpr std::string_view Back     = "options.back";
 		inline constexpr std::string_view ComingSoon = "options.coming_soon";
 
+		inline constexpr std::string_view ControlsKeyboard = "options.controls_keyboard";
+		inline constexpr std::string_view ControlsGamepad  = "options.controls_gamepad";
+		inline constexpr std::string_view ControlsBack     = "options.controls_back";
+
 		inline constexpr std::string_view Resolution     = "options.resolution";
 		inline constexpr std::string_view WindowMode     = "options.window_mode";
 		inline constexpr std::string_view Vsync          = "options.vsync";

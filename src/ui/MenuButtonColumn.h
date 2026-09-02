@@ -47,7 +47,17 @@ namespace UI
 		void SetSwooshCallback(std::function<void(std::size_t)> callback);
 
 		void Begin();
+		// Settle the column immediately in its resting slots, with no fly-in.
+		// Used for a secondary column that slides in horizontally instead.
+		void AppearInstantly();
 		void PlayExit();
+
+		// A render-time translation applied to every button (and its hit box),
+		// and an alpha/dim multiplier. The Options screen animates these to slide
+		// one column off-screen while another slides in, and to show a dimmed
+		// "flyout" preview of the Controls sub-menu on hover.
+		void SetRenderShift(sf::Vector2f shift) { renderShift = shift; }
+		void SetRenderDim(float dim) { renderDim = dim; }
 		[[nodiscard]] bool IsIntroDone() const;
 		[[nodiscard]] bool IsExitDone() const;
 
@@ -90,6 +100,9 @@ namespace UI
 		std::vector<Button> buttons;
 		sf::Vector2f topLeft{ 240.f, 300.f };
 		float rowGap = 96.f;
+
+		sf::Vector2f renderShift{ 0.f, 0.f };
+		float renderDim = 1.f;
 
 		std::size_t selectedIndex = 0;
 		std::function<void(std::size_t)> onSelectionChanged;

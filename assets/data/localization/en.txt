@@ -31,6 +31,10 @@ options.language = Language
 options.back     = Back to Main Menu
 options.coming_soon = Coming soon.
 
+options.controls_keyboard = Keyboard
+options.controls_gamepad  = Gamepad
+options.controls_back     = Back
+
 options.resolution      = Screen Resolution:
 options.window_mode     = Window Mode:
 options.vsync           = Vertical Sync:

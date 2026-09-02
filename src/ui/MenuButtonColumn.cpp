@@ -144,6 +144,13 @@ namespace UI
 		}
 	}
 
+	void MenuButtonColumn::AppearInstantly()
+	{
+		Begin();
+		introTime = 1e7f;   // past the end of the fly-in: settled, no animation
+		std::fill(swooshFired.begin(), swooshFired.end(), static_cast<char>(1));
+	}
+
 	void MenuButtonColumn::PlayExit()
 	{
 		if (exitTime < 0.f)
@@ -223,7 +230,7 @@ namespace UI
 
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre, 1.f).contains(point))
+			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre + renderShift, 1.f).contains(point))
 			{
 				if (i != selectedIndex)
 				{
@@ -247,7 +254,7 @@ namespace UI
 
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre, 1.f).contains(point))
+			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre + renderShift, 1.f).contains(point))
 			{
 				selectedIndex = i;
 				Activate();
@@ -369,7 +376,9 @@ namespace UI
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
 			const Button& button = buttons[i];
-			const Pose pose = PoseOf(i);
+			Pose pose = PoseOf(i);
+			pose.centre += renderShift;
+			pose.alpha *= renderDim;
 			if (pose.alpha <= 0.f)
 			{
 				continue;
