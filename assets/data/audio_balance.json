@@ -6,7 +6,7 @@
     },
     "sounds": {
         "title_button_drop": 100.0,
-        "menu_item_appeared": 50.0,
+        "menu_item_appeared": 40.0,
         "menu_item_selected": 100.0,
         "menu_item_pressed": 100.0,
         "drop_piece": 100.0,
