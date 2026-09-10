@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <utility>
 
+#include "KickData.h"
+
 namespace
 {
 	// Pieces spawn low in the hidden buffer, so they sit just above the visible
@@ -43,24 +45,34 @@ bool GameplaySession::Rotate(bool clockwise)
 		return false;
 	}
 
-	Tetromino rotatedTetromino = currentTetromino;
+	const int fromRotation = currentTetromino.GetRotationIndex();
+	const int toRotation = (fromRotation + (clockwise ? 1 : 3)) % 4;
 
-	if (clockwise)
+	// SRS wall kicks: try each offset in order and take the first that fits, so a
+	// rotation into a wall or the stack slides clear instead of failing.
+	for (const sf::Vector2i& kick : KickData::Offsets(currentTetromino.GetType(), fromRotation, toRotation))
 	{
-		rotatedTetromino.RotateClockwise();
-	}
-	else
-	{
-		rotatedTetromino.RotateCounterClockwise();
+		Tetromino candidate = currentTetromino;
+
+		if (clockwise)
+		{
+			candidate.RotateClockwise();
+		}
+		else
+		{
+			candidate.RotateCounterClockwise();
+		}
+
+		candidate.Move(kick.x, kick.y);
+
+		if (board.CanPlace(candidate))
+		{
+			currentTetromino = candidate;
+			return true;
+		}
 	}
 
-	if (!board.CanPlace(rotatedTetromino))
-	{
-		return false;
-	}
-
-	currentTetromino = rotatedTetromino;
-	return true;
+	return false;
 }
 
 void GameplaySession::SoftDropStep()

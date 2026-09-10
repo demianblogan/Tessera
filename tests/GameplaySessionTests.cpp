@@ -162,6 +162,45 @@ TEST_CASE("hard-dropping into one narrow column ends the game without clearing a
 		|| reason == GameplaySession::GameOverReason::BlockOut));
 }
 
+TEST_CASE("four rotations return the active piece to its spawn orientation")
+{
+	GameplaySession session;
+
+	for (int i = 0; i < 4; i++)
+	{
+		session.Rotate(true);
+	}
+
+	CHECK(session.GetCurrentTetromino().GetRotationIndex() == 0);
+}
+
+TEST_CASE("a rotation blocked in place kicks the piece off the wall")
+{
+	GameplaySession session;
+
+	// The I piece has the most distinctive kicks; it arrives within one 7-bag.
+	int guard = 0;
+	while (session.GetCurrentTetromino().GetType() != Tetromino::Type::I && guard++ < 10)
+	{
+		session.HardDrop();
+		session.Update(1.0f);
+		(void)session.ConsumeEvents();
+	}
+	REQUIRE(session.GetCurrentTetromino().GetType() == Tetromino::Type::I);
+
+	// Stand it up and push it against the right wall.
+	session.Rotate(true);
+	while (session.MoveHorizontal(1)) {}
+
+	const int xBefore = session.GetCurrentTetromino().GetPosition().x;
+
+	// Rotating back to flat would poke through the wall in place, so it must kick.
+	const bool rotated = session.Rotate(true);
+
+	CHECK(rotated);
+	CHECK(session.GetCurrentTetromino().GetPosition().x < xBefore);
+}
+
 TEST_CASE("input is ignored once the game is over")
 {
 	GameplaySession session;

@@ -9,6 +9,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
 
+#include <gameplay/KickDataFile.h>
 #include <gameplay/PieceDataFile.h>
 #include <states/LoadingState.h>
 #include <utils/AppDataPath.h>
@@ -217,8 +218,10 @@ Application::Application()
 	// stays off.
 	settings.Load();
 
-	// Authored tetromino shapes, overriding the built-in SRS layout if present.
+	// Authored tetromino shapes and wall kicks, overriding the built-in SRS
+	// layout / kick tables if present.
 	PieceDataFile::Load("assets/data/pieces.json");
+	KickDataFile::Load("assets/data/srs_kicks.json");
 
 	if (settings.GetSettings().display.resolution.x == 0u)
 	{
