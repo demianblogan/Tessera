@@ -27,6 +27,14 @@ namespace
 		const float noise = std::sin(x * 12.9898f + y * 4.1414f) * 43758.5453f;
 		return (noise - std::floor(noise)) * 0.4f;
 	}
+
+	// Screen Y of a grid row's top edge. The hidden buffer rows sit above the
+	// board, so only rows from Board::BufferHeight down are actually on screen.
+	[[nodiscard]] float RowTop(int gridY)
+	{
+		return BoardRenderer::BoardPosition.y
+			+ static_cast<float>(gridY - Board::BufferHeight) * BoardRenderer::BlockSize;
+	}
 }
 
 BoardRenderer::BoardRenderer(Context& context)
@@ -53,9 +61,9 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		}
 	);
 
-	for (int y = 0; y < Board::HEIGHT; y++)
+	for (int y = Board::BufferHeight; y < Board::HEIGHT; y++)
 	{
-		const float t = static_cast<float>(y) / (Board::HEIGHT - 1);
+		const float t = static_cast<float>(y - Board::BufferHeight) / (Board::VisibleHeight - 1);
 		const auto brightness = static_cast<std::uint8_t>(6 + t * 18);
 
 		blockSprite.setColor(sf::Color(
@@ -69,7 +77,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 			blockSprite.setPosition(
 				{
 					BoardPosition.x + x * BlockSize,
-					BoardPosition.y + y * BlockSize
+					RowTop(y)
 				}
 			);
 
@@ -90,12 +98,12 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		}
 	);
 
-	for (int y = 0; y < Board::HEIGHT; y++)
+	for (int y = Board::BufferHeight; y < Board::HEIGHT; y++)
 	{
 		blockSprite.setPosition(
 			{
 				BoardPosition.x - BlockSize,
-				BoardPosition.y + y * BlockSize
+				RowTop(y)
 			}
 		);
 		target.draw(blockSprite);
@@ -103,7 +111,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		blockSprite.setPosition(
 			{
 				BoardPosition.x + Board::WIDTH * BlockSize,
-				BoardPosition.y + y * BlockSize
+				RowTop(y)
 			}
 		);
 		target.draw(blockSprite);
@@ -114,7 +122,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		blockSprite.setPosition(
 			{
 				BoardPosition.x + x * BlockSize,
-				BoardPosition.y + Board::HEIGHT * BlockSize
+				RowTop(Board::HEIGHT)
 			}
 		);
 		target.draw(blockSprite);
@@ -126,7 +134,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 	const Board::Grid& grid = session.GetBoard().GetGrid();
 
-	for (int y = 0; y < Board::HEIGHT; y++)
+	for (int y = Board::BufferHeight; y < Board::HEIGHT; y++)
 	{
 		for (int x = 0; x < Board::WIDTH; x++)
 		{
@@ -152,7 +160,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				blockSprite.setPosition(
 					{
 						BoardPosition.x + x * BlockSize,
-						BoardPosition.y + y * BlockSize + local * local * 1200.f
+						RowTop(y) + local * local * 1200.f
 					}
 				);
 
@@ -164,7 +172,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				blockSprite.setPosition(
 					{
 						BoardPosition.x + x * BlockSize,
-						BoardPosition.y + y * BlockSize
+						RowTop(y)
 					}
 				);
 			}
@@ -188,7 +196,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		flash.setPosition(
 			{
 				BoardPosition.x,
-				BoardPosition.y + effect.row * BlockSize
+				RowTop(effect.row)
 			}
 		);
 		flash.setSize({ Board::WIDTH * BlockSize, BlockSize });
@@ -202,7 +210,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		sweep.setPosition(
 			{
 				BoardPosition.x + sweepX,
-				BoardPosition.y + effect.row * BlockSize
+				RowTop(effect.row)
 			}
 		);
 		sweep.setSize({ sweepWidth, BlockSize });
@@ -230,10 +238,15 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 		for (const sf::Vector2i& blockPosition : ghostTetromino.GetBlockPositions())
 		{
+			if (blockPosition.y < Board::BufferHeight)
+			{
+				continue;
+			}
+
 			blockSprite.setPosition(
 				{
 					BoardPosition.x + blockPosition.x * BlockSize,
-					BoardPosition.y + blockPosition.y * BlockSize
+					RowTop(blockPosition.y)
 				}
 			);
 
@@ -253,10 +266,15 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 		for (const sf::Vector2i& blockPosition : effects.GetLandingFlashBlocks())
 		{
+			if (blockPosition.y < Board::BufferHeight)
+			{
+				continue;
+			}
+
 			blockSprite.setPosition(
 				{
 					BoardPosition.x + blockPosition.x * BlockSize,
-					BoardPosition.y + blockPosition.y * BlockSize
+					RowTop(blockPosition.y)
 				}
 			);
 
@@ -276,7 +294,8 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		const auto blockPositions = piece.GetBlockPositions();
 		const sf::IntRect pieceTextureRect{ { static_cast<int>(piece.GetType()) * SpriteSize, 0 }, { SpriteSize, SpriteSize } };
 
-		// Bounding box of the piece in board pixels, for the bloom buffer.
+		// Bounding box of the piece in board pixels, for the bloom buffer. Rows in
+		// the hidden buffer are clipped off the top.
 		int minX = Board::WIDTH;
 		int minY = Board::HEIGHT;
 		int maxX = 0;
@@ -290,35 +309,45 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 			maxY = std::max(maxY, blockPosition.y);
 		}
 
-		const sf::FloatRect pieceArea{
-			{ BoardPosition.x + minX * BlockSize, BoardPosition.y + minY * BlockSize },
-			{ (maxX - minX + 1) * BlockSize, (maxY - minY + 1) * BlockSize }
-		};
+		const int visibleMinY = std::max(minY, Board::BufferHeight);
 
 		// The neon halo colour for the active piece; matches the game's cyan accent.
 		const HapticSettings::Colour& glowColour = context.hapticSettings.activePieceGlow;
 		const sf::Color neonTint(glowColour.r, glowColour.g, glowColour.b);
 
-		glow.Draw(target, pieceArea,
-			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
-			{
-				sf::Sprite pieceSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
-				pieceSprite.setTextureRect(pieceTextureRect);
-				pieceSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+		if (maxY >= Board::BufferHeight)
+		{
+			const sf::FloatRect pieceArea{
+				{ BoardPosition.x + minX * BlockSize, RowTop(visibleMinY) },
+				{ (maxX - minX + 1) * BlockSize, (maxY - visibleMinY + 1) * BlockSize }
+			};
 
-				for (const sf::Vector2i& blockPosition : blockPositions)
+			glow.Draw(target, pieceArea,
+				[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
 				{
-					pieceSprite.setPosition(
-						{
-							BoardPosition.x + blockPosition.x * BlockSize,
-							BoardPosition.y + blockPosition.y * BlockSize
-						}
-					);
+					sf::Sprite pieceSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
+					pieceSprite.setTextureRect(pieceTextureRect);
+					pieceSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
 
-					buffer.draw(pieceSprite, states);
-				}
-			},
-			neonTint);
+					for (const sf::Vector2i& blockPosition : blockPositions)
+					{
+						if (blockPosition.y < Board::BufferHeight)
+						{
+							continue;
+						}
+
+						pieceSprite.setPosition(
+							{
+								BoardPosition.x + blockPosition.x * BlockSize,
+								RowTop(blockPosition.y)
+							}
+						);
+
+						buffer.draw(pieceSprite, states);
+					}
+				},
+				neonTint);
+		}
 
 		blockSprite.setTextureRect(pieceTextureRect);
 		blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
@@ -326,10 +355,15 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 		for (const sf::Vector2i& blockPosition : blockPositions)
 		{
+			if (blockPosition.y < Board::BufferHeight)
+			{
+				continue;
+			}
+
 			blockSprite.setPosition(
 				{
 					BoardPosition.x + blockPosition.x * BlockSize,
-					BoardPosition.y + blockPosition.y * BlockSize
+					RowTop(blockPosition.y)
 				}
 			);
 

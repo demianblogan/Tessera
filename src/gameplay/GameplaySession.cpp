@@ -3,8 +3,15 @@
 #include <algorithm>
 #include <utility>
 
+namespace
+{
+	// Pieces spawn low in the hidden buffer, so they sit just above the visible
+	// field and drop into view the way modern Tetris shows them entering.
+	constexpr sf::Vector2i SpawnPosition{ Board::WIDTH / 2 - 2, Board::BufferHeight - 2 };
+}
+
 GameplaySession::GameplaySession()
-	: currentTetromino(tetrominoBag.Next(), { Board::WIDTH / 2 - 2, 0 })
+	: currentTetromino(tetrominoBag.Next(), SpawnPosition)
 	, nextTetromino(tetrominoBag.Next(), { 0, 0 })
 {
 	// No code
@@ -225,7 +232,7 @@ void GameplaySession::LockAndScan()
 
 bool GameplaySession::SpawnNextTetromino()
 {
-	currentTetromino = { nextTetromino.GetType(), { Board::WIDTH / 2 - 2, 0 } };
+	currentTetromino = { nextTetromino.GetType(), SpawnPosition };
 	nextTetromino = { tetrominoBag.Next(), { 0, 0 } };
 
 	return board.CanPlace(currentTetromino);

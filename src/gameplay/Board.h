@@ -10,7 +10,17 @@ class Board
 {
 public:
 	static constexpr int WIDTH = 10;
-	static constexpr int HEIGHT = 20;
+
+	// The playfield the player sees.
+	static constexpr int VisibleHeight = 20;
+
+	// Hidden rows above the visible field (the "buffer" / vanish zone). Pieces
+	// spawn here and drop into view; a piece that locks entirely inside it is a
+	// lock-out. The grid stores buffer rows first (y in [0, BufferHeight)), then
+	// the visible rows (y in [BufferHeight, HEIGHT)).
+	static constexpr int BufferHeight = 20;
+
+	static constexpr int HEIGHT = BufferHeight + VisibleHeight;
 
 	using GridRow = std::array<Cell, WIDTH>;
 	using Grid = std::array<GridRow, HEIGHT>;

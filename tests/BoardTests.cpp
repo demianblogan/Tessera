@@ -21,6 +21,13 @@ namespace
 	}
 }
 
+TEST_CASE("the grid is the visible field plus a hidden buffer above it")
+{
+	CHECK(Board::VisibleHeight == 20);
+	CHECK(Board::HEIGHT == Board::BufferHeight + Board::VisibleHeight);
+	CHECK(Board::BufferHeight > 0);
+}
+
 TEST_CASE("a fresh board has no occupied cells")
 {
 	const Board board;

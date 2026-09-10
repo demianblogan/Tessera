@@ -33,6 +33,17 @@ TEST_CASE("a new session starts falling, at score 0 and level 1")
 	CHECK(session.GetClearingRows().empty());
 }
 
+TEST_CASE("a new piece spawns inside the hidden buffer, above the visible field")
+{
+	const GameplaySession session;
+
+	for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
+	{
+		CHECK(block.y >= 0);
+		CHECK(block.y < Board::BufferHeight);
+	}
+}
+
 TEST_CASE("MoveHorizontal(0) is a no-op that reports no movement")
 {
 	GameplaySession session;
