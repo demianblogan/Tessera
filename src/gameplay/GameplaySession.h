@@ -97,9 +97,23 @@ private:
 	// happens when the clear animation ends.
 	static constexpr float RowClearDelay = 0.45f;
 
+	// A piece that can no longer fall is given this long before it locks, during
+	// which it still takes input. Each successful move or rotation resets the
+	// countdown, but only up to MaxLockResets times at a given depth -- past that
+	// the piece locks regardless, so it can't be stalled forever by spinning.
+	static constexpr float LockDelay = 0.5f;
+	static constexpr int MaxLockResets = 15;
+
 	void LockAndScan();
 	bool SpawnNextTetromino();
 	void EndGame(GameOverReason reason);
+
+	// Lock-delay bookkeeping.
+	void ResetLockState();
+	void OnPieceDescended();   // after the piece moves down a row
+	void OnPieceShifted();     // after a successful horizontal move or rotation
+	[[nodiscard]] bool IsResting() const;
+	[[nodiscard]] int PieceBottomRow() const;
 
 	[[nodiscard]] static bool IsEntirelyInBuffer(const Tetromino& tetromino);
 
@@ -112,6 +126,10 @@ private:
 
 	float fallTimer = 0.f;
 	float fallDelay = BaseFallDelay;
+
+	float lockTimer = 0.f;
+	int lockResets = 0;
+	int lowestRow = 0;   // deepest row the active piece's lowest block has reached
 
 	std::vector<int> clearingRows;
 	float clearTimer = 0.f;

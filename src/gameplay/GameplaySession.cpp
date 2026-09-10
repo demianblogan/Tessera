@@ -16,7 +16,7 @@ GameplaySession::GameplaySession()
 	: currentTetromino(tetrominoBag.Next(), SpawnPosition)
 	, nextTetromino(tetrominoBag.Next(), { 0, 0 })
 {
-	// No code
+	ResetLockState();
 }
 
 bool GameplaySession::MoveHorizontal(int direction)
@@ -35,6 +35,7 @@ bool GameplaySession::MoveHorizontal(int direction)
 	}
 
 	currentTetromino = movedTetromino;
+	OnPieceShifted();
 	return true;
 }
 
@@ -68,6 +69,7 @@ bool GameplaySession::Rotate(bool clockwise)
 		if (board.CanPlace(candidate))
 		{
 			currentTetromino = candidate;
+			OnPieceShifted();
 			return true;
 		}
 	}
@@ -89,11 +91,10 @@ void GameplaySession::SoftDropStep()
 	{
 		currentTetromino = movedTetromino;
 		fallTimer = 0.f;
+		OnPieceDescended();
 	}
-	else
-	{
-		LockAndScan();
-	}
+	// Otherwise the piece is resting; the lock delay in Update() locks it. Soft
+	// drop is faster gravity, not an instant lock.
 }
 
 void GameplaySession::HardDrop()
@@ -167,20 +168,33 @@ void GameplaySession::Update(float deltaTime)
 		return;
 	}
 
+	// Gravity: step the piece down for each fall-delay's worth of time. Stop at
+	// the first step it can't take -- the lock delay below takes over there.
 	fallTimer += deltaTime;
 
-	if (fallTimer >= fallDelay)
+	while (fallTimer >= fallDelay)
 	{
 		fallTimer -= fallDelay;
 
 		Tetromino movedTetromino = currentTetromino;
 		movedTetromino.Move(0, 1);
 
-		if (board.CanPlace(movedTetromino))
+		if (!board.CanPlace(movedTetromino))
 		{
-			currentTetromino = movedTetromino;
+			fallTimer = 0.f;
+			break;
 		}
-		else
+
+		currentTetromino = movedTetromino;
+		OnPieceDescended();
+	}
+
+	// Lock delay: once the piece can't fall, count down and lock when it expires.
+	if (IsResting())
+	{
+		lockTimer += deltaTime;
+
+		if (lockTimer >= LockDelay)
 		{
 			LockAndScan();
 		}
@@ -255,7 +269,64 @@ bool GameplaySession::SpawnNextTetromino()
 	currentTetromino = { nextTetromino.GetType(), SpawnPosition };
 	nextTetromino = { tetrominoBag.Next(), { 0, 0 } };
 
+	ResetLockState();
+
 	return board.CanPlace(currentTetromino);
+}
+
+void GameplaySession::ResetLockState()
+{
+	lockTimer = 0.f;
+	lockResets = 0;
+	lowestRow = PieceBottomRow();
+}
+
+int GameplaySession::PieceBottomRow() const
+{
+	int bottom = 0;
+	for (const sf::Vector2i& block : currentTetromino.GetBlockPositions())
+	{
+		bottom = std::max(bottom, block.y);
+	}
+	return bottom;
+}
+
+bool GameplaySession::IsResting() const
+{
+	Tetromino below = currentTetromino;
+	below.Move(0, 1);
+	return !board.CanPlace(below);
+}
+
+void GameplaySession::OnPieceDescended()
+{
+	const int bottom = PieceBottomRow();
+	if (bottom > lowestRow)
+	{
+		lowestRow = bottom;
+		lockTimer = 0.f;
+		lockResets = 0;
+	}
+}
+
+void GameplaySession::OnPieceShifted()
+{
+	const int bottom = PieceBottomRow();
+	if (bottom > lowestRow)
+	{
+		lowestRow = bottom;
+		lockTimer = 0.f;
+		lockResets = 0;
+		return;
+	}
+
+	// A move or rotation that keeps the piece at (or above) its deepest row so
+	// far buys more lock time, up to MaxLockResets times.
+	if (lockResets < MaxLockResets && IsResting())
+	{
+		lockTimer = 0.f;
+		++lockResets;
+	}
 }
 
 void GameplaySession::EndGame(GameOverReason reason)

@@ -92,6 +92,68 @@ TEST_CASE("a soft-drop step lowers the piece by one row")
 	CHECK(session.GetCurrentTetromino().GetPosition().y == startY + 1);
 }
 
+namespace
+{
+	// Soft-drop the active piece until it rests on the floor (soft drop no longer
+	// locks, so this just parks it).
+	void DropToFloor(GameplaySession& session)
+	{
+		for (int i = 0; i < Board::HEIGHT + 4; i++)
+		{
+			session.SoftDropStep();
+		}
+	}
+}
+
+TEST_CASE("a piece resting on the floor waits out the lock delay before locking")
+{
+	GameplaySession session;
+	DropToFloor(session);
+
+	REQUIRE(session.GetPhase() == GameplaySession::Phase::Falling);
+	CHECK_FALSE(session.ConsumeEvents().landed);
+
+	// Just short of the delay: still in play.
+	session.Update(0.4f);
+	CHECK(session.GetPhase() == GameplaySession::Phase::Falling);
+
+	// Past it: locked, and a fresh piece has spawned back up in the buffer.
+	session.Update(0.2f);
+	CHECK(session.ConsumeEvents().landed);
+	CHECK(session.GetCurrentTetromino().GetPosition().y < Board::BufferHeight);
+}
+
+TEST_CASE("moving a resting piece resets the lock delay")
+{
+	GameplaySession session;
+	DropToFloor(session);
+	(void)session.ConsumeEvents();
+
+	for (int i = 0; i < 10; i++)
+	{
+		session.Update(0.4f);
+		session.MoveHorizontal(i % 2 == 0 ? 1 : -1);
+		CHECK(session.GetPhase() == GameplaySession::Phase::Falling);
+	}
+}
+
+TEST_CASE("the lock-delay reset is capped so a piece cannot be stalled forever")
+{
+	GameplaySession session;
+	DropToFloor(session);
+	(void)session.ConsumeEvents();
+
+	bool locked = false;
+	for (int i = 0; i < 200 && !locked; i++)
+	{
+		session.Update(0.45f);
+		session.MoveHorizontal(i % 2 == 0 ? 1 : -1);
+		locked = session.ConsumeEvents().landed;
+	}
+
+	CHECK(locked);
+}
+
 TEST_CASE("a hard drop locks a piece and reports the landing")
 {
 	GameplaySession session;
