@@ -63,8 +63,18 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	backgroundSprite.setScale({ BackgroundScale, BackgroundScale });
 
 	SetUpInputBindings();
+	ApplyGameplaySettings();
 
+	// Gameplay has no music for now -- the old track did not fit and a proper
+	// dynamic-intensity score is a v1.8.0 task (Audio & HUD). Silence the shell
+	// track on the way in.
+	context.music.Get(Assets::MusicID::MainMenu).stop();
+}
+
+void GameplayState::ApplyGameplaySettings()
+{
 	const GameSettings& settings = context.settings.GetSettings();
+
 	hud.SetVisible(GameplayHud::Element::Hold, settings.hudHold);
 	hud.SetVisible(GameplayHud::Element::Next, settings.hudNext);
 	hud.SetVisible(GameplayHud::Element::Score, settings.hudScore);
@@ -74,11 +84,11 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	hud.SetVisible(GameplayHud::Element::ControlsLegend, settings.hudControlsLegend);
 
 	effects.SetShakeEnabled(settings.screenShakeEnabled);
+}
 
-	// Gameplay has no music for now -- the old track did not fit and a proper
-	// dynamic-intensity score is a v1.8.0 task (Audio & HUD). Silence the shell
-	// track on the way in.
-	context.music.Get(Assets::MusicID::MainMenu).stop();
+void GameplayState::OnResume()
+{
+	ApplyGameplaySettings();
 }
 
 void GameplayState::SetUpInputBindings()

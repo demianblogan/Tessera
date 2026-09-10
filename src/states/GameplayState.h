@@ -69,6 +69,11 @@ private:
 
 	void SetUpInputBindings();
 
+	// Push the current HUD / effects settings into the live HUD and effects
+	// objects. Run at construction and again on OnResume(), so changes made from
+	// the pause screen's Options take effect the moment play resumes.
+	void ApplyGameplaySettings();
+
 	void PollHeldInput();
 	void ApplyGamepadActions();
 	void ApplyHorizontalRepeat(float deltaTime);
@@ -89,4 +94,5 @@ public:
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
+	void OnResume() override;
 };
