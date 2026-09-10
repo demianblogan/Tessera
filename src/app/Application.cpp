@@ -9,6 +9,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
 
+#include <gameplay/PieceDataFile.h>
 #include <states/LoadingState.h>
 #include <utils/AppDataPath.h>
 
@@ -215,6 +216,10 @@ Application::Application()
 	// one. The window draws its own cursor (UI::GlowingCursor); the OS one
 	// stays off.
 	settings.Load();
+
+	// Authored tetromino shapes, overriding the built-in SRS layout if present.
+	PieceDataFile::Load("assets/data/pieces.json");
+
 	if (settings.GetSettings().display.resolution.x == 0u)
 	{
 		settings.GetSettings().display.resolution = displayManager.DesktopResolution();

@@ -86,6 +86,7 @@
     <!-- Game code under test (pure logic: only SFML headers, no SFML link). -->
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
+    <ClCompile Include="src\gameplay\PieceData.cpp" />
     <ClCompile Include="src\gameplay\TetrominoBag.cpp" />
     <ClCompile Include="src\gameplay\GameplaySession.cpp" />
     <ClCompile Include="src\utils\Random.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="tests\TestMain.cpp" />
     <ClCompile Include="tests\BoardTests.cpp" />
     <ClCompile Include="tests\TetrominoTests.cpp" />
+    <ClCompile Include="tests\PieceDataTests.cpp" />
     <ClCompile Include="tests\TetrominoBagTests.cpp" />
     <ClCompile Include="tests\GameplaySessionTests.cpp" />
   </ItemGroup>

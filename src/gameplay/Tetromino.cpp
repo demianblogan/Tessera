@@ -1,5 +1,7 @@
 #include "Tetromino.h"
 
+#include "PieceData.h"
+
 Tetromino::Tetromino(Type type, const sf::Vector2i& startPosition)
 	: type(type), position(startPosition)
 {
@@ -37,62 +39,22 @@ const sf::Vector2i& Tetromino::GetPosition() const
 	return position;
 }
 
-std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>Tetromino::GetBlockPositions() const
+std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> Tetromino::GetBlockPositions() const
 {
+	return GetBlockPositions(rotationStateIndex);
+}
+
+std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> Tetromino::GetBlockPositions(
+	int rotationIndex, sf::Vector2i extraOffset) const
+{
+	const PieceData::BlockOffsets& offsets = PieceData::Blocks(type, rotationIndex);
+
 	std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> blockPositions;
 
-	const TetrominoShapes::ShapeMatrix& shape = GetCurrentShape();
-	int blockIndex = 0;
-
-	for (int y = 0; y < TetrominoShapes::MATRIX_SIZE; y++)
+	for (int i = 0; i < TetrominoShapes::BLOCK_COUNT; ++i)
 	{
-		for (int x = 0; x < TetrominoShapes::MATRIX_SIZE; x++)
-		{
-			const char cell = shape[y][x];
-
-			if (cell == '.')
-			{
-				continue;
-			}
-
-			blockPositions[blockIndex] = { position.x + x, position.y + y };
-			blockIndex++;
-		}
+		blockPositions[i] = position + extraOffset + offsets[i];
 	}
 
 	return blockPositions;
-}
-
-const TetrominoShapes::RotationSet& Tetromino::GetRotationSet() const
-{
-	switch (type)
-	{
-	case Type::I:
-		return TetrominoShapes::I;
-
-	case Type::O:
-		return TetrominoShapes::O;
-
-	case Type::T:
-		return TetrominoShapes::T;
-
-	case Type::S:
-		return TetrominoShapes::S;
-
-	case Type::Z:
-		return TetrominoShapes::Z;
-
-	case Type::J:
-		return TetrominoShapes::J;
-
-	case Type::L:
-		return TetrominoShapes::L;
-	}
-
-	std::unreachable();
-}
-
-const TetrominoShapes::ShapeMatrix& Tetromino::GetCurrentShape() const
-{
-	return GetRotationSet()[rotationStateIndex];
 }

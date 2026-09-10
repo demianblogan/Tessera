@@ -33,9 +33,6 @@ private:
 	// 3 = Left
 	int rotationStateIndex = 0;
 
-	[[nodiscard]] const TetrominoShapes::RotationSet& GetRotationSet() const;
-	[[nodiscard]] const TetrominoShapes::ShapeMatrix& GetCurrentShape() const;
-
 public:
 	Tetromino(Type type, const sf::Vector2i& startPosition);
 
@@ -47,5 +44,13 @@ public:
 	[[nodiscard]] Type GetType() const;
 	[[nodiscard]] int GetRotationIndex() const;
 	[[nodiscard]] const sf::Vector2i& GetPosition() const;
+
+	// Board cells this piece occupies right now.
 	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> GetBlockPositions() const;
+
+	// Board cells this piece would occupy at an arbitrary rotation state (and
+	// optional extra offset), without changing the piece -- used to trial SRS
+	// wall kicks before committing a rotation.
+	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> GetBlockPositions(
+		int rotationIndex, sf::Vector2i extraOffset = {}) const;
 };
