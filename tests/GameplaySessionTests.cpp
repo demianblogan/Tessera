@@ -112,6 +112,7 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 	GameplaySession session;
 
 	bool sawGameOverEvent = false;
+	GameplaySession::GameOverReason reason = GameplaySession::GameOverReason::None;
 
 	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
 	{
@@ -122,6 +123,7 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 		if (events.gameOver)
 		{
 			sawGameOverEvent = true;
+			reason = events.gameOverReason;
 		}
 
 		// Scoring invariants hold at every step.
@@ -131,6 +133,33 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 
 	CHECK(session.GetPhase() == GameplaySession::Phase::GameOver);
 	CHECK(sawGameOverEvent);
+
+	// The end is classified, and the event agrees with the query.
+	CHECK(reason != GameplaySession::GameOverReason::None);
+	CHECK(reason == session.GetGameOverReason());
+}
+
+TEST_CASE("hard-dropping into one narrow column ends the game without clearing a line")
+{
+	GameplaySession session;
+
+	// Never move the piece: every shape spawns around the middle columns, so the
+	// stack only ever fills columns 3-6 and no row can complete.
+	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
+	{
+		session.HardDrop();
+		session.Update(1.0f);
+		(void)session.ConsumeEvents();
+	}
+
+	REQUIRE(session.GetPhase() == GameplaySession::Phase::GameOver);
+	CHECK(session.GetLinesCleared() == 0);
+
+	// The stack overflowed the top: either a piece locked entirely in the buffer
+	// (lock-out) or the next one had no room to spawn (block-out).
+	const GameplaySession::GameOverReason reason = session.GetGameOverReason();
+	CHECK((reason == GameplaySession::GameOverReason::LockOut
+		|| reason == GameplaySession::GameOverReason::BlockOut));
 }
 
 TEST_CASE("input is ignored once the game is over")

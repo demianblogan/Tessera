@@ -144,8 +144,7 @@ void GameplaySession::Update(float deltaTime)
 
 		if (!SpawnNextTetromino())
 		{
-			phase = Phase::GameOver;
-			pendingEvents.gameOver = true;
+			EndGame(GameOverReason::BlockOut);
 		}
 
 		return;
@@ -208,7 +207,17 @@ void GameplaySession::LockAndScan()
 	pendingEvents.landed = true;
 	pendingEvents.landedBlocks = currentTetromino.GetBlockPositions();
 
+	// Lock-out: the piece came to rest without any part reaching the visible
+	// field, so the stack has overflowed the top.
+	const bool lockedOut = IsEntirelyInBuffer(currentTetromino);
+
 	board.LockTetromino(currentTetromino);
+
+	if (lockedOut)
+	{
+		EndGame(GameOverReason::LockOut);
+		return;
+	}
 
 	const std::vector<int> fullRows = board.FindFullRows();
 
@@ -225,8 +234,7 @@ void GameplaySession::LockAndScan()
 
 	if (!SpawnNextTetromino())
 	{
-		phase = Phase::GameOver;
-		pendingEvents.gameOver = true;
+		EndGame(GameOverReason::BlockOut);
 	}
 }
 
@@ -236,4 +244,25 @@ bool GameplaySession::SpawnNextTetromino()
 	nextTetromino = { tetrominoBag.Next(), { 0, 0 } };
 
 	return board.CanPlace(currentTetromino);
+}
+
+void GameplaySession::EndGame(GameOverReason reason)
+{
+	phase = Phase::GameOver;
+	gameOverReason = reason;
+	pendingEvents.gameOver = true;
+	pendingEvents.gameOverReason = reason;
+}
+
+bool GameplaySession::IsEntirelyInBuffer(const Tetromino& tetromino)
+{
+	for (const sf::Vector2i& block : tetromino.GetBlockPositions())
+	{
+		if (block.y >= Board::BufferHeight)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

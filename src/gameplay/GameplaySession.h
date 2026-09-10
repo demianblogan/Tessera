@@ -24,7 +24,16 @@ public:
 	{
 		Falling,        // a piece is in play and responds to input
 		ClearingRows,   // full rows found; the clear delay is running, input is ignored
-		GameOver        // spawn was blocked; the session is finished
+		GameOver        // the session is finished -- see GameOverReason
+	};
+
+	// Why the session ended. BlockOut: a new piece had no room to spawn. LockOut:
+	// a piece came to rest entirely inside the hidden buffer, above the field.
+	enum class GameOverReason
+	{
+		None,
+		BlockOut,
+		LockOut
 	};
 
 	// Everything that happened during the last MoveHorizontal / Rotate /
@@ -41,7 +50,9 @@ public:
 		int clearedRowCount = 0;
 
 		bool leveledUp = false;
+
 		bool gameOver = false;
+		GameOverReason gameOverReason = GameOverReason::None;
 	};
 
 	GameplaySession();
@@ -61,6 +72,7 @@ public:
 
 	[[nodiscard]] Phase GetPhase() const { return phase; }
 	[[nodiscard]] bool IsFalling() const { return phase == Phase::Falling; }
+	[[nodiscard]] GameOverReason GetGameOverReason() const { return gameOverReason; }
 
 	[[nodiscard]] const Board& GetBoard() const { return board; }
 	[[nodiscard]] const Tetromino& GetCurrentTetromino() const { return currentTetromino; }
@@ -87,6 +99,9 @@ private:
 
 	void LockAndScan();
 	bool SpawnNextTetromino();
+	void EndGame(GameOverReason reason);
+
+	[[nodiscard]] static bool IsEntirelyInBuffer(const Tetromino& tetromino);
 
 	Board board;
 	TetrominoBag tetrominoBag;
@@ -105,6 +120,8 @@ private:
 	int level = 1;
 	int totalLinesCleared = 0;
 	float elapsedSeconds = 0.f;
+
+	GameOverReason gameOverReason = GameOverReason::None;
 
 	Events pendingEvents;
 };
