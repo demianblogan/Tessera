@@ -44,6 +44,10 @@ public:
 	// piece that spawns next is drawn larger and brighter than the rest; when
 	// the queue advances, everything slides smoothly into its new slot.
 	void RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const;
+	// Draws the held piece centred inside `area` (the HOLD HUD cell), dimmed
+	// once hold has already been used on the piece currently in play. Draws
+	// nothing while no piece has been held yet.
+	void RenderHoldPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const;
 
 private:
 	static constexpr int SpriteSize = 16;

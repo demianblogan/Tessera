@@ -44,6 +44,9 @@ public:
 	void SetVisible(Element element, bool visible);
 	void Render(sf::RenderTarget& target) const;
 
+	[[nodiscard]] bool HoldVisible() const { return holdVisible; }
+	[[nodiscard]] sf::FloatRect HoldPreviewArea() const { return holdBoxBounds; }
+
 	[[nodiscard]] bool NextVisible() const { return nextVisible; }
 	[[nodiscard]] sf::FloatRect NextPreviewArea() const { return nextBoxBounds; }
 

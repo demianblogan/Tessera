@@ -444,6 +444,22 @@ void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySe
 	}
 }
 
+void BoardRenderer::RenderHoldPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const
+{
+	if (!session.HasHeldPiece())
+	{
+		return;
+	}
+
+	const sf::Color tint = session.CanHold()
+		? sf::Color::White
+		: sf::Color(NextMinBrightness, NextMinBrightness, NextMinBrightness);
+
+	const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
+
+	DrawPiecePreview(target, session.GetHeldPiece(), NextHeroBlockSize, centre, tint);
+}
+
 void BoardRenderer::DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece,
 	float blockSize, sf::Vector2f centre, sf::Color tint) const
 {

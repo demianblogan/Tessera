@@ -105,6 +105,80 @@ TEST_CASE("the spawn count is a pure change signal for the renderer")
 	CHECK(session.GetSpawnCount() == 1);
 }
 
+TEST_CASE("holding for the first time stashes the piece and draws the next queued one")
+{
+	GameplaySession session;
+
+	CHECK_FALSE(session.HasHeldPiece());
+	CHECK(session.CanHold());
+
+	const Tetromino::Type active = session.GetCurrentTetromino().GetType();
+	const Tetromino::Type upcoming = session.GetNextPiece(0).GetType();
+
+	CHECK(session.Hold());
+
+	CHECK(session.HasHeldPiece());
+	CHECK(session.GetHeldPiece().GetType() == active);
+	CHECK(session.GetCurrentTetromino().GetType() == upcoming);
+	CHECK_FALSE(session.CanHold());
+}
+
+TEST_CASE("hold cannot be used twice on the same piece")
+{
+	GameplaySession session;
+
+	CHECK(session.Hold());
+	CHECK_FALSE(session.Hold());
+}
+
+TEST_CASE("holding again swaps with what is already held, without touching the queue")
+{
+	GameplaySession session;
+
+	const Tetromino::Type firstHeld = session.GetCurrentTetromino().GetType();
+	REQUIRE(session.Hold());
+
+	// Lock the piece hold just gave us, so hold is available again -- this also
+	// advances the queue by one (a normal spawn), which the swap below must not
+	// repeat.
+	session.HardDrop();
+	session.Update(1.0f);
+	(void)session.ConsumeEvents();
+	REQUIRE(session.CanHold());
+
+	const Tetromino::Type thirdPiece = session.GetCurrentTetromino().GetType();
+
+	std::array<Tetromino::Type, 5> queueBefore{};
+	for (int i = 0; i < session.GetNextCount(); i++)
+	{
+		queueBefore[static_cast<std::size_t>(i)] = session.GetNextPiece(i).GetType();
+	}
+
+	CHECK(session.Hold());
+
+	CHECK(session.GetCurrentTetromino().GetType() == firstHeld);
+	CHECK(session.GetHeldPiece().GetType() == thirdPiece);
+
+	for (int i = 0; i < session.GetNextCount(); i++)
+	{
+		CHECK(session.GetNextPiece(i).GetType() == queueBefore[static_cast<std::size_t>(i)]);
+	}
+}
+
+TEST_CASE("hold becomes available again once the piece in play locks")
+{
+	GameplaySession session;
+
+	REQUIRE(session.Hold());
+	CHECK_FALSE(session.CanHold());
+
+	session.HardDrop();
+	session.Update(1.0f);
+	(void)session.ConsumeEvents();
+
+	CHECK(session.CanHold());
+}
+
 TEST_CASE("MoveHorizontal(0) is a no-op that reports no movement")
 {
 	GameplaySession session;

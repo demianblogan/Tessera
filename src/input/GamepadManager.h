@@ -67,6 +67,7 @@ public:
 	[[nodiscard]] bool WasHardDropPressed() const noexcept;          // A / Cross, this frame
 	[[nodiscard]] bool WasRotateClockwisePressed() const noexcept;   // right bumper, this frame
 	[[nodiscard]] bool WasRotateCounterClockwisePressed() const noexcept; // left bumper, this frame
+	[[nodiscard]] bool WasHoldPressed() const noexcept;              // Y / Triangle, this frame
 
 	[[nodiscard]] bool IsConnected() const noexcept;
 	[[nodiscard]] bool IsInUse() const noexcept;
@@ -91,7 +92,9 @@ private:
 	bool wasHardDropDown = false;
 	bool wasRightBumperDown = false;
 	bool wasLeftBumperDown = false;
+	bool wasHoldDown = false;
 	bool hardDropEdge = false;
 	bool rotateClockwiseEdge = false;
 	bool rotateCounterClockwiseEdge = false;
+	bool holdEdge = false;
 };

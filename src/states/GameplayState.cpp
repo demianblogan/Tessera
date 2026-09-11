@@ -38,6 +38,7 @@ namespace
 	constexpr float RotateNudge = 3.f;
 	constexpr float SoftDropNudge = 1.f;
 	constexpr float HardDropNudge = 16.f;
+	constexpr float HoldNudge = 6.f;
 	constexpr float LandNudge = 5.f;
 	constexpr float RowClearNudge = 12.f;
 	constexpr float TetrisNudge = 26.f;
@@ -102,6 +103,7 @@ void GameplayState::SetUpInputBindings()
 	gameplayActions.AddBinding(GameplayAction::HardDrop, InputBinding(controls.hardDrop, Trigger::OnPress));
 	gameplayActions.AddBinding(GameplayAction::RotateClockwise, InputBinding(controls.rotateClockwise, Trigger::OnPress));
 	gameplayActions.AddBinding(GameplayAction::RotateCounterClockwise, InputBinding(controls.rotateCounterClockwise, Trigger::OnPress));
+	gameplayActions.AddBinding(GameplayAction::Hold, InputBinding(controls.hold, Trigger::OnPress));
 	gameplayActions.AddBinding(GameplayAction::Pause, InputBinding(controls.pause, Trigger::OnPress));
 
 	gameplayInput.Subscribe(GameplayAction::MoveLeft, [this] { heldHorizontal -= 1; });
@@ -111,6 +113,7 @@ void GameplayState::SetUpInputBindings()
 	gameplayInput.Subscribe(GameplayAction::HardDrop, [this] { PerformHardDrop(); });
 	gameplayInput.Subscribe(GameplayAction::RotateClockwise, [this] { TryRotate(true); });
 	gameplayInput.Subscribe(GameplayAction::RotateCounterClockwise, [this] { TryRotate(false); });
+	gameplayInput.Subscribe(GameplayAction::Hold, [this] { TryHold(); });
 
 	gameplayInput.Subscribe(GameplayAction::Pause, [this] { OpenPause(); });
 }
@@ -218,6 +221,11 @@ void GameplayState::ApplyGamepadActions()
 	{
 		TryRotate(false);
 	}
+
+	if (context.gamepad.WasHoldPressed())
+	{
+		TryHold();
+	}
 }
 
 void GameplayState::ApplyHorizontalRepeat(float deltaTime)
@@ -313,6 +321,22 @@ void GameplayState::TryRotate(bool clockwise)
 	else
 	{
 		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
+	}
+}
+
+void GameplayState::TryHold()
+{
+	if (!session.IsFalling())
+	{
+		return;
+	}
+
+	if (session.Hold())
+	{
+		// Placeholder cue borrowed from rotate -- a dedicated hold sound/rumble
+		// lands with the rest of the new-action feedback.
+		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
+		sceneMotion.Nudge({ 0.f, -HoldNudge });
 	}
 }
 
@@ -413,6 +437,10 @@ void GameplayState::Render(sf::RenderTarget& target)
 	if (!dying)
 	{
 		hud.Render(target);
+		if (hud.HoldVisible())
+		{
+			boardRenderer.RenderHoldPreview(target, session, hud.HoldPreviewArea());
+		}
 		if (hud.NextVisible())
 		{
 			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewArea());

@@ -81,6 +81,49 @@ bool GameplaySession::Rotate(bool clockwise)
 	return false;
 }
 
+bool GameplaySession::Hold()
+{
+	if (phase != Phase::Falling || holdUsedThisTurn)
+	{
+		return false;
+	}
+
+	const Tetromino::Type currentType = currentTetromino.GetType();
+
+	if (heldType)
+	{
+		// Swap: the piece that was held drops in at the spawn position; the
+		// active piece takes its place in the hold slot. The queue is untouched.
+		const Tetromino::Type swapped = *heldType;
+		heldType = currentType;
+		currentTetromino = { swapped, SpawnPosition };
+		ResetLockState();
+
+		if (!board.CanPlace(currentTetromino))
+		{
+			EndGame(GameOverReason::BlockOut);
+		}
+	}
+	else
+	{
+		// First hold: stash the active piece and draw the next queued one, same
+		// as a normal spawn.
+		heldType = currentType;
+		if (!SpawnNextTetromino())
+		{
+			EndGame(GameOverReason::BlockOut);
+		}
+	}
+
+	holdUsedThisTurn = true;
+	return true;
+}
+
+Tetromino GameplaySession::GetHeldPiece() const
+{
+	return { heldType.value_or(Tetromino::Type::I), { 0, 0 } };
+}
+
 void GameplaySession::SoftDropStep()
 {
 	if (phase != Phase::Falling)
@@ -278,6 +321,11 @@ bool GameplaySession::SpawnNextTetromino()
 	currentTetromino = { type, SpawnPosition };
 
 	ResetLockState();
+
+	// A genuinely new piece is in play, so hold is available again. (Hold()
+	// itself also reaches this path the first time it's used, in which case it
+	// immediately sets holdUsedThisTurn back to true afterwards.)
+	holdUsedThisTurn = false;
 
 	return board.CanPlace(currentTetromino);
 }

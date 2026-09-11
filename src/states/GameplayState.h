@@ -30,6 +30,7 @@ private:
 		HardDrop,
 		RotateClockwise,
 		RotateCounterClockwise,
+		Hold,
 		Pause
 	};
 
@@ -81,6 +82,7 @@ private:
 
 	void TryRotate(bool clockwise);
 	void PerformHardDrop();
+	void TryHold();
 	void ReactToEvents(const GameplaySession::Events& events);
 
 	// Snapshot the current frame and hand it to a new PauseState, so the pause

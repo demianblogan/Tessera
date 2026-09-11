@@ -5,9 +5,11 @@
 #include "../display/DisplayMode.h"
 
 // Keyboard bindings for gameplay. Physical scancodes, so they survive a layout
-// change. The six rebindable actions are edited by the Controls > Keyboard
-// panel and persisted. `pause` is fixed to Escape (the universal menu/exit key)
-// and is neither shown nor saved. Gamepad bindings are fixed (GamepadManager).
+// change. The rebindable actions are edited by the Controls > Keyboard panel
+// and persisted (`hold` is wired and saved from v1.6.0 on, but its own
+// Keyboard-panel row lands later). `pause` is fixed to Escape (the universal
+// menu/exit key) and is neither shown nor saved. Gamepad bindings are fixed
+// (GamepadManager).
 struct ControlSettings
 {
     sf::Keyboard::Scancode moveLeft = sf::Keyboard::Scancode::Left;
@@ -16,6 +18,7 @@ struct ControlSettings
     sf::Keyboard::Scancode hardDrop = sf::Keyboard::Scancode::Space;
     sf::Keyboard::Scancode rotateClockwise = sf::Keyboard::Scancode::E;
     sf::Keyboard::Scancode rotateCounterClockwise = sf::Keyboard::Scancode::Q;
+    sf::Keyboard::Scancode hold = sf::Keyboard::Scancode::C;
     sf::Keyboard::Scancode pause = sf::Keyboard::Scancode::Escape;
 };
 
@@ -26,7 +29,7 @@ struct GameSettings
 {
     // Bumped whenever the on-disk settings layout changes. A file written by a
     // different version is preserved as .corrupt and replaced with defaults.
-    static constexpr int FormatVersion = 7;
+    static constexpr int FormatVersion = 8;
 
     // --- Graphics:
 

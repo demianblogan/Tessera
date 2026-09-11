@@ -2,6 +2,7 @@
 
 #include <array>
 #include <deque>
+#include <optional>
 #include <vector>
 
 #include <SFML/System/Vector2.hpp>
@@ -66,6 +67,12 @@ public:
 	void SoftDropStep();
 	void HardDrop();
 
+	// Swap the active piece into the hold slot: the first time, it stashes the
+	// active piece and draws the next queued one; after that, it swaps with
+	// whatever is already held. Once per piece in play -- false if hold was
+	// already used this piece, or nothing is falling.
+	bool Hold();
+
 	// Gravity plus the row-clear delay countdown.
 	void Update(float deltaTime);
 
@@ -87,6 +94,11 @@ public:
 	// renderer (e.g. to animate the next-queue sliding up) -- nothing here reads
 	// the count itself.
 	[[nodiscard]] int GetSpawnCount() const { return spawnCount; }
+
+	[[nodiscard]] bool HasHeldPiece() const { return heldType.has_value(); }
+	[[nodiscard]] bool CanHold() const { return !holdUsedThisTurn; }
+	// Only meaningful when HasHeldPiece() is true.
+	[[nodiscard]] Tetromino GetHeldPiece() const;
 
 	[[nodiscard]] const std::vector<int>& GetClearingRows() const { return clearingRows; }
 
@@ -145,6 +157,9 @@ private:
 	int lowestRow = 0;   // deepest row the active piece's lowest block has reached
 
 	int spawnCount = 0;
+
+	std::optional<Tetromino::Type> heldType;
+	bool holdUsedThisTurn = false;
 
 	std::vector<int> clearingRows;
 	float clearTimer = 0.f;
