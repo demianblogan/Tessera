@@ -408,7 +408,12 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		hud.OnRowsCleared();
 	}
 
-	if (events.landed)
+	// rowsCleared (with the combo/back-to-back/Perfect Clear verdict) only
+	// arrives once the clear delay resolves, a separate ConsumeEvents() batch
+	// from the landed/rowsDetected one at lock time -- landed is long since
+	// false again by then. A T-spin that cleared nothing is the one case that
+	// arrives together with landed, since it's decided at lock time.
+	if (events.rowsCleared || events.tSpin)
 	{
 		ShowClearCallout(events);
 	}
