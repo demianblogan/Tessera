@@ -129,3 +129,13 @@ hud.rotate    = Rotate
 hud.soft_drop = Soft Drop
 hud.hard_drop = Hard Drop
 hud.pause     = Pause
+
+callout.single        = SINGLE
+callout.double        = DOUBLE
+callout.triple        = TRIPLE
+callout.tetris        = TETRIS
+callout.t_spin        = T-SPIN
+callout.t_spin_mini   = T-SPIN MINI
+callout.back_to_back  = BACK-TO-BACK
+callout.perfect_clear = PERFECT CLEAR
+callout.combo         = COMBO

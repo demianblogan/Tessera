@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -21,6 +23,8 @@
 #include "../config/HapticSettings.h"
 #include "../input/gamepad/GamepadHaptics.h"
 #include "../input/gamepad/HapticPulse.h"
+#include "../localization/LocalizationManager.h"
+#include "../localization/TextKeys.h"
 #include "../settings/SettingsManager.h"
 #include "../settings/GameSettings.h"
 #include "../display/DisplayManager.h"
@@ -43,6 +47,18 @@ namespace
 	constexpr float LandNudge = 5.f;
 	constexpr float RowClearNudge = 12.f;
 	constexpr float TetrisNudge = 26.f;
+
+	// On-board callout look: colour by what earned it, one shared size for the
+	// main line and a smaller one for the combo count underneath it.
+	constexpr unsigned int CalloutMainSize = 40;
+	constexpr unsigned int CalloutComboSize = 28;
+
+	const sf::Color DefaultClearColour{ 235, 240, 248 };
+	const sf::Color TetrisColour{ 120, 230, 255 };
+	const sf::Color TSpinColour{ 220, 130, 255 };
+	const sf::Color BackToBackColour{ 255, 190, 80 };
+	const sf::Color PerfectClearColour{ 255, 215, 60 };
+	const sf::Color ComboColour{ 160, 220, 255 };
 }
 
 GameplayState::GameplayState(Context& context, bool playIntro)
@@ -51,6 +67,7 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	, boardRenderer(context)
 	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, hud(context)
+	, boardCallouts(context)
 	, gameplayInput(gameplayActions)
 	, horizontalRepeater({ context.hapticSettings.delayedAutoShift, context.hapticSettings.autoRepeatRate })
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameplayBackground))
@@ -143,6 +160,7 @@ void GameplayState::Update(float deltaTime)
 	neonGlow.Update(deltaTime);
 	hud.Update(deltaTime);
 	sceneMotion.Update(deltaTime);
+	boardCallouts.Update(deltaTime);
 
 	if (introActive)
 	{
@@ -390,6 +408,11 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		hud.OnRowsCleared();
 	}
 
+	if (events.landed)
+	{
+		ShowClearCallout(events);
+	}
+
 	if (events.leveledUp)
 	{
 		context.audioPlayer.Play(Assets::SoundID::NextLevel);
@@ -406,6 +429,72 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 
 		dying = true;
 		deathTimer = 0.f;
+	}
+}
+
+void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
+{
+	// Plain Single clears are far too common to call out; everything else
+	// (Double and up, any T-spin, back-to-back, Perfect Clear, a combo) is rare
+	// or noteworthy enough to earn a popup.
+	const LocalizationManager& text = context.localization;
+
+	const auto rowSuffix = [&text](int rows) -> sf::String
+	{
+		switch (rows)
+		{
+		case 1: return text.GetText(TextKey::Callout::Single);
+		case 2: return text.GetText(TextKey::Callout::Double);
+		case 3: return text.GetText(TextKey::Callout::Triple);
+		case 4: return text.GetText(TextKey::Callout::Tetris);
+		default: return {};
+		}
+	};
+
+	std::vector<BoardCallouts::Line> lines;
+
+	if (events.perfectClear)
+	{
+		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColour, CalloutMainSize });
+	}
+
+	sf::String main;
+	if (events.backToBack)
+	{
+		main += text.GetText(TextKey::Callout::BackToBack) + sf::String(" ");
+	}
+	if (events.tSpin)
+	{
+		main += text.GetText(events.tSpinMini ? TextKey::Callout::TSpinMini : TextKey::Callout::TSpin);
+		if (events.clearedRowCount > 0)
+		{
+			main += sf::String(" ") + rowSuffix(events.clearedRowCount);
+		}
+	}
+	else if (events.clearedRowCount >= 2)
+	{
+		main += rowSuffix(events.clearedRowCount);
+	}
+
+	if (!main.isEmpty())
+	{
+		const sf::Color mainColour = events.backToBack ? BackToBackColour
+			: events.tSpin ? TSpinColour
+			: events.clearedRowCount == 4 ? TetrisColour
+			: DefaultClearColour;
+		lines.push_back({ main, mainColour, CalloutMainSize });
+	}
+
+	if (events.rowsCleared && events.comboCount > 0)
+	{
+		sf::String comboText = sf::String("x") + sf::String(std::to_string(events.comboCount + 1)) + sf::String(" ")
+			+ text.GetText(TextKey::Callout::Combo);
+		lines.push_back({ std::move(comboText), ComboColour, CalloutComboSize });
+	}
+
+	if (!lines.empty())
+	{
+		boardCallouts.Show(std::move(lines));
 	}
 }
 
@@ -457,6 +546,7 @@ void GameplayState::Render(sf::RenderTarget& target)
 			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewArea());
 		}
 		boardRenderer.RenderHoldFlight(target);
+		boardCallouts.Render(target);
 	}
 	else
 	{

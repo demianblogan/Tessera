@@ -163,4 +163,19 @@ namespace TextKey
 		inline constexpr std::string_view HardDrop = "hud.hard_drop";
 		inline constexpr std::string_view Pause    = "hud.pause";
 	}
+
+	// On-board popups for scoring highlights; short fragments joined in code
+	// (e.g. "T-SPIN" + "DOUBLE", "BACK-TO-BACK" + "TETRIS").
+	namespace Callout
+	{
+		inline constexpr std::string_view Single       = "callout.single";
+		inline constexpr std::string_view Double       = "callout.double";
+		inline constexpr std::string_view Triple       = "callout.triple";
+		inline constexpr std::string_view Tetris       = "callout.tetris";
+		inline constexpr std::string_view TSpin        = "callout.t_spin";
+		inline constexpr std::string_view TSpinMini    = "callout.t_spin_mini";
+		inline constexpr std::string_view BackToBack   = "callout.back_to_back";
+		inline constexpr std::string_view PerfectClear = "callout.perfect_clear";
+		inline constexpr std::string_view Combo        = "callout.combo";   // + "xN " prefix in code
+	}
 }

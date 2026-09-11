@@ -10,6 +10,7 @@
 #include "../input/ActionMap.h"
 #include "../input/DirectionalRepeater.h"
 #include "../input/InputHandler.h"
+#include "../rendering/BoardCallouts.h"
 #include "../rendering/BoardRenderer.h"
 #include "../rendering/EffectsController.h"
 #include "../rendering/GameplayHud.h"
@@ -42,6 +43,7 @@ private:
 	EffectsController effects;
 	GameplayHud hud;
 	SceneMotion sceneMotion;
+	BoardCallouts boardCallouts;
 
 	ActionMap<GameplayAction> gameplayActions;
 	InputHandler<GameplayAction> gameplayInput;
@@ -84,6 +86,7 @@ private:
 	void PerformHardDrop();
 	void TryHold();
 	void ReactToEvents(const GameplaySession::Events& events);
+	void ShowClearCallout(const GameplaySession::Events& events);
 
 	// Snapshot the current frame and hand it to a new PauseState, so the pause
 	// screen can "solidify" the frozen picture behind its menu.
