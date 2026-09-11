@@ -48,10 +48,12 @@ namespace
 	constexpr float RowClearNudge = 12.f;
 	constexpr float TetrisNudge = 26.f;
 
-	// On-board callout look: colour by what earned it, one shared size for the
-	// main line and a smaller one for the combo count underneath it.
-	constexpr unsigned int CalloutMainSize = 40;
-	constexpr unsigned int CalloutComboSize = 28;
+	// On-board callout look: colour by what earned it; text grows with the
+	// event's rank (0 = least special), one fixed smaller size for the combo
+	// count underneath it.
+	constexpr unsigned int CalloutBaseSize = 34;
+	constexpr unsigned int CalloutSizePerRank = 4;
+	constexpr unsigned int CalloutComboSize = 26;
 
 	const sf::Color DefaultClearColour{ 235, 240, 248 };
 	const sf::Color TetrisColour{ 120, 230, 255 };
@@ -456,11 +458,26 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 		}
 	};
 
+	// How special this clear is: bigger text, a bigger flash and a longer stay
+	// on screen for rarer clears, on the same escalating scale as everywhere
+	// else in the game.
+	int rank = 0;
+	if (events.clearedRowCount == 3) { rank = 1; }
+	if (events.clearedRowCount == 4) { rank = 3; }
+	if (events.tSpin) { rank = std::max(rank, events.tSpinMini ? 2 : 4); }
+	if (events.tSpin && events.clearedRowCount >= 2) { rank += 1; }
+	if (events.backToBack) { rank += 1; }
+	if (events.perfectClear) { rank = std::max(rank, 5) + 1; }
+
+	const unsigned int mainSize = CalloutBaseSize + static_cast<unsigned int>(rank) * CalloutSizePerRank;
+
 	std::vector<BoardCallouts::Line> lines;
+	sf::Color accent = DefaultClearColour;
 
 	if (events.perfectClear)
 	{
-		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColour, CalloutMainSize });
+		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColour, mainSize });
+		accent = PerfectClearColour;
 	}
 
 	sf::String main;
@@ -487,7 +504,12 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 			: events.tSpin ? TSpinColour
 			: events.clearedRowCount == 4 ? TetrisColour
 			: DefaultClearColour;
-		lines.push_back({ main, mainColour, CalloutMainSize });
+		lines.push_back({ main, mainColour, mainSize });
+
+		if (!events.perfectClear)
+		{
+			accent = mainColour;
+		}
 	}
 
 	if (events.rowsCleared && events.comboCount > 0)
@@ -499,7 +521,7 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 
 	if (!lines.empty())
 	{
-		boardCallouts.Show(std::move(lines));
+		boardCallouts.Show(std::move(lines), rank, accent);
 	}
 }
 
