@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -331,12 +332,22 @@ void GameplayState::TryHold()
 		return;
 	}
 
+	const Tetromino outgoingPiece = session.GetCurrentTetromino();
+	const bool hadHeldPiece = session.HasHeldPiece();
+
 	if (session.Hold())
 	{
 		// Placeholder cue borrowed from rotate -- a dedicated hold sound/rumble
 		// lands with the rest of the new-action feedback.
 		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
 		sceneMotion.Nudge({ 0.f, -HoldNudge });
+
+		// Fly the outgoing piece to the HOLD box; if one was already held, fly
+		// it back out to the board position Hold() just gave it.
+		const std::optional<Tetromino> incomingPiece = hadHeldPiece
+			? std::optional<Tetromino>(session.GetCurrentTetromino())
+			: std::nullopt;
+		boardRenderer.TriggerHoldSwap(outgoingPiece, incomingPiece, hud.HoldPreviewArea());
 	}
 }
 
@@ -445,6 +456,7 @@ void GameplayState::Render(sf::RenderTarget& target)
 		{
 			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewArea());
 		}
+		boardRenderer.RenderHoldFlight(target);
 	}
 	else
 	{

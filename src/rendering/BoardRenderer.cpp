@@ -58,6 +58,24 @@ void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
 	{
 		nextSlideProgress = std::min(1.f, nextSlideProgress + deltaTime / NextSlideDuration);
 	}
+
+	if (outgoingFlight)
+	{
+		outgoingFlight->timer += deltaTime;
+		if (outgoingFlight->timer >= HoldFlightDuration)
+		{
+			outgoingFlight.reset();
+		}
+	}
+
+	if (incomingFlight)
+	{
+		incomingFlight->timer += deltaTime;
+		if (incomingFlight->timer >= HoldFlightDuration)
+		{
+			incomingFlight.reset();
+		}
+	}
 }
 
 void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
@@ -446,6 +464,12 @@ void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySe
 
 void BoardRenderer::RenderHoldPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const
 {
+	// A flight animation is standing in for the HOLD box's contents right now.
+	if (IsHoldFlightActive())
+	{
+		return;
+	}
+
 	if (!session.HasHeldPiece())
 	{
 		return;
@@ -458,6 +482,76 @@ void BoardRenderer::RenderHoldPreview(sf::RenderTarget& target, const GameplaySe
 	const sf::Vector2f centre{ area.position.x + area.size.x * 0.5f, area.position.y + area.size.y * 0.5f };
 
 	DrawPiecePreview(target, session.GetHeldPiece(), NextHeroBlockSize, centre, tint);
+}
+
+void BoardRenderer::RenderHoldFlight(sf::RenderTarget& target) const
+{
+	const auto drawFlight = [&](const std::optional<PieceFlight>& flight)
+	{
+		if (!flight)
+		{
+			return;
+		}
+
+		const float t = UI::Easing::EaseOutCubic(std::min(flight->timer / HoldFlightDuration, 1.f));
+		const sf::Vector2f centre = UI::Easing::Lerp(flight->fromCentre, flight->toCentre, t);
+		const float blockSize = UI::Easing::Lerp(flight->fromBlockSize, flight->toBlockSize, t);
+
+		DrawPiecePreview(target, Tetromino(flight->type, { 0, 0 }), blockSize, centre);
+	};
+
+	drawFlight(outgoingFlight);
+	drawFlight(incomingFlight);
+}
+
+void BoardRenderer::TriggerHoldSwap(const Tetromino& outgoingPiece, std::optional<Tetromino> incomingPiece,
+	sf::FloatRect holdBoxArea)
+{
+	const sf::Vector2f holdCentre{
+		holdBoxArea.position.x + holdBoxArea.size.x * 0.5f,
+		holdBoxArea.position.y + holdBoxArea.size.y * 0.5f };
+
+	outgoingFlight = PieceFlight{
+		outgoingPiece.GetType(),
+		BoardSpaceCentre(outgoingPiece), BlockSize,
+		holdCentre, NextHeroBlockSize,
+		0.f };
+
+	if (incomingPiece)
+	{
+		incomingFlight = PieceFlight{
+			incomingPiece->GetType(),
+			holdCentre, NextHeroBlockSize,
+			BoardSpaceCentre(*incomingPiece), BlockSize,
+			0.f };
+	}
+	else
+	{
+		incomingFlight.reset();
+	}
+}
+
+sf::Vector2f BoardRenderer::BoardSpaceCentre(const Tetromino& piece)
+{
+	const auto blocks = piece.GetBlockPositions();
+
+	int minX = Board::WIDTH;
+	int maxX = 0;
+	int minY = Board::HEIGHT;
+	int maxY = 0;
+
+	for (const sf::Vector2i& block : blocks)
+	{
+		minX = std::min(minX, block.x);
+		maxX = std::max(maxX, block.x);
+		minY = std::min(minY, block.y);
+		maxY = std::max(maxY, block.y);
+	}
+
+	return {
+		BoardPosition.x + static_cast<float>(minX + maxX + 1) * 0.5f * BlockSize,
+		RowTop(minY) + static_cast<float>(maxY - minY + 1) * 0.5f * BlockSize
+	};
 }
 
 void BoardRenderer::DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece,
