@@ -230,30 +230,44 @@ GameplayHud::GameplayHud(Context& context)
 		{ TextKey::Hud::Pause,    Input::KeyName(controls.pause) },
 	} };
 
-	const float columnStep = ControlsBounds.size.x / static_cast<float>(entries.size());
 	const float lineY = Centre(ControlsBounds).y;
 
-	for (std::size_t i = 0; i < entries.size(); i++)
-	{
-		const float columnCentreX = ControlsBounds.position.x + columnStep * (static_cast<float>(i) + 0.5f);
+	// Build every entry first (so its text -- and width -- is known), then lay
+	// them out with equal gaps, including from the frame's own inner edges: the
+	// gap before the first entry and after the last one is the same size as the
+	// gaps between entries, rather than each entry just centring in an equal
+	// share of the strip (which does not give equal *visual* spacing, since the
+	// entries themselves are different widths).
+	float totalTextWidth = 0.f;
 
+	for (const auto& [labelKey, valueString] : entries)
+	{
 		ControlEntry entry{
-			sf::Text(font, context.localization.GetText(entries[i].first) + sf::String(": "), ControlsLabelSize),
-			sf::Text(font, entries[i].second, ControlsValueSize)
+			sf::Text(font, context.localization.GetText(labelKey) + sf::String(": "), ControlsLabelSize),
+			sf::Text(font, valueString, ControlsValueSize)
 		};
 		entry.label.setFillColor(ControlsLabelColour);
 		entry.value.setFillColor(ControlsValueColour);
 
-		// One line per entry ("Move: Left / Right"), the pair centred as a unit
-		// on the column.
-		const float labelWidth = entry.label.getLocalBounds().size.x;
-		const float totalWidth = labelWidth + entry.value.getLocalBounds().size.x;
-		const float startX = columnCentreX - totalWidth * 0.5f;
-
-		AlignLeft(entry.label, { startX, lineY });
-		AlignLeft(entry.value, { startX + labelWidth, lineY });
-
+		totalTextWidth += entry.label.getLocalBounds().size.x + entry.value.getLocalBounds().size.x;
 		controlsEntries.push_back(std::move(entry));
+	}
+
+	const float innerLeft = ControlsBounds.position.x + FillInset;
+	const float innerWidth = ControlsBounds.size.x - FillInset * 2.f;
+	const float gap = (innerWidth - totalTextWidth) / static_cast<float>(controlsEntries.size() + 1);
+
+	float cursorX = innerLeft + gap;
+
+	for (ControlEntry& entry : controlsEntries)
+	{
+		const float labelWidth = entry.label.getLocalBounds().size.x;
+		const float valueWidth = entry.value.getLocalBounds().size.x;
+
+		AlignLeft(entry.label, { cursorX, lineY });
+		AlignLeft(entry.value, { cursorX + labelWidth, lineY });
+
+		cursorX += labelWidth + valueWidth + gap;
 	}
 }
 
