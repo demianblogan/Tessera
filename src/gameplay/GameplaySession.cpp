@@ -1,6 +1,7 @@
 #include "GameplaySession.h"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 #include "KickData.h"
@@ -138,6 +139,7 @@ void GameplaySession::SoftDropStep()
 	{
 		currentTetromino = movedTetromino;
 		fallTimer = 0.f;
+		score += SoftDropScorePerCell;
 		OnPieceDescended();
 	}
 	// Otherwise the piece is resting; the lock delay in Update() locks it. Soft
@@ -151,6 +153,8 @@ void GameplaySession::HardDrop()
 		return;
 	}
 
+	int cellsDropped = 0;
+
 	while (true)
 	{
 		Tetromino movedTetromino = currentTetromino;
@@ -162,7 +166,10 @@ void GameplaySession::HardDrop()
 		}
 
 		currentTetromino = movedTetromino;
+		++cellsDropped;
 	}
+
+	score += cellsDropped * HardDropScorePerCell;
 
 	fallTimer = 0.f;
 	LockAndScan();
@@ -188,17 +195,21 @@ void GameplaySession::Update(float deltaTime)
 		board.ClearRows(clearingRows);
 		clearingRows.clear();
 
+		// Guideline scoring: Single/Double/Triple/Tetris, at the level the clear
+		// happened at -- before this clear's own lines can push the level up.
+		const int scoringRows = std::clamp(clearedRows, 1, static_cast<int>(LineClearScores.size()));
+		score += LineClearScores[scoringRows - 1] * level;
+
 		totalLinesCleared += clearedRows;
-		score += clearedRows * ScorePerRow;
 
 		const int previousLevel = level;
-		level = score / ScorePerLevel + 1;
+		level = totalLinesCleared / LinesPerLevel + 1;
 
 		pendingEvents.rowsCleared = true;
 		pendingEvents.clearedRowCount = clearedRows;
 		pendingEvents.leveledUp = level > previousLevel;
 
-		fallDelay = std::max(MinFallDelay, BaseFallDelay - (level - 1) * FallDelayPerLevel);
+		fallDelay = GravityDelayForLevel(level);
 
 		phase = Phase::Falling;
 
@@ -340,6 +351,18 @@ void GameplaySession::ResetLockState()
 	lockTimer = 0.f;
 	lockResets = 0;
 	lowestRow = PieceBottomRow();
+}
+
+float GameplaySession::GravityDelayForLevel(int level)
+{
+	// The guideline gravity curve: (0.8 - (level-1)*0.007) ^ (level-1) seconds
+	// per row. Level 1 is 1s/row (any base to the power 0 is 1) and it eases
+	// down from there; the base is floored so a very high level can't make it
+	// negative before the exponent gets a chance to matter.
+	const float base = std::max(0.001f, 0.8f - static_cast<float>(level - 1) * 0.007f);
+	const float delay = std::pow(base, static_cast<float>(level - 1));
+
+	return std::max(MinFallDelay, delay);
 }
 
 int GameplaySession::PieceBottomRow() const

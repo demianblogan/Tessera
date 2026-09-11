@@ -108,15 +108,23 @@ public:
 	[[nodiscard]] float GetElapsedSeconds() const { return elapsedSeconds; }
 
 private:
-	static constexpr int ScorePerLevel = 50;
-	static constexpr int ScorePerRow = 10;
+	// Guideline scoring: points per line clear (Single/Double/Triple/Tetris, by
+	// row count 1..4), multiplied by the level the clear happened at. Soft/hard
+	// drop award a small bonus per cell dropped, win or lose the race to lock.
+	static constexpr std::array<int, 4> LineClearScores = { 100, 300, 500, 800 };
+	static constexpr int SoftDropScorePerCell = 1;
+	static constexpr int HardDropScorePerCell = 2;
+
+	// A new level every this many total lines cleared.
+	static constexpr int LinesPerLevel = 10;
 
 	// How many upcoming pieces the queue holds (and the HUD shows). Fixed for
 	// now; a player setting for this arrives with the other gameplay toggles.
 	static constexpr int NextQueueLength = 5;
-	static constexpr float BaseFallDelay = 0.5f;
-	static constexpr float MinFallDelay = 0.1f;
-	static constexpr float FallDelayPerLevel = 0.05f;
+
+	// However high the level climbs, gravity never gets faster than this --
+	// GravityDelayForLevel() otherwise keeps shrinking indefinitely.
+	static constexpr float MinFallDelay = 0.02f;
 
 	// Kept in step with EffectsController::RowClearDuration: the board removal
 	// happens when the clear animation ends.
@@ -132,6 +140,10 @@ private:
 	void LockAndScan();
 	bool SpawnNextTetromino();
 	void EndGame(GameOverReason reason);
+
+	// Seconds per row of gravity at `level`, following the guideline curve
+	// (level 1 = 1s/row, easing down from there), floored at MinFallDelay.
+	[[nodiscard]] static float GravityDelayForLevel(int level);
 
 	// Lock-delay bookkeeping.
 	void ResetLockState();
@@ -150,7 +162,7 @@ private:
 	Phase phase = Phase::Falling;
 
 	float fallTimer = 0.f;
-	float fallDelay = BaseFallDelay;
+	float fallDelay = GravityDelayForLevel(1);
 
 	float lockTimer = 0.f;
 	int lockResets = 0;

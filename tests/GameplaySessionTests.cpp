@@ -1,5 +1,7 @@
 #include "doctest/doctest.h"
 
+#include <algorithm>
+
 #include "gameplay/Board.h"
 #include "gameplay/GameplaySession.h"
 
@@ -211,7 +213,8 @@ TEST_CASE("gravity drops the piece one row once the fall delay elapses")
 
 	const int startY = session.GetCurrentTetromino().GetPosition().y;
 
-	session.Update(0.5f);
+	// The guideline gravity curve is 1 second per row at level 1.
+	session.Update(1.0f);
 
 	CHECK(session.GetCurrentTetromino().GetPosition().y == startY + 1);
 }
@@ -289,6 +292,32 @@ TEST_CASE("the lock-delay reset is capped so a piece cannot be stalled forever")
 	CHECK(locked);
 }
 
+TEST_CASE("a soft-drop step awards one point")
+{
+	GameplaySession session;
+
+	CHECK(session.GetScore() == 0);
+	session.SoftDropStep();
+	CHECK(session.GetScore() == 1);
+}
+
+TEST_CASE("a hard drop awards two points per cell dropped")
+{
+	GameplaySession session;
+
+	int startBottom = 0;
+	for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
+	{
+		startBottom = std::max(startBottom, block.y);
+	}
+
+	session.HardDrop();
+	(void)session.ConsumeEvents();
+
+	const int cellsDropped = (Board::HEIGHT - 1) - startBottom;
+	CHECK(session.GetScore() == cellsDropped * 2);
+}
+
 TEST_CASE("a hard drop locks a piece and reports the landing")
 {
 	GameplaySession session;
@@ -310,6 +339,7 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 
 	bool sawGameOverEvent = false;
 	GameplaySession::GameOverReason reason = GameplaySession::GameOverReason::None;
+	int previousScore = 0;
 
 	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
 	{
@@ -323,9 +353,11 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 			reason = events.gameOverReason;
 		}
 
-		// Scoring invariants hold at every step.
-		CHECK(session.GetScore() % 10 == 0);
-		CHECK(session.GetLevel() == session.GetScore() / 50 + 1);
+		// Scoring invariants hold at every step: it never goes down, and the
+		// level always matches the guideline "every 10 lines" rule.
+		CHECK(session.GetScore() >= previousScore);
+		CHECK(session.GetLevel() == session.GetLinesCleared() / 10 + 1);
+		previousScore = session.GetScore();
 	}
 
 	CHECK(session.GetPhase() == GameplaySession::Phase::GameOver);
