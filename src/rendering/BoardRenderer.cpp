@@ -380,11 +380,12 @@ void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySe
 		return;
 	}
 
-	// A vertical stack inside the NEXT cell: the piece that spawns next on top,
-	// the rest below it, evenly spaced under the caption.
+	// A vertical stack filling `area`: the piece that spawns next on top, the
+	// rest below it in equal slots, so this keeps working as the queue length
+	// (currently fixed at 5) becomes a player setting.
 	const float centreX = area.position.x + area.size.x * 0.5f;
-	const float firstY = area.position.y + area.size.y * 0.32f;
-	const float slotStride = area.size.y * 0.15f;
+	const float slotStride = area.size.y / static_cast<float>(count);
+	const float firstY = area.position.y + slotStride * 0.5f;
 
 	for (int i = 0; i < count; ++i)
 	{

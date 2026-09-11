@@ -27,32 +27,66 @@
 namespace
 {
 	// The HUD hugs the well: a narrow gap off its *outer* wall (the board draws a
-	// one-block wall around the playfield) keeps every panel close so the eye
+	// one-block wall around the playfield) keeps both panels close so the eye
 	// barely has to travel off the stack.
-	constexpr float ScreenHeight = 1080.f;
 	constexpr float WellOuterLeft = BoardRenderer::BoardPosition.x - BoardRenderer::BlockSize;
 	constexpr float WellOuterRight = BoardRenderer::BoardPosition.x
 		+ static_cast<float>(Board::WIDTH + 1) * BoardRenderer::BlockSize;
+	constexpr float WellOuterTop = BoardRenderer::BoardPosition.y - BoardRenderer::BlockSize;
+	constexpr float WellOuterBottom = BoardRenderer::BoardPosition.y
+		+ static_cast<float>(Board::VisibleHeight + 1) * BoardRenderer::BlockSize;
 
 	constexpr float WellGap = 34.f;
-	constexpr float Square = 210.f;
-	constexpr float Gap = 24.f;
+	constexpr float PanelWidth = 220.f;
+	constexpr float RowInset = 22.f;
 
-	constexpr float ColumnTop = (ScreenHeight - (4.f * Square + 3.f * Gap)) * 0.5f;
-	constexpr float LeftX = WellOuterLeft - WellGap - Square;
+	// Both panels share the same internal shape: a caption, a square "hero" area
+	// (the hold piece / the next queue), a divider, then two stacked stat rows.
+	constexpr float CaptionOffset = 42.f;
+	constexpr float HeroTop = 60.f;
+	constexpr float HoldBoxSize = 150.f;
+	constexpr float NextBoxHeight = 260.f;
+	constexpr float DividerGap = 20.f;
+	constexpr float RowsGap = 30.f;
+	constexpr float RowHeight = 80.f;
+	constexpr float BottomPadding = 30.f;
+
+	constexpr float LeftPanelHeight = HeroTop + HoldBoxSize + DividerGap + RowsGap + RowHeight * 2.f + BottomPadding;
+	constexpr float RightPanelHeight = HeroTop + NextBoxHeight + DividerGap + RowsGap + RowHeight * 2.f + BottomPadding;
+
+	// Both panels share a top edge; it's picked so the taller one (NEXT carries
+	// more content than HOLD) sits centred against the well.
+	constexpr float PanelTop = WellOuterTop + (WellOuterBottom - WellOuterTop - RightPanelHeight) * 0.5f;
+
+	constexpr float LeftX = WellOuterLeft - WellGap - PanelWidth;
 	constexpr float RightX = WellOuterRight + WellGap;
 
-	// The legend keeps its right edge flush with the left column but is wider, so
-	// each row fits "Action .......... Key" on one line like the menus do.
-	constexpr float LegendWidth = 400.f;
-	constexpr sf::FloatRect LegendBounds{
-		{ LeftX + Square - LegendWidth, ColumnTop + 2.f * (Square + Gap) },
-		{ LegendWidth, 2.f * Square + Gap } };
+	constexpr sf::FloatRect LeftPanelBounds{ { LeftX, PanelTop }, { PanelWidth, LeftPanelHeight } };
+	constexpr sf::FloatRect RightPanelBounds{ { RightX, PanelTop }, { PanelWidth, RightPanelHeight } };
 
-	constexpr unsigned int CaptionSize = 38;
-	constexpr unsigned int ValueSize = 54;
-	constexpr unsigned int LegendTitleSize = 32;
-	constexpr unsigned int LegendRowSize = 27;
+	constexpr float LeftColumnCentreX = LeftX + PanelWidth * 0.5f;
+	constexpr float RightColumnCentreX = RightX + PanelWidth * 0.5f;
+
+	constexpr float LeftRowsTop = PanelTop + HeroTop + HoldBoxSize + DividerGap + RowsGap;
+	constexpr float RightRowsTop = PanelTop + HeroTop + NextBoxHeight + DividerGap + RowsGap;
+
+	constexpr float LevelRowTop = LeftRowsTop;
+	constexpr float TimeRowTop = LeftRowsTop + RowHeight;
+	constexpr float ScoreRowTop = RightRowsTop;
+	constexpr float LinesRowTop = RightRowsTop + RowHeight;
+
+	constexpr float StatLabelOffset = 16.f;
+	constexpr float StatValueOffset = 50.f;
+
+	// The leftover space under the (shorter) left panel, down to the well's foot.
+	constexpr float LegendTop = PanelTop + LeftPanelHeight + 24.f;
+	constexpr sf::FloatRect LegendBounds{ { LeftX, LegendTop }, { PanelWidth, WellOuterBottom - LegendTop - 12.f } };
+
+	constexpr unsigned int CaptionSize = 34;
+	constexpr unsigned int StatLabelSize = 22;
+	constexpr unsigned int StatValueSize = 40;
+	constexpr unsigned int LegendTitleSize = 22;
+	constexpr unsigned int LegendRowSize = 19;
 
 	constexpr sf::Vector2f FrameTargetBorder{ 32.f, 32.f };
 	constexpr float FillInset = 16.f;
@@ -63,17 +97,14 @@ namespace
 	const sf::Color CaptionColour{ 150, 172, 196 };
 	const sf::Color ValueColour{ 255, 255, 255 };
 	const sf::Color FlashColour{ 120, 230, 255 };
+	const sf::Color DividerColour{ 150, 172, 196, 55 };
+	const sf::Color PlaceholderColour{ 90, 110, 130, 130 };
 	const sf::Color LegendActionColour{ 146, 162, 178 };
 	const sf::Color LegendKeyColour{ 236, 240, 246 };
 
 	[[nodiscard]] sf::Vector2f Centre(const sf::FloatRect& rect)
 	{
 		return { rect.position.x + rect.size.x * 0.5f, rect.position.y + rect.size.y * 0.5f };
-	}
-
-	[[nodiscard]] sf::FloatRect SquareAt(float x, int row)
-	{
-		return { { x, ColumnTop + static_cast<float>(row) * (Square + Gap) }, { Square, Square } };
 	}
 
 	[[nodiscard]] sf::Color MixColour(sf::Color from, sf::Color to, float t)
@@ -105,73 +136,79 @@ namespace
 		text.setOrigin({ bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y * 0.5f });
 		text.setPosition(rightMiddle);
 	}
-
-	// Cell indices, in build order.
-	enum CellId : std::size_t { Hold = 0, Level = 1, Next = 2, Score = 3, Lines = 4, Time = 5 };
-
-	[[nodiscard]] sf::Vector2f ValueCentre(std::size_t cell)
-	{
-		const bool left = cell == Level;
-		const int row = left ? 1 : static_cast<int>(cell) - static_cast<int>(Next);
-		const sf::FloatRect bounds = SquareAt(left ? LeftX : RightX, row);
-		return Centre(bounds);
-	}
 }
 
-GameplayHud::Cell GameplayHud::MakeCell(std::string_view captionKey, sf::FloatRect bounds)
+GameplayHud::StatRow GameplayHud::MakeStatRow(std::string_view labelKey, std::string_view initialValue,
+	float centreX, float rowTop) const
 {
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
-	sf::RectangleShape fill({ bounds.size.x - FillInset * 2.f, bounds.size.y - FillInset * 2.f });
-	fill.setPosition({ bounds.position.x + FillInset, bounds.position.y + FillInset });
-	fill.setFillColor(FillColour);
+	StatRow row{
+		sf::Text(font, context.localization.GetText(labelKey), StatLabelSize),
+		sf::Text(font, initialValue, StatValueSize)
+	};
 
-	UI::NineSliceFrame frame(context.textures.Get(Assets::TextureID::UiFrameBlue), bounds,
-		UI::MenuFrameSourceBorder, FrameTargetBorder);
+	row.label.setFillColor(CaptionColour);
+	row.label.setLetterSpacing(1.2f);
+	CentreText(row.label, { centreX, rowTop + StatLabelOffset });
 
-	sf::Text caption(font, context.localization.GetText(captionKey), CaptionSize);
-	caption.setFillColor(CaptionColour);
-	caption.setLetterSpacing(1.4f);
-	CentreText(caption, { Centre(bounds).x, bounds.position.y + 42.f });
+	row.value.setFillColor(ValueColour);
+	CentreText(row.value, { centreX, rowTop + StatValueOffset });
 
-	return { std::move(fill), std::move(frame), std::move(caption), 0.f };
+	return row;
 }
 
 GameplayHud::GameplayHud(Context& context)
 	: context(context)
-	, scoreValue(context.fonts.Get(Assets::FontID::Main), "0", ValueSize)
-	, levelValue(context.fonts.Get(Assets::FontID::Main), "1", ValueSize)
-	, linesValue(context.fonts.Get(Assets::FontID::Main), "0", ValueSize)
-	, timeValue(context.fonts.Get(Assets::FontID::Main), "0:00", ValueSize)
-	, legendFrame(context.textures.Get(Assets::TextureID::UiFrameBlue), LegendBounds,
+	, leftFill({ LeftPanelBounds.size.x - FillInset * 2.f, LeftPanelBounds.size.y - FillInset * 2.f })
+	, leftFrame(context.textures.Get(Assets::TextureID::UiFrameBlue), LeftPanelBounds,
 		UI::MenuFrameSourceBorder, FrameTargetBorder)
-	, legendTitle(context.fonts.Get(Assets::FontID::Main),
-		context.localization.GetText(TextKey::Hud::Controls), LegendTitleSize)
-	, nextCellBounds(SquareAt(RightX, 0))
+	, holdCaption(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::Hold), CaptionSize)
+	, holdBoxBounds{ { LeftX + RowInset, PanelTop + HeroTop }, { PanelWidth - RowInset * 2.f, HoldBoxSize } }
+	, holdPlaceholder({ holdBoxBounds.size.x - 12.f, holdBoxBounds.size.y - 12.f })
+	, leftDivider({ PanelWidth - RowInset * 2.f, 2.f })
+	, levelRow(MakeStatRow(TextKey::Hud::Level, "1", LeftColumnCentreX, LevelRowTop))
+	, timeRow(MakeStatRow(TextKey::Hud::Time, "0:00", LeftColumnCentreX, TimeRowTop))
+	, rightFill({ RightPanelBounds.size.x - FillInset * 2.f, RightPanelBounds.size.y - FillInset * 2.f })
+	, rightFrame(context.textures.Get(Assets::TextureID::UiFrameBlue), RightPanelBounds,
+		UI::MenuFrameSourceBorder, FrameTargetBorder)
+	, nextCaption(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::Next), CaptionSize)
+	, nextBoxBounds{ { RightX, PanelTop + HeroTop }, { PanelWidth, NextBoxHeight } }
+	, rightDivider({ PanelWidth - RowInset * 2.f, 2.f })
+	, scoreRow(MakeStatRow(TextKey::Hud::Score, "0", RightColumnCentreX, ScoreRowTop))
+	, linesRow(MakeStatRow(TextKey::Hud::Lines, "0", RightColumnCentreX, LinesRowTop))
+	, legendTitle(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::Controls), LegendTitleSize)
 {
-	cells.push_back(MakeCell(TextKey::Hud::Hold, SquareAt(LeftX, 0)));
-	cells.push_back(MakeCell(TextKey::Hud::Level, SquareAt(LeftX, 1)));
-	cells.push_back(MakeCell(TextKey::Hud::Next, SquareAt(RightX, 0)));
-	cells.push_back(MakeCell(TextKey::Hud::Score, SquareAt(RightX, 1)));
-	cells.push_back(MakeCell(TextKey::Hud::Lines, SquareAt(RightX, 2)));
-	cells.push_back(MakeCell(TextKey::Hud::Time, SquareAt(RightX, 3)));
+	leftFill.setPosition({ LeftPanelBounds.position.x + FillInset, LeftPanelBounds.position.y + FillInset });
+	leftFill.setFillColor(FillColour);
 
-	scoreValue.setFillColor(ValueColour);
-	levelValue.setFillColor(ValueColour);
-	linesValue.setFillColor(ValueColour);
-	timeValue.setFillColor(ValueColour);
+	CentreText(holdCaption, { Centre(LeftPanelBounds).x, LeftPanelBounds.position.y + CaptionOffset });
+	holdCaption.setFillColor(CaptionColour);
+	holdCaption.setLetterSpacing(1.4f);
 
-	Set(0, 1, 0, 0.f);
+	holdPlaceholder.setPosition({ holdBoxBounds.position.x + 6.f, holdBoxBounds.position.y + 6.f });
+	holdPlaceholder.setFillColor(sf::Color::Transparent);
+	holdPlaceholder.setOutlineColor(PlaceholderColour);
+	holdPlaceholder.setOutlineThickness(2.f);
 
-	// Controls legend under the left column: one entry per action, key names read
-	// once from the live bindings (layout-independent, via Input::KeyName).
-	legendFill.setSize({ LegendBounds.size.x - FillInset * 2.f, LegendBounds.size.y - FillInset * 2.f });
-	legendFill.setPosition({ LegendBounds.position.x + FillInset, LegendBounds.position.y + FillInset });
-	legendFill.setFillColor(FillColour);
+	leftDivider.setPosition({ LeftX + RowInset, PanelTop + HeroTop + HoldBoxSize + DividerGap });
+	leftDivider.setFillColor(DividerColour);
 
+	rightFill.setPosition({ RightPanelBounds.position.x + FillInset, RightPanelBounds.position.y + FillInset });
+	rightFill.setFillColor(FillColour);
+
+	CentreText(nextCaption, { Centre(RightPanelBounds).x, RightPanelBounds.position.y + CaptionOffset });
+	nextCaption.setFillColor(CaptionColour);
+	nextCaption.setLetterSpacing(1.4f);
+
+	rightDivider.setPosition({ RightX + RowInset, PanelTop + HeroTop + NextBoxHeight + DividerGap });
+	rightDivider.setFillColor(DividerColour);
+
+	// Controls legend: no frame, just muted text under the left panel -- it's a
+	// reference, not something read every frame.
 	legendTitle.setFillColor(CaptionColour);
-	legendTitle.setLetterSpacing(1.4f);
-	CentreText(legendTitle, { Centre(LegendBounds).x, LegendBounds.position.y + 40.f });
+	legendTitle.setLetterSpacing(1.2f);
+	CentreText(legendTitle, { Centre(LegendBounds).x, LegendBounds.position.y + 16.f });
 
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 	const ControlSettings& controls = context.settings.GetSettings().controls;
@@ -190,8 +227,8 @@ GameplayHud::GameplayHud(Context& context)
 		{ TextKey::Hud::Pause,    Input::KeyName(controls.pause) },
 	} };
 
-	const float entriesTop = LegendBounds.position.y + 92.f;
-	const float entryStep = (LegendBounds.size.y - 112.f) / static_cast<float>(entries.size());
+	const float entriesTop = LegendBounds.position.y + 46.f;
+	const float entryStep = (LegendBounds.size.y - 56.f) / static_cast<float>(entries.size());
 
 	for (std::size_t i = 0; i < entries.size(); i++)
 	{
@@ -203,8 +240,8 @@ GameplayHud::GameplayHud(Context& context)
 		};
 		entry.action.setFillColor(LegendActionColour);
 		entry.keys.setFillColor(LegendKeyColour);
-		AlignLeft(entry.action, { LegendBounds.position.x + 28.f, y });
-		AlignRight(entry.keys, { LegendBounds.position.x + LegendBounds.size.x - 28.f, y });
+		AlignLeft(entry.action, { LegendBounds.position.x + RowInset, y });
+		AlignRight(entry.keys, { LegendBounds.position.x + LegendBounds.size.x - RowInset, y });
 
 		legendEntries.push_back(std::move(entry));
 	}
@@ -212,53 +249,48 @@ GameplayHud::GameplayHud(Context& context)
 
 void GameplayHud::Set(int score, int level, int lines, float seconds)
 {
-	scoreValue.setString(std::to_string(score));
-	levelValue.setString(std::to_string(level));
-	linesValue.setString(std::to_string(lines));
-	timeValue.setString(TimeFormat::MinutesSeconds(seconds));
+	scoreRow.value.setString(std::to_string(score));
+	levelRow.value.setString(std::to_string(level));
+	linesRow.value.setString(std::to_string(lines));
+	timeRow.value.setString(TimeFormat::MinutesSeconds(seconds));
 
-	CentreText(scoreValue, ValueCentre(Score));
-	CentreText(levelValue, ValueCentre(Level));
-	CentreText(linesValue, ValueCentre(Lines));
-	CentreText(timeValue, ValueCentre(Time));
+	CentreText(scoreRow.value, { RightColumnCentreX, ScoreRowTop + StatValueOffset });
+	CentreText(levelRow.value, { LeftColumnCentreX, LevelRowTop + StatValueOffset });
+	CentreText(linesRow.value, { RightColumnCentreX, LinesRowTop + StatValueOffset });
+	CentreText(timeRow.value, { LeftColumnCentreX, TimeRowTop + StatValueOffset });
 }
 
 void GameplayHud::Update(float deltaTime)
 {
-	for (Cell& cell : cells)
-	{
-		cell.flash = std::max(0.f, cell.flash - deltaTime / FlashDuration);
-	}
+	levelRow.flash = std::max(0.f, levelRow.flash - deltaTime / FlashDuration);
+	timeRow.flash = std::max(0.f, timeRow.flash - deltaTime / FlashDuration);
+	scoreRow.flash = std::max(0.f, scoreRow.flash - deltaTime / FlashDuration);
+	linesRow.flash = std::max(0.f, linesRow.flash - deltaTime / FlashDuration);
 }
 
 void GameplayHud::SetVisible(Element element, bool visible)
 {
 	switch (element)
 	{
-	case Element::Hold:  cells[Hold].visible = visible; break;
-	case Element::Next:  cells[Next].visible = visible; break;
-	case Element::Score: cells[Score].visible = visible; break;
-	case Element::Lines: cells[Lines].visible = visible; break;
-	case Element::Level: cells[Level].visible = visible; break;
-	case Element::Time:  cells[Time].visible = visible; break;
+	case Element::Hold:  holdVisible = visible; break;
+	case Element::Next:  nextVisible = visible; break;
+	case Element::Score: scoreRow.visible = visible; break;
+	case Element::Lines: linesRow.visible = visible; break;
+	case Element::Level: levelRow.visible = visible; break;
+	case Element::Time:  timeRow.visible = visible; break;
 	case Element::ControlsLegend: showControls = visible; break;
 	}
 }
 
-bool GameplayHud::NextVisible() const
-{
-	return cells[Next].visible;
-}
-
 void GameplayHud::OnRowsCleared()
 {
-	cells[Score].flash = 1.f;
-	cells[Lines].flash = 1.f;
+	scoreRow.flash = 1.f;
+	linesRow.flash = 1.f;
 }
 
 void GameplayHud::OnLevelUp()
 {
-	cells[Level].flash = 1.f;
+	levelRow.flash = 1.f;
 }
 
 void GameplayHud::DrawValue(sf::RenderTarget& target, const sf::Text& value, float flash) const
@@ -277,46 +309,61 @@ void GameplayHud::DrawValue(sf::RenderTarget& target, const sf::Text& value, flo
 	target.draw(lit);
 }
 
-void GameplayHud::DrawCell(sf::RenderTarget& target, const Cell& cell) const
+void GameplayHud::DrawStatRow(sf::RenderTarget& target, const StatRow& row) const
 {
-	target.draw(cell.fill);
-	cell.frame.Draw(target);
-
-	if (cell.flash > 0.f)
-	{
-		const float ease = UI::Easing::EaseOutCubic(cell.flash);
-
-		sf::RectangleShape glow = cell.fill;
-		glow.setFillColor(MixColour(sf::Color(FlashColour.r, FlashColour.g, FlashColour.b, 0),
-			sf::Color(FlashColour.r, FlashColour.g, FlashColour.b, 60), ease));
-		glow.setOutlineThickness(3.f);
-		glow.setOutlineColor(sf::Color(FlashColour.r, FlashColour.g, FlashColour.b,
-			static_cast<std::uint8_t>(ease * 230.f)));
-		target.draw(glow);
-	}
-
-	target.draw(cell.caption);
+	target.draw(row.label);
+	DrawValue(target, row.value, row.flash);
 }
 
 void GameplayHud::Render(sf::RenderTarget& target) const
 {
-	for (const Cell& cell : cells)
+	const bool leftPanelVisible = holdVisible || levelRow.visible || timeRow.visible;
+
+	if (leftPanelVisible)
 	{
-		if (cell.visible)
+		target.draw(leftFill);
+		leftFrame.Draw(target);
+
+		if (holdVisible)
 		{
-			DrawCell(target, cell);
+			target.draw(holdCaption);
+			target.draw(holdPlaceholder);
 		}
+
+		if (levelRow.visible || timeRow.visible)
+		{
+			target.draw(leftDivider);
+		}
+
+		if (levelRow.visible) { DrawStatRow(target, levelRow); }
+		if (timeRow.visible)  { DrawStatRow(target, timeRow); }
 	}
 
-	if (cells[Score].visible) { DrawValue(target, scoreValue, cells[Score].flash); }
-	if (cells[Level].visible) { DrawValue(target, levelValue, cells[Level].flash); }
-	if (cells[Lines].visible) { DrawValue(target, linesValue, cells[Lines].flash); }
-	if (cells[Time].visible)  { DrawValue(target, timeValue, cells[Time].flash); }
+	const bool rightPanelVisible = nextVisible || scoreRow.visible || linesRow.visible;
+
+	if (rightPanelVisible)
+	{
+		target.draw(rightFill);
+		rightFrame.Draw(target);
+
+		// The queued pieces themselves are drawn by BoardRenderer, via
+		// NextPreviewArea() -- this only frames the panel and its caption.
+		if (nextVisible)
+		{
+			target.draw(nextCaption);
+		}
+
+		if (scoreRow.visible || linesRow.visible)
+		{
+			target.draw(rightDivider);
+		}
+
+		if (scoreRow.visible) { DrawStatRow(target, scoreRow); }
+		if (linesRow.visible) { DrawStatRow(target, linesRow); }
+	}
 
 	if (showControls)
 	{
-		target.draw(legendFill);
-		legendFrame.Draw(target);
 		target.draw(legendTitle);
 
 		for (const ControlEntry& entry : legendEntries)
