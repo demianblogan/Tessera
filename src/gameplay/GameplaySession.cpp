@@ -198,15 +198,46 @@ void GameplaySession::Update(float deltaTime)
 		// Guideline scoring: Single/Double/Triple/Tetris, at the level the clear
 		// happened at -- before this clear's own lines can push the level up.
 		const int scoringRows = std::clamp(clearedRows, 1, static_cast<int>(LineClearScores.size()));
-		score += LineClearScores[scoringRows - 1] * level;
+		int lineScore = LineClearScores[scoringRows - 1] * level;
+
+		// Back-to-back: a Tetris right after another Tetris (nothing smaller in
+		// between) scores the line-clear part at 1.5x. Evaluated against the
+		// state left by the *previous* clear, then updated for the next one.
+		const bool isDifficultClear = scoringRows == static_cast<int>(LineClearScores.size());
+		const bool earnedBackToBack = isDifficultClear && backToBackActive;
+		if (earnedBackToBack)
+		{
+			lineScore = static_cast<int>(static_cast<float>(lineScore) * BackToBackMultiplier);
+		}
+		backToBackActive = isDifficultClear;
+
+		// Combo: every clear beyond the first in an unbroken chain adds its own
+		// bonus, on top of (not multiplied by) the line-clear score above.
+		++comboCount;
+		if (comboCount > 0)
+		{
+			score += ComboScorePerLevel * comboCount * level;
+		}
+
+		score += lineScore;
 
 		totalLinesCleared += clearedRows;
 
 		const int previousLevel = level;
 		level = totalLinesCleared / LinesPerLevel + 1;
 
+		// Perfect Clear: nothing left on the board at all.
+		const bool isPerfectClear = board.IsEmpty();
+		if (isPerfectClear)
+		{
+			score += PerfectClearScores[scoringRows - 1] * level;
+		}
+
 		pendingEvents.rowsCleared = true;
 		pendingEvents.clearedRowCount = clearedRows;
+		pendingEvents.comboCount = comboCount;   // never negative here: it was just incremented from >= -1
+		pendingEvents.backToBack = earnedBackToBack;
+		pendingEvents.perfectClear = isPerfectClear;
 		pendingEvents.leveledUp = level > previousLevel;
 
 		fallDelay = GravityDelayForLevel(level);
@@ -315,6 +346,9 @@ void GameplaySession::LockAndScan()
 		phase = Phase::ClearingRows;
 		return;
 	}
+
+	// This piece locked without clearing anything -- any combo chain ends here.
+	comboCount = -1;
 
 	if (!SpawnNextTetromino())
 	{

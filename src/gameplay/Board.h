@@ -45,4 +45,7 @@ public:
 
 	[[nodiscard]] bool CanPlace(const Tetromino& tetromino) const;
 	[[nodiscard]] const Grid& GetGrid() const;
+
+	// True once every cell is empty -- a Perfect Clear.
+	[[nodiscard]] bool IsEmpty() const;
 };

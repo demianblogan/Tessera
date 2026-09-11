@@ -132,3 +132,19 @@ const Board::Grid& Board::GetGrid() const
 {
 	return grid;
 }
+
+bool Board::IsEmpty() const
+{
+	for (const GridRow& row : grid)
+	{
+		for (const Cell& cell : row)
+		{
+			if (cell.occupied)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}

@@ -7,6 +7,124 @@
 
 namespace
 {
+	// The topmost occupied row in column x, or Board::HEIGHT if the column is
+	// empty (so "lower topRow" always means "more full").
+	int TopRow(const Board& board, int x)
+	{
+		for (int y = 0; y < Board::HEIGHT; y++)
+		{
+			if (board.GetGrid()[y][x].occupied)
+			{
+				return y;
+			}
+		}
+		return Board::HEIGHT;
+	}
+
+	// Moves the active piece to whichever rotation and horizontal position
+	// creates the fewest new holes when dropped (ties broken by landing as low
+	// as possible), then hard-drops it there. There is no seedable RNG in this
+	// project, so a test that needs real line clears drives play through a
+	// small hole-avoiding bot rather than hoping convenient shapes turn up --
+	// a heuristic that only tracked height (and not per-column overhangs)
+	// quickly buries gaps under S/Z/L/J that nothing can ever fill again,
+	// which stalls every row well short of complete.
+	void DropAvoidingHoles(GameplaySession& session)
+	{
+		const Tetromino piece = session.GetCurrentTetromino();
+		const int startRotation = piece.GetRotationIndex();
+
+		int bestRotation = startRotation;
+		int bestX0 = 0;
+		int bestHoles = -1;
+		int bestLandingOffset = -1;
+
+		for (int rotation = 0; rotation < 4; rotation++)
+		{
+			const auto blocks = piece.GetBlockPositions(rotation);
+
+			int pieceMinX = Board::WIDTH;
+			int pieceMaxX = -1;
+			for (const sf::Vector2i& block : blocks)
+			{
+				pieceMinX = std::min(pieceMinX, block.x);
+				pieceMaxX = std::max(pieceMaxX, block.x);
+			}
+			const int width = pieceMaxX - pieceMinX + 1;
+
+			// The piece's own lowest block in each local column it occupies (in
+			// current, unmoved board Y), or -1 if it has no block in that column.
+			std::array<int, 4> bottomOfColumn = { -1, -1, -1, -1 };
+			for (const sf::Vector2i& block : blocks)
+			{
+				const int localColumn = block.x - pieceMinX;
+				bottomOfColumn[static_cast<std::size_t>(localColumn)] =
+					std::max(bottomOfColumn[static_cast<std::size_t>(localColumn)], block.y);
+			}
+
+			for (int x0 = 0; x0 <= Board::WIDTH - width; x0++)
+			{
+				int landingOffset = Board::HEIGHT;
+				for (int c = 0; c < width; c++)
+				{
+					if (bottomOfColumn[static_cast<std::size_t>(c)] < 0)
+					{
+						continue;
+					}
+					const int topRow = TopRow(session.GetBoard(), x0 + c);
+					landingOffset = std::min(landingOffset, (topRow - 1) - bottomOfColumn[static_cast<std::size_t>(c)]);
+				}
+
+				int holes = 0;
+				for (int c = 0; c < width; c++)
+				{
+					if (bottomOfColumn[static_cast<std::size_t>(c)] < 0)
+					{
+						continue;
+					}
+					const int topRow = TopRow(session.GetBoard(), x0 + c);
+					const int resultingBottom = landingOffset + bottomOfColumn[static_cast<std::size_t>(c)];
+					holes += std::max(0, (topRow - 1) - resultingBottom);
+				}
+
+				if (bestHoles < 0 || holes < bestHoles ||
+					(holes == bestHoles && landingOffset > bestLandingOffset))
+				{
+					bestHoles = holes;
+					bestLandingOffset = landingOffset;
+					bestRotation = rotation;
+					bestX0 = x0;
+				}
+			}
+		}
+
+		// Rotate clockwise to the chosen orientation. A kick can fail at the
+		// board edge; if so, just place whatever orientation was reached.
+		for (int steps = ((bestRotation - startRotation) % 4 + 4) % 4; steps > 0; steps--)
+		{
+			if (!session.Rotate(true))
+			{
+				break;
+			}
+		}
+
+		int minX = Board::WIDTH;
+		for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
+		{
+			minX = std::min(minX, block.x);
+		}
+
+		const int delta = bestX0 - minX;
+		const int direction = delta > 0 ? 1 : -1;
+
+		for (int i = 0; i < delta * direction; i++)
+		{
+			session.MoveHorizontal(direction);
+		}
+
+		session.HardDrop();
+	}
+
 	bool BoardHasAnyBlock(const Board& board)
 	{
 		for (int y = 0; y < Board::HEIGHT; y++)
@@ -389,6 +507,50 @@ TEST_CASE("hard-dropping into one narrow column ends the game without clearing a
 	const GameplaySession::GameOverReason reason = session.GetGameOverReason();
 	CHECK((reason == GameplaySession::GameOverReason::LockOut
 		|| reason == GameplaySession::GameOverReason::BlockOut));
+}
+
+TEST_CASE("combo tracks consecutive clears exactly, and back-to-back / perfect-clear stay honest")
+{
+	GameplaySession session;
+
+	// Keep the stack flat (rather than piling into one column) so rows actually
+	// complete. Piece shapes are still random -- the exact score each clear is
+	// worth isn't asserted, but the *relationship* the combo counter must hold
+	// to consecutive clears is checked exactly every time.
+	int expectedCombo = -1;
+	bool sawAnyClear = false;
+
+	for (int piece = 0; piece < 1000 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
+	{
+		DropAvoidingHoles(session);
+		session.Update(1.0f);
+		const GameplaySession::Events events = session.ConsumeEvents();
+
+		if (events.rowsCleared)
+		{
+			++expectedCombo;
+			sawAnyClear = true;
+
+			CHECK(events.comboCount == expectedCombo);
+
+			// Only a Tetris counts as "difficult" for back-to-back so far.
+			if (events.backToBack)
+			{
+				CHECK(events.clearedRowCount == 4);
+			}
+
+			if (events.perfectClear)
+			{
+				CHECK(session.GetBoard().IsEmpty());
+			}
+		}
+		else
+		{
+			expectedCombo = -1;
+		}
+	}
+
+	CHECK(sawAnyClear);
 }
 
 TEST_CASE("four rotations return the active piece to its spawn orientation")

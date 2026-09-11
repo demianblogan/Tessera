@@ -28,6 +28,26 @@ TEST_CASE("the grid is the visible field plus a hidden buffer above it")
 	CHECK(Board::BufferHeight > 0);
 }
 
+TEST_CASE("IsEmpty is true for a fresh board and false once anything locks")
+{
+	Board board;
+
+	CHECK(board.IsEmpty());
+
+	LockO(board, 0, 0);
+	CHECK_FALSE(board.IsEmpty());
+}
+
+TEST_CASE("IsEmpty is true again once every locked cell clears")
+{
+	Board board;
+	FillBottomTwoRows(board);
+	CHECK_FALSE(board.IsEmpty());
+
+	board.ClearRows(board.FindFullRows());
+	CHECK(board.IsEmpty());
+}
+
 TEST_CASE("a fresh board has no occupied cells")
 {
 	const Board board;

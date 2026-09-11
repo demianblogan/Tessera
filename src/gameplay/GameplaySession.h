@@ -51,6 +51,16 @@ public:
 		bool rowsCleared = false;
 		int clearedRowCount = 0;
 
+		// 0 on an isolated clear; increments with each clear that directly
+		// follows another (no non-clearing lock in between).
+		int comboCount = 0;
+		// True if this clear's line-clear score got the back-to-back bonus
+		// (a Tetris directly following another Tetris, for now -- T-spins join
+		// the back-to-back club once they exist).
+		bool backToBack = false;
+		// True if this clear left the board completely empty.
+		bool perfectClear = false;
+
 		bool leveledUp = false;
 
 		bool gameOver = false;
@@ -114,6 +124,18 @@ private:
 	static constexpr std::array<int, 4> LineClearScores = { 100, 300, 500, 800 };
 	static constexpr int SoftDropScorePerCell = 1;
 	static constexpr int HardDropScorePerCell = 2;
+
+	// Combo: 50 * comboCount * level, on top of the line-clear score, for every
+	// clear beyond the first in an unbroken chain of clears.
+	static constexpr int ComboScorePerLevel = 50;
+
+	// Back-to-back: a Tetris directly following another Tetris (no ordinary
+	// clear in between) scores its line-clear component at this multiplier.
+	static constexpr float BackToBackMultiplier = 1.5f;
+
+	// Perfect Clear: the board is completely empty after the clear. Indexed the
+	// same way as LineClearScores (by row count 1..4), added on top of it.
+	static constexpr std::array<int, 4> PerfectClearScores = { 800, 1200, 1800, 2000 };
 
 	// A new level every this many total lines cleared.
 	static constexpr int LinesPerLevel = 10;
@@ -180,6 +202,9 @@ private:
 	int level = 1;
 	int totalLinesCleared = 0;
 	float elapsedSeconds = 0.f;
+
+	int comboCount = -1;         // -1 = not currently chaining clears
+	bool backToBackActive = false;
 
 	GameOverReason gameOverReason = GameOverReason::None;
 
