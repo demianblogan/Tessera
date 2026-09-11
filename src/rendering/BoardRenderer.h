@@ -29,7 +29,7 @@ class BoardRenderer
 {
 public:
 	static constexpr float BlockSize = 42.f;
-	static constexpr sf::Vector2f BoardPosition{ 720.f, 60.f };
+	static constexpr sf::Vector2f BoardPosition{ 720.f, 84.f };
 
 	explicit BoardRenderer(Context& context);
 

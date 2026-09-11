@@ -80,24 +80,22 @@ namespace
 	constexpr float StatValueOffset = 50.f;
 
 	// The controls legend: one horizontal strip under the well, spanning the
-	// full HUD width (both panels plus the well between them). It's a reference
-	// the player rarely needs mid-game, so it sits apart from HOLD/NEXT instead
-	// of competing with them for a side column.
+	// full HUD width (both panels plus the well between them). One line per
+	// entry ("Move: Left / Right") -- it's a reference the player rarely needs
+	// mid-game, so it sits apart from HOLD/NEXT instead of competing with them
+	// for a side column, and stays as short as the text it actually holds.
 	constexpr float ControlsGap = 24.f;
-	constexpr float ControlsBottomMargin = 16.f;
+	constexpr float ControlsBarHeight = 74.f;
 	constexpr float ControlsTop = WellOuterBottom + ControlsGap;
 	constexpr sf::FloatRect ControlsBounds{
 		{ LeftX, ControlsTop },
-		{ (RightX + PanelWidth) - LeftX, ScreenHeight - ControlsTop - ControlsBottomMargin } };
-
-	constexpr float ControlsLabelOffset = 34.f;
-	constexpr float ControlsValueOffset = 68.f;
+		{ (RightX + PanelWidth) - LeftX, ControlsBarHeight } };
 
 	constexpr unsigned int CaptionSize = 34;
 	constexpr unsigned int StatLabelSize = 22;
 	constexpr unsigned int StatValueSize = 40;
-	constexpr unsigned int ControlsLabelSize = 19;
-	constexpr unsigned int ControlsValueSize = 25;
+	constexpr unsigned int ControlsLabelSize = 22;
+	constexpr unsigned int ControlsValueSize = 22;
 
 	constexpr sf::Vector2f FrameTargetBorder{ 32.f, 32.f };
 	constexpr float FillInset = 16.f;
@@ -132,6 +130,13 @@ namespace
 		const sf::FloatRect bounds = text.getLocalBounds();
 		text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 		text.setPosition(centre);
+	}
+
+	void AlignLeft(sf::Text& text, sf::Vector2f leftMiddle)
+	{
+		const sf::FloatRect bounds = text.getLocalBounds();
+		text.setOrigin({ bounds.position.x, bounds.position.y + bounds.size.y * 0.5f });
+		text.setPosition(leftMiddle);
 	}
 }
 
@@ -226,21 +231,27 @@ GameplayHud::GameplayHud(Context& context)
 	} };
 
 	const float columnStep = ControlsBounds.size.x / static_cast<float>(entries.size());
+	const float lineY = Centre(ControlsBounds).y;
 
 	for (std::size_t i = 0; i < entries.size(); i++)
 	{
-		const float x = ControlsBounds.position.x + columnStep * (static_cast<float>(i) + 0.5f);
+		const float columnCentreX = ControlsBounds.position.x + columnStep * (static_cast<float>(i) + 0.5f);
 
 		ControlEntry entry{
-			sf::Text(font, context.localization.GetText(entries[i].first), ControlsLabelSize),
+			sf::Text(font, context.localization.GetText(entries[i].first) + sf::String(": "), ControlsLabelSize),
 			sf::Text(font, entries[i].second, ControlsValueSize)
 		};
 		entry.label.setFillColor(ControlsLabelColour);
-		entry.label.setLetterSpacing(1.2f);
-		CentreText(entry.label, { x, ControlsBounds.position.y + ControlsLabelOffset });
-
 		entry.value.setFillColor(ControlsValueColour);
-		CentreText(entry.value, { x, ControlsBounds.position.y + ControlsValueOffset });
+
+		// One line per entry ("Move: Left / Right"), the pair centred as a unit
+		// on the column.
+		const float labelWidth = entry.label.getLocalBounds().size.x;
+		const float totalWidth = labelWidth + entry.value.getLocalBounds().size.x;
+		const float startX = columnCentreX - totalWidth * 0.5f;
+
+		AlignLeft(entry.label, { startX, lineY });
+		AlignLeft(entry.value, { startX + labelWidth, lineY });
 
 		controlsEntries.push_back(std::move(entry));
 	}
