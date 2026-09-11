@@ -85,7 +85,7 @@ namespace
 	// mid-game, so it sits apart from HOLD/NEXT instead of competing with them
 	// for a side column, and stays as short as the text it actually holds.
 	constexpr float ControlsGap = 24.f;
-	constexpr float ControlsBarHeight = 74.f;
+	constexpr float ControlsBarHeight = 80.f;
 	constexpr float ControlsTop = WellOuterBottom + ControlsGap;
 	constexpr sf::FloatRect ControlsBounds{
 		{ LeftX, ControlsTop },
@@ -94,8 +94,8 @@ namespace
 	constexpr unsigned int CaptionSize = 34;
 	constexpr unsigned int StatLabelSize = 22;
 	constexpr unsigned int StatValueSize = 40;
-	constexpr unsigned int ControlsLabelSize = 22;
-	constexpr unsigned int ControlsValueSize = 22;
+	constexpr unsigned int ControlsLabelSize = 24;
+	constexpr unsigned int ControlsValueSize = 27;
 
 	constexpr sf::Vector2f FrameTargetBorder{ 32.f, 32.f };
 	constexpr float FillInset = 16.f;
