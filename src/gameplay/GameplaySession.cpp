@@ -273,6 +273,7 @@ bool GameplaySession::SpawnNextTetromino()
 	const Tetromino::Type type = nextQueue.front();
 	nextQueue.pop_front();
 	nextQueue.push_back(tetrominoBag.Next());
+	++spawnCount;
 
 	currentTetromino = { type, SpawnPosition };
 

@@ -17,15 +17,16 @@ namespace sf
 	class RenderTarget;
 }
 
-// The in-game HUD: two grouped panels flanking the well instead of one framed
-// square per stat, so the eye only travels to two places instead of scattering
-// across six. Left panel: HOLD (the piece box, drawn once the hold mechanic
-// lands) over LEVEL and TIME. Right panel: NEXT (the piece queue) over SCORE
-// and LINES. A quiet, frameless controls legend sits in the space left under
-// the (shorter) left panel -- it's a reference, not something read every
-// frame, so it carries the least visual weight. GameplayState pushes the
-// numbers each frame with Set() and calls the OnX hooks so the matching row
-// flashes; BoardRenderer draws the next queue inside NextPreviewArea().
+// The in-game HUD: two grouped panels flanking the well, plus a horizontal
+// controls strip under it -- three places to look instead of one framed
+// square per stat scattered all around the well. Left panel: HOLD (the piece
+// box, drawn once the hold mechanic lands) over LEVEL and TIME. Right panel:
+// NEXT (the piece queue) over SCORE and LINES. Both sit flush with the well's
+// top edge. The controls legend spans the full width below the well -- it's a
+// reference, glanced at rarely, so it sits apart from the two stat panels
+// rather than competing with them. GameplayState pushes the numbers each
+// frame with Set() and calls the OnX hooks so the matching row flashes;
+// BoardRenderer draws the next queue inside NextPreviewArea().
 class GameplayHud
 {
 public:
@@ -61,8 +62,8 @@ private:
 	// A controls-legend entry: the action name over the key(s) bound to it.
 	struct ControlEntry
 	{
-		sf::Text action;
-		sf::Text keys;
+		sf::Text label;
+		sf::Text value;
 	};
 
 	[[nodiscard]] StatRow MakeStatRow(std::string_view labelKey, std::string_view initialValue,
@@ -94,8 +95,9 @@ private:
 	StatRow linesRow;
 	bool nextVisible = true;
 
-	// Controls legend: no frame, sits under the shorter left panel.
-	sf::Text legendTitle;
-	std::vector<ControlEntry> legendEntries;
+	// Controls legend: a horizontal strip under the well.
+	sf::RectangleShape controlsFill;
+	UI::NineSliceFrame controlsFrame;
+	std::vector<ControlEntry> controlsEntries;
 	bool showControls = true;
 };

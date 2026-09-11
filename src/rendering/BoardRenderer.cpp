@@ -17,6 +17,7 @@
 #include "../gameplay/TetrominoShapes.h"
 #include "EffectsController.h"
 #include "NeonGlow.h"
+#include "../ui/Easing.h"
 
 namespace
 {
@@ -41,6 +42,22 @@ BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
 {
 	// No code
+}
+
+void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
+{
+	const int spawnCount = session.GetSpawnCount();
+
+	if (previousSpawnCount && *previousSpawnCount != spawnCount)
+	{
+		nextSlideProgress = 0.f;
+	}
+	previousSpawnCount = spawnCount;
+
+	if (nextSlideProgress < 1.f)
+	{
+		nextSlideProgress = std::min(1.f, nextSlideProgress + deltaTime / NextSlideDuration);
+	}
 }
 
 void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
@@ -372,6 +389,37 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 }
 
+float BoardRenderer::NextSlotCentreY(sf::FloatRect area, int slot)
+{
+	if (slot <= 0)
+	{
+		return area.position.y + NextHeroSlotHeight * 0.5f;
+	}
+
+	return area.position.y + NextHeroSlotHeight
+		+ static_cast<float>(slot - 1) * NextRestSlotHeight + NextRestSlotHeight * 0.5f;
+}
+
+float BoardRenderer::NextSlotBlockSize(int slot)
+{
+	return slot <= 0 ? NextHeroBlockSize : NextRestBlockSize;
+}
+
+sf::Color BoardRenderer::NextSlotTint(int slot, int count)
+{
+	if (slot <= 0 || count <= 2)
+	{
+		return slot <= 0 ? sf::Color::White : sf::Color(NextMinBrightness, NextMinBrightness, NextMinBrightness);
+	}
+
+	// Slot 1 (the piece right after the hero) stays bright; it fades toward
+	// NextMinBrightness by the last slot.
+	const float t = static_cast<float>(slot - 1) / static_cast<float>(count - 2);
+	const auto level = static_cast<std::uint8_t>(
+		UI::Easing::Lerp(255.f, static_cast<float>(NextMinBrightness), t));
+	return sf::Color(level, level, level);
+}
+
 void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const
 {
 	const int count = session.GetNextCount();
@@ -380,22 +428,24 @@ void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySe
 		return;
 	}
 
-	// A vertical stack filling `area`: the piece that spawns next on top, the
-	// rest below it in equal slots, so this keeps working as the queue length
-	// (currently fixed at 5) becomes a player setting.
 	const float centreX = area.position.x + area.size.x * 0.5f;
-	const float slotStride = area.size.y / static_cast<float>(count);
-	const float firstY = area.position.y + slotStride * 0.5f;
+	const float ease = UI::Easing::EaseOutCubic(nextSlideProgress);
 
-	for (int i = 0; i < count; ++i)
+	for (int slot = 0; slot < count; ++slot)
 	{
-		DrawPiecePreview(target, session.GetNextPiece(i), NextBlockSize,
-			{ centreX, firstY + slotStride * static_cast<float>(i) });
+		// Mid-slide, every piece is still drawn one slot behind where the queue
+		// just put it, and eases into its real slot -- a smooth slide up rather
+		// than the queue snapping into place.
+		const float y = UI::Easing::Lerp(NextSlotCentreY(area, slot + 1), NextSlotCentreY(area, slot), ease);
+		const float blockSize = UI::Easing::Lerp(
+			static_cast<float>(NextSlotBlockSize(slot + 1)), static_cast<float>(NextSlotBlockSize(slot)), ease);
+
+		DrawPiecePreview(target, session.GetNextPiece(slot), blockSize, { centreX, y }, NextSlotTint(slot, count));
 	}
 }
 
 void BoardRenderer::DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece,
-	float blockSize, sf::Vector2f centre) const
+	float blockSize, sf::Vector2f centre, sf::Color tint) const
 {
 	sf::Sprite blockSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
 
@@ -406,6 +456,7 @@ void BoardRenderer::DrawPiecePreview(sf::RenderTarget& target, const Tetromino& 
 		}
 	);
 	blockSprite.setScale({ blockSize / 16.f, blockSize / 16.f });
+	blockSprite.setColor(tint);
 
 	const auto blockPositions = piece.GetBlockPositions();
 

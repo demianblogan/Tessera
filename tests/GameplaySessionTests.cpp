@@ -93,6 +93,18 @@ TEST_CASE("the queue advances by exactly one slot per spawn")
 	}
 }
 
+TEST_CASE("the spawn count is a pure change signal for the renderer")
+{
+	GameplaySession session;
+	CHECK(session.GetSpawnCount() == 0);
+
+	session.HardDrop();
+	session.Update(1.0f);
+	(void)session.ConsumeEvents();
+
+	CHECK(session.GetSpawnCount() == 1);
+}
+
 TEST_CASE("MoveHorizontal(0) is a no-op that reports no movement")
 {
 	GameplaySession session;

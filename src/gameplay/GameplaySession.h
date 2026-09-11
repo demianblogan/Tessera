@@ -83,6 +83,11 @@ public:
 	[[nodiscard]] int GetNextCount() const { return static_cast<int>(nextQueue.size()); }
 	[[nodiscard]] Tetromino GetNextPiece(int index) const;
 
+	// How many times a piece has spawned so far. Purely a change signal for the
+	// renderer (e.g. to animate the next-queue sliding up) -- nothing here reads
+	// the count itself.
+	[[nodiscard]] int GetSpawnCount() const { return spawnCount; }
+
 	[[nodiscard]] const std::vector<int>& GetClearingRows() const { return clearingRows; }
 
 	[[nodiscard]] int GetScore() const { return score; }
@@ -138,6 +143,8 @@ private:
 	float lockTimer = 0.f;
 	int lockResets = 0;
 	int lowestRow = 0;   // deepest row the active piece's lowest block has reached
+
+	int spawnCount = 0;
 
 	std::vector<int> clearingRows;
 	float clearTimer = 0.f;

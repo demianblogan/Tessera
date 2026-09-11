@@ -27,8 +27,9 @@
 namespace
 {
 	// The HUD hugs the well: a narrow gap off its *outer* wall (the board draws a
-	// one-block wall around the playfield) keeps both panels close so the eye
+	// one-block wall around the playfield) keeps every panel close so the eye
 	// barely has to travel off the stack.
+	constexpr float ScreenHeight = 1080.f;
 	constexpr float WellOuterLeft = BoardRenderer::BoardPosition.x - BoardRenderer::BlockSize;
 	constexpr float WellOuterRight = BoardRenderer::BoardPosition.x
 		+ static_cast<float>(Board::WIDTH + 1) * BoardRenderer::BlockSize;
@@ -40,12 +41,14 @@ namespace
 	constexpr float PanelWidth = 220.f;
 	constexpr float RowInset = 22.f;
 
-	// Both panels share the same internal shape: a caption, a square "hero" area
-	// (the hold piece / the next queue), a divider, then two stacked stat rows.
+	// Both side panels share the same internal shape: a caption, a square "hero"
+	// area (the hold piece / the next queue), a divider, then two stacked stat
+	// rows. They sit flush with the well's top edge -- the well is by far the
+	// tallest thing on screen, so there's nothing to centre either panel against.
 	constexpr float CaptionOffset = 42.f;
 	constexpr float HeroTop = 60.f;
 	constexpr float HoldBoxSize = 150.f;
-	constexpr float NextBoxHeight = 260.f;
+	constexpr float NextBoxHeight = 290.f;
 	constexpr float DividerGap = 20.f;
 	constexpr float RowsGap = 30.f;
 	constexpr float RowHeight = 80.f;
@@ -54,9 +57,7 @@ namespace
 	constexpr float LeftPanelHeight = HeroTop + HoldBoxSize + DividerGap + RowsGap + RowHeight * 2.f + BottomPadding;
 	constexpr float RightPanelHeight = HeroTop + NextBoxHeight + DividerGap + RowsGap + RowHeight * 2.f + BottomPadding;
 
-	// Both panels share a top edge; it's picked so the taller one (NEXT carries
-	// more content than HOLD) sits centred against the well.
-	constexpr float PanelTop = WellOuterTop + (WellOuterBottom - WellOuterTop - RightPanelHeight) * 0.5f;
+	constexpr float PanelTop = WellOuterTop;
 
 	constexpr float LeftX = WellOuterLeft - WellGap - PanelWidth;
 	constexpr float RightX = WellOuterRight + WellGap;
@@ -78,15 +79,25 @@ namespace
 	constexpr float StatLabelOffset = 16.f;
 	constexpr float StatValueOffset = 50.f;
 
-	// The leftover space under the (shorter) left panel, down to the well's foot.
-	constexpr float LegendTop = PanelTop + LeftPanelHeight + 24.f;
-	constexpr sf::FloatRect LegendBounds{ { LeftX, LegendTop }, { PanelWidth, WellOuterBottom - LegendTop - 12.f } };
+	// The controls legend: one horizontal strip under the well, spanning the
+	// full HUD width (both panels plus the well between them). It's a reference
+	// the player rarely needs mid-game, so it sits apart from HOLD/NEXT instead
+	// of competing with them for a side column.
+	constexpr float ControlsGap = 24.f;
+	constexpr float ControlsBottomMargin = 16.f;
+	constexpr float ControlsTop = WellOuterBottom + ControlsGap;
+	constexpr sf::FloatRect ControlsBounds{
+		{ LeftX, ControlsTop },
+		{ (RightX + PanelWidth) - LeftX, ScreenHeight - ControlsTop - ControlsBottomMargin } };
+
+	constexpr float ControlsLabelOffset = 34.f;
+	constexpr float ControlsValueOffset = 68.f;
 
 	constexpr unsigned int CaptionSize = 34;
 	constexpr unsigned int StatLabelSize = 22;
 	constexpr unsigned int StatValueSize = 40;
-	constexpr unsigned int LegendTitleSize = 22;
-	constexpr unsigned int LegendRowSize = 19;
+	constexpr unsigned int ControlsLabelSize = 19;
+	constexpr unsigned int ControlsValueSize = 25;
 
 	constexpr sf::Vector2f FrameTargetBorder{ 32.f, 32.f };
 	constexpr float FillInset = 16.f;
@@ -99,8 +110,8 @@ namespace
 	const sf::Color FlashColour{ 120, 230, 255 };
 	const sf::Color DividerColour{ 150, 172, 196, 55 };
 	const sf::Color PlaceholderColour{ 90, 110, 130, 130 };
-	const sf::Color LegendActionColour{ 146, 162, 178 };
-	const sf::Color LegendKeyColour{ 236, 240, 246 };
+	const sf::Color ControlsLabelColour{ 146, 162, 178 };
+	const sf::Color ControlsValueColour{ 236, 240, 246 };
 
 	[[nodiscard]] sf::Vector2f Centre(const sf::FloatRect& rect)
 	{
@@ -121,20 +132,6 @@ namespace
 		const sf::FloatRect bounds = text.getLocalBounds();
 		text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 		text.setPosition(centre);
-	}
-
-	void AlignLeft(sf::Text& text, sf::Vector2f leftMiddle)
-	{
-		const sf::FloatRect bounds = text.getLocalBounds();
-		text.setOrigin({ bounds.position.x, bounds.position.y + bounds.size.y * 0.5f });
-		text.setPosition(leftMiddle);
-	}
-
-	void AlignRight(sf::Text& text, sf::Vector2f rightMiddle)
-	{
-		const sf::FloatRect bounds = text.getLocalBounds();
-		text.setOrigin({ bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y * 0.5f });
-		text.setPosition(rightMiddle);
 	}
 }
 
@@ -164,7 +161,7 @@ GameplayHud::GameplayHud(Context& context)
 	, leftFrame(context.textures.Get(Assets::TextureID::UiFrameBlue), LeftPanelBounds,
 		UI::MenuFrameSourceBorder, FrameTargetBorder)
 	, holdCaption(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::Hold), CaptionSize)
-	, holdBoxBounds{ { LeftX + RowInset, PanelTop + HeroTop }, { PanelWidth - RowInset * 2.f, HoldBoxSize } }
+	, holdBoxBounds{ { LeftX + (PanelWidth - HoldBoxSize) * 0.5f, PanelTop + HeroTop }, { HoldBoxSize, HoldBoxSize } }
 	, holdPlaceholder({ holdBoxBounds.size.x - 12.f, holdBoxBounds.size.y - 12.f })
 	, leftDivider({ PanelWidth - RowInset * 2.f, 2.f })
 	, levelRow(MakeStatRow(TextKey::Hud::Level, "1", LeftColumnCentreX, LevelRowTop))
@@ -177,7 +174,9 @@ GameplayHud::GameplayHud(Context& context)
 	, rightDivider({ PanelWidth - RowInset * 2.f, 2.f })
 	, scoreRow(MakeStatRow(TextKey::Hud::Score, "0", RightColumnCentreX, ScoreRowTop))
 	, linesRow(MakeStatRow(TextKey::Hud::Lines, "0", RightColumnCentreX, LinesRowTop))
-	, legendTitle(context.fonts.Get(Assets::FontID::Main), context.localization.GetText(TextKey::Hud::Controls), LegendTitleSize)
+	, controlsFill({ ControlsBounds.size.x - FillInset * 2.f, ControlsBounds.size.y - FillInset * 2.f })
+	, controlsFrame(context.textures.Get(Assets::TextureID::UiFrameBlue), ControlsBounds,
+		UI::MenuFrameSourceBorder, FrameTargetBorder)
 {
 	leftFill.setPosition({ LeftPanelBounds.position.x + FillInset, LeftPanelBounds.position.y + FillInset });
 	leftFill.setFillColor(FillColour);
@@ -204,12 +203,11 @@ GameplayHud::GameplayHud(Context& context)
 	rightDivider.setPosition({ RightX + RowInset, PanelTop + HeroTop + NextBoxHeight + DividerGap });
 	rightDivider.setFillColor(DividerColour);
 
-	// Controls legend: no frame, just muted text under the left panel -- it's a
-	// reference, not something read every frame.
-	legendTitle.setFillColor(CaptionColour);
-	legendTitle.setLetterSpacing(1.2f);
-	CentreText(legendTitle, { Centre(LegendBounds).x, LegendBounds.position.y + 16.f });
+	controlsFill.setPosition({ ControlsBounds.position.x + FillInset, ControlsBounds.position.y + FillInset });
+	controlsFill.setFillColor(FillColour);
 
+	// One entry per action, spread evenly across the strip; key names are read
+	// once from the live bindings (layout-independent, via Input::KeyName).
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 	const ControlSettings& controls = context.settings.GetSettings().controls;
 
@@ -227,23 +225,24 @@ GameplayHud::GameplayHud(Context& context)
 		{ TextKey::Hud::Pause,    Input::KeyName(controls.pause) },
 	} };
 
-	const float entriesTop = LegendBounds.position.y + 46.f;
-	const float entryStep = (LegendBounds.size.y - 56.f) / static_cast<float>(entries.size());
+	const float columnStep = ControlsBounds.size.x / static_cast<float>(entries.size());
 
 	for (std::size_t i = 0; i < entries.size(); i++)
 	{
-		const float y = entriesTop + entryStep * (static_cast<float>(i) + 0.5f);
+		const float x = ControlsBounds.position.x + columnStep * (static_cast<float>(i) + 0.5f);
 
 		ControlEntry entry{
-			sf::Text(font, context.localization.GetText(entries[i].first), LegendRowSize),
-			sf::Text(font, entries[i].second, LegendRowSize)
+			sf::Text(font, context.localization.GetText(entries[i].first), ControlsLabelSize),
+			sf::Text(font, entries[i].second, ControlsValueSize)
 		};
-		entry.action.setFillColor(LegendActionColour);
-		entry.keys.setFillColor(LegendKeyColour);
-		AlignLeft(entry.action, { LegendBounds.position.x + RowInset, y });
-		AlignRight(entry.keys, { LegendBounds.position.x + LegendBounds.size.x - RowInset, y });
+		entry.label.setFillColor(ControlsLabelColour);
+		entry.label.setLetterSpacing(1.2f);
+		CentreText(entry.label, { x, ControlsBounds.position.y + ControlsLabelOffset });
 
-		legendEntries.push_back(std::move(entry));
+		entry.value.setFillColor(ControlsValueColour);
+		CentreText(entry.value, { x, ControlsBounds.position.y + ControlsValueOffset });
+
+		controlsEntries.push_back(std::move(entry));
 	}
 }
 
@@ -364,12 +363,13 @@ void GameplayHud::Render(sf::RenderTarget& target) const
 
 	if (showControls)
 	{
-		target.draw(legendTitle);
+		target.draw(controlsFill);
+		controlsFrame.Draw(target);
 
-		for (const ControlEntry& entry : legendEntries)
+		for (const ControlEntry& entry : controlsEntries)
 		{
-			target.draw(entry.action);
-			target.draw(entry.keys);
+			target.draw(entry.label);
+			target.draw(entry.value);
 		}
 	}
 }

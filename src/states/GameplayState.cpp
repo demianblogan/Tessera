@@ -168,6 +168,7 @@ void GameplayState::Update(float deltaTime)
 	previousHeldHorizontal = heldHorizontal;
 
 	session.Update(deltaTime);
+	boardRenderer.Update(deltaTime, session);
 
 	hud.Set(session.GetScore(), session.GetLevel(), session.GetLinesCleared(), session.GetElapsedSeconds());
 
