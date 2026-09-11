@@ -51,9 +51,9 @@ namespace
 	// On-board callout look: colour by what earned it; text grows with the
 	// event's rank (0 = least special), one fixed smaller size for the combo
 	// count underneath it.
-	constexpr unsigned int CalloutBaseSize = 34;
-	constexpr unsigned int CalloutSizePerRank = 4;
-	constexpr unsigned int CalloutComboSize = 26;
+	constexpr unsigned int CalloutBaseSize = 66;
+	constexpr unsigned int CalloutSizePerRank = 8;
+	constexpr unsigned int CalloutComboSize = 48;
 
 	const sf::Color DefaultClearColour{ 235, 240, 248 };
 	const sf::Color TetrisColour{ 120, 230, 255 };

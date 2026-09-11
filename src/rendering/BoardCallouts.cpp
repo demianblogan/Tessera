@@ -42,6 +42,7 @@ namespace
 
 BoardCallouts::BoardCallouts(Context& context)
 	: context(context)
+	, glow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	// No code
 }
@@ -61,19 +62,20 @@ void BoardCallouts::Show(std::vector<Line> lines, int rank, sf::Color accent)
 		text.setFillColor(line.colour);
 		text.setLetterSpacing(1.2f);
 		text.setOutlineColor(sf::Color::Black);
-		text.setOutlineThickness(2.f);
+		text.setOutlineThickness(3.f);
 		activeLines.push_back({ std::move(text), line.colour });
 	}
 
 	showing = true;
 	timer = 0.f;
 	duration = BaseDuration + static_cast<float>(clampedRank) * DurationPerRank;
+	chromatic = clampedRank >= ChromaticRankThreshold;
 
 	accentColour = accent;
 	flashTimer = 0.f;
-	flashRadius = 60.f + static_cast<float>(clampedRank) * 14.f;
+	flashRadius = 70.f + static_cast<float>(clampedRank) * 16.f;
 
-	dust.Emit(Anchor, { flashRadius, flashRadius }, accent, 16 + clampedRank * 6);
+	dust.Emit(Anchor, { flashRadius, flashRadius }, accent, 20 + clampedRank * 7);
 }
 
 void BoardCallouts::Update(float deltaTime)
@@ -94,12 +96,13 @@ void BoardCallouts::Update(float deltaTime)
 	}
 
 	dust.Update(deltaTime);
+	glow.Update(deltaTime);
 }
 
-void BoardCallouts::Render(sf::RenderTarget& target) const
+void BoardCallouts::Render(sf::RenderTarget& target)
 {
-	// The flash burst sits behind the text and particles, and finishes well
-	// before either does.
+	// The flash burst sits behind everything, and finishes well before the
+	// text or the particles do.
 	if (flashTimer < FlashDuration)
 	{
 		const float ease = UI::Easing::EaseOutCubic(flashTimer / FlashDuration);
@@ -123,17 +126,19 @@ void BoardCallouts::Render(sf::RenderTarget& target) const
 	const float t = timer / duration;
 	const float yOffset = -RiseDistance * UI::Easing::EaseOutCubic(std::min(t, 1.f));
 
-	float alpha = 1.f;
+	float fadeAlpha = 1.f;
 	if (t > HoldFraction)
 	{
-		alpha = 1.f - (t - HoldFraction) / (1.f - HoldFraction);
+		fadeAlpha = 1.f - (t - HoldFraction) / (1.f - HoldFraction);
 	}
-	alpha = UI::Easing::Clamp01(alpha);
+	fadeAlpha = UI::Easing::Clamp01(fadeAlpha);
 
-	// Every line pops in bright (its own colour, flashed toward white) and
-	// eases back to its real colour and size over the first instant on screen.
-	const float pop = 1.f - UI::Easing::Clamp01(timer / TextPopDuration);
-	const float scale = 1.f + 0.25f * pop;
+	// The punch-in: a springy overshoot down to full size (EaseOutBack pushes
+	// past 1 partway through, which -- interpolating *toward* 1 from above --
+	// reads as the text overshooting small and popping back up to size).
+	const float popT = UI::Easing::Clamp01(timer / PopDuration);
+	const float scale = UI::Easing::Lerp(PopStartScale, 1.f, UI::Easing::EaseOutBack(popT));
+	const float punch = 1.f - popT;   // 1 at the moment of impact, 0 once settled
 
 	const float totalHeight = LineSpacing * static_cast<float>(activeLines.size() - 1);
 	float y = Anchor.y + yOffset - totalHeight * 0.5f;
@@ -142,8 +147,8 @@ void BoardCallouts::Render(sf::RenderTarget& target) const
 	{
 		sf::Text drawn = line.text;
 
-		sf::Color fillColour = Brighten(line.baseColour, pop * 0.85f);
-		fillColour.a = static_cast<std::uint8_t>(alpha * 255.f);
+		sf::Color fillColour = Brighten(line.baseColour, punch * 0.5f);
+		fillColour.a = static_cast<std::uint8_t>(fadeAlpha * 255.f);
 		drawn.setFillColor(fillColour);
 
 		sf::Color outlineColour = drawn.getOutlineColor();
@@ -152,6 +157,34 @@ void BoardCallouts::Render(sf::RenderTarget& target) const
 
 		drawn.setScale({ scale, scale });
 		CentreText(drawn, { Anchor.x, y });
+
+		const sf::FloatRect glowArea{
+			{ Anchor.x - GlowBoxSize.x * 0.5f, y - GlowBoxSize.y * 0.5f },
+			GlowBoxSize
+		};
+
+		glow.Draw(target, glowArea,
+			[&](sf::RenderTarget& buffer, const sf::RenderStates& states) { buffer.draw(drawn, states); },
+			accentColour, false);
+
+		// A brief chromatic split on the way in, for the rarest callouts only.
+		if (chromatic && punch > 0.02f)
+		{
+			const auto splitAlpha = static_cast<std::uint8_t>(punch * 140.f);
+
+			sf::Text cyanGhost = drawn;
+			cyanGhost.move({ -ChromaticOffset * punch, 0.f });
+			cyanGhost.setFillColor(sf::Color(80, 220, 255, splitAlpha));
+			cyanGhost.setOutlineColor(sf::Color(0, 0, 0, 0));
+			target.draw(cyanGhost);
+
+			sf::Text redGhost = drawn;
+			redGhost.move({ ChromaticOffset * punch, 0.f });
+			redGhost.setFillColor(sf::Color(255, 90, 90, splitAlpha));
+			redGhost.setOutlineColor(sf::Color(0, 0, 0, 0));
+			target.draw(redGhost);
+		}
+
 		target.draw(drawn);
 
 		y += LineSpacing;
