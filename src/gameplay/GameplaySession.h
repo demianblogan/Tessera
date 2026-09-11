@@ -8,6 +8,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include "Board.h"
+#include "TSpinRule.h"
 #include "Tetromino.h"
 #include "TetrominoBag.h"
 #include "TetrominoShapes.h"
@@ -52,14 +53,20 @@ public:
 		int clearedRowCount = 0;
 
 		// 0 on an isolated clear; increments with each clear that directly
-		// follows another (no non-clearing lock in between).
+		// follows another (no non-clearing lock in between). Meaningless unless
+		// rowsCleared is true.
 		int comboCount = 0;
-		// True if this clear's line-clear score got the back-to-back bonus
-		// (a Tetris directly following another Tetris, for now -- T-spins join
-		// the back-to-back club once they exist).
+		// True if this clear's line-clear score got the back-to-back bonus (a
+		// Tetris or a T-spin clear directly following another one).
 		bool backToBack = false;
 		// True if this clear left the board completely empty.
 		bool perfectClear = false;
+
+		// This lock was recognised as a T-spin (the three-corner rule, and the
+		// last thing done to the piece was a rotation) -- set whether or not it
+		// cleared any lines. tSpinMini distinguishes Mini from full.
+		bool tSpin = false;
+		bool tSpinMini = false;
 
 		bool leveledUp = false;
 
@@ -125,12 +132,22 @@ private:
 	static constexpr int SoftDropScorePerCell = 1;
 	static constexpr int HardDropScorePerCell = 2;
 
+	// T-spin scoring. A T-spin can clear at most 3 lines (the piece is never
+	// more than 3 rows tall), so these tables stop at Triple, unlike the plain
+	// line-clear table above. "No lines" is scored separately, immediately at
+	// lock time, since ClearingRows is never entered for it.
+	static constexpr int TSpinNoClearScore = 400;
+	static constexpr int TSpinMiniNoClearScore = 100;
+	static constexpr std::array<int, 3> TSpinClearScores = { 800, 1200, 1600 };
+	static constexpr std::array<int, 2> TSpinMiniClearScores = { 200, 400 };
+
 	// Combo: 50 * comboCount * level, on top of the line-clear score, for every
 	// clear beyond the first in an unbroken chain of clears.
 	static constexpr int ComboScorePerLevel = 50;
 
-	// Back-to-back: a Tetris directly following another Tetris (no ordinary
-	// clear in between) scores its line-clear component at this multiplier.
+	// Back-to-back: a Tetris or T-spin clear directly following another one (no
+	// ordinary clear in between) scores its line-clear component at this
+	// multiplier. A T-spin that clears nothing neither breaks nor extends this.
 	static constexpr float BackToBackMultiplier = 1.5f;
 
 	// Perfect Clear: the board is completely empty after the clear. Indexed the
@@ -205,6 +222,13 @@ private:
 
 	int comboCount = -1;         // -1 = not currently chaining clears
 	bool backToBackActive = false;
+
+	// True if the last thing done to the active piece was a successful
+	// rotation (cleared by any move, including gravity) -- required for a
+	// T-spin. Carries a lock's T-spin classification through the row-clear
+	// delay, since Update() resolves the actual clear later than LockAndScan().
+	bool lastActionWasRotation = false;
+	TSpinRule::Result pendingTSpinResult = TSpinRule::Result::None;
 
 	GameOverReason gameOverReason = GameOverReason::None;
 

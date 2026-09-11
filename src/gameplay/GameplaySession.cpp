@@ -40,6 +40,7 @@ bool GameplaySession::MoveHorizontal(int direction)
 	}
 
 	currentTetromino = movedTetromino;
+	lastActionWasRotation = false;
 	OnPieceShifted();
 	return true;
 }
@@ -74,6 +75,7 @@ bool GameplaySession::Rotate(bool clockwise)
 		if (board.CanPlace(candidate))
 		{
 			currentTetromino = candidate;
+			lastActionWasRotation = true;
 			OnPieceShifted();
 			return true;
 		}
@@ -195,15 +197,36 @@ void GameplaySession::Update(float deltaTime)
 		board.ClearRows(clearingRows);
 		clearingRows.clear();
 
-		// Guideline scoring: Single/Double/Triple/Tetris, at the level the clear
-		// happened at -- before this clear's own lines can push the level up.
-		const int scoringRows = std::clamp(clearedRows, 1, static_cast<int>(LineClearScores.size()));
-		int lineScore = LineClearScores[scoringRows - 1] * level;
+		const TSpinRule::Result tSpin = pendingTSpinResult;
+		pendingTSpinResult = TSpinRule::Result::None;
 
-		// Back-to-back: a Tetris right after another Tetris (nothing smaller in
-		// between) scores the line-clear part at 1.5x. Evaluated against the
-		// state left by the *previous* clear, then updated for the next one.
-		const bool isDifficultClear = scoringRows == static_cast<int>(LineClearScores.size());
+		// Guideline scoring: Single/Double/Triple/Tetris, at the level the clear
+		// happened at -- before this clear's own lines can push the level up. A
+		// T-spin clear uses its own (higher) table instead.
+		const int scoringRows = std::clamp(clearedRows, 1, static_cast<int>(LineClearScores.size()));
+		int lineScore = 0;
+
+		if (tSpin == TSpinRule::Result::Full)
+		{
+			const int index = std::clamp(scoringRows, 1, static_cast<int>(TSpinClearScores.size())) - 1;
+			lineScore = TSpinClearScores[index] * level;
+		}
+		else if (tSpin == TSpinRule::Result::Mini)
+		{
+			const int index = std::clamp(scoringRows, 1, static_cast<int>(TSpinMiniClearScores.size())) - 1;
+			lineScore = TSpinMiniClearScores[index] * level;
+		}
+		else
+		{
+			lineScore = LineClearScores[scoringRows - 1] * level;
+		}
+
+		// Back-to-back: a Tetris or a T-spin clear right after another one of
+		// either (nothing smaller in between) scores the line-clear part at
+		// 1.5x. Evaluated against the state left by the *previous* clear, then
+		// updated for the next one.
+		const bool isDifficultClear = tSpin != TSpinRule::Result::None
+			|| scoringRows == static_cast<int>(LineClearScores.size());
 		const bool earnedBackToBack = isDifficultClear && backToBackActive;
 		if (earnedBackToBack)
 		{
@@ -238,6 +261,8 @@ void GameplaySession::Update(float deltaTime)
 		pendingEvents.comboCount = comboCount;   // never negative here: it was just incremented from >= -1
 		pendingEvents.backToBack = earnedBackToBack;
 		pendingEvents.perfectClear = isPerfectClear;
+		pendingEvents.tSpin = tSpin != TSpinRule::Result::None;
+		pendingEvents.tSpinMini = tSpin == TSpinRule::Result::Mini;
 		pendingEvents.leveledUp = level > previousLevel;
 
 		fallDelay = GravityDelayForLevel(level);
@@ -322,6 +347,11 @@ void GameplaySession::LockAndScan()
 	pendingEvents.landed = true;
 	pendingEvents.landedBlocks = currentTetromino.GetBlockPositions();
 
+	// T-spin check happens against the resting position, before this piece's
+	// own cells join the board (they're never diagonal from its centre, so it
+	// wouldn't matter either way, but the intent reads clearer this way).
+	const TSpinRule::Result tSpin = TSpinRule::Detect(board, currentTetromino, lastActionWasRotation);
+
 	// Lock-out: the piece came to rest without any part reaching the visible
 	// field, so the stack has overflowed the top.
 	const bool lockedOut = IsEntirelyInBuffer(currentTetromino);
@@ -338,6 +368,11 @@ void GameplaySession::LockAndScan()
 
 	if (!fullRows.empty())
 	{
+		// The actual score depends on how many rows clear, which isn't decided
+		// until the clear delay in Update() elapses -- carry the classification
+		// forward until then.
+		pendingTSpinResult = tSpin;
+
 		pendingEvents.rowsDetected = true;
 		pendingEvents.detectedRows = fullRows;
 
@@ -349,6 +384,16 @@ void GameplaySession::LockAndScan()
 
 	// This piece locked without clearing anything -- any combo chain ends here.
 	comboCount = -1;
+
+	// A T-spin that clears nothing still scores, and neither breaks nor extends
+	// back-to-back (that's tied to clears, and this one didn't clear anything).
+	if (tSpin != TSpinRule::Result::None)
+	{
+		score += (tSpin == TSpinRule::Result::Full ? TSpinNoClearScore : TSpinMiniNoClearScore) * level;
+
+		pendingEvents.tSpin = true;
+		pendingEvents.tSpinMini = tSpin == TSpinRule::Result::Mini;
+	}
 
 	if (!SpawnNextTetromino())
 	{
@@ -385,6 +430,7 @@ void GameplaySession::ResetLockState()
 	lockTimer = 0.f;
 	lockResets = 0;
 	lowestRow = PieceBottomRow();
+	lastActionWasRotation = false;
 }
 
 float GameplaySession::GravityDelayForLevel(int level)
@@ -418,6 +464,12 @@ bool GameplaySession::IsResting() const
 
 void GameplaySession::OnPieceDescended()
 {
+	// Gravity/soft-drop movement, so whatever T-spin setup a rotation left
+	// behind no longer applies -- except a hard drop's fall, which never calls
+	// this (see HardDrop()), so rotating into a spin and hard-dropping it still
+	// counts.
+	lastActionWasRotation = false;
+
 	const int bottom = PieceBottomRow();
 	if (bottom > lowestRow)
 	{
@@ -467,3 +519,4 @@ bool GameplaySession::IsEntirelyInBuffer(const Tetromino& tetromino)
 
 	return true;
 }
+

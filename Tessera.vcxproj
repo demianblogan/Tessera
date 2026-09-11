@@ -139,6 +139,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\gameplay\PieceData.cpp" />
     <ClCompile Include="src\gameplay\PieceDataFile.cpp" />
     <ClCompile Include="src\gameplay\KickData.cpp" />
+    <ClCompile Include="src\gameplay\TSpinRule.cpp" />
     <ClCompile Include="src\gameplay\KickDataFile.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
     <ClCompile Include="src\input\GamepadManager.cpp" />
@@ -242,6 +243,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\gameplay\PieceData.h" />
     <ClInclude Include="src\gameplay\PieceDataFile.h" />
     <ClInclude Include="src\gameplay\KickData.h" />
+    <ClInclude Include="src\gameplay\TSpinRule.h" />
     <ClInclude Include="src\gameplay\KickDataFile.h" />
     <ClInclude Include="src\input\ActionMap.h" />
     <ClInclude Include="src\input\DirectionalRepeater.h" />
