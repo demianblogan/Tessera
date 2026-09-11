@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <deque>
 #include <vector>
 
 #include <SFML/System/Vector2.hpp>
@@ -76,8 +77,11 @@ public:
 
 	[[nodiscard]] const Board& GetBoard() const { return board; }
 	[[nodiscard]] const Tetromino& GetCurrentTetromino() const { return currentTetromino; }
-	[[nodiscard]] const Tetromino& GetNextTetromino() const { return nextTetromino; }
 	[[nodiscard]] Tetromino GetGhostTetromino() const;
+
+	// The upcoming pieces, in order (index 0 is the piece that spawns next).
+	[[nodiscard]] int GetNextCount() const { return static_cast<int>(nextQueue.size()); }
+	[[nodiscard]] Tetromino GetNextPiece(int index) const;
 
 	[[nodiscard]] const std::vector<int>& GetClearingRows() const { return clearingRows; }
 
@@ -89,6 +93,10 @@ public:
 private:
 	static constexpr int ScorePerLevel = 50;
 	static constexpr int ScorePerRow = 10;
+
+	// How many upcoming pieces the queue holds (and the HUD shows). Fixed for
+	// now; a player setting for this arrives with the other gameplay toggles.
+	static constexpr int NextQueueLength = 5;
 	static constexpr float BaseFallDelay = 0.5f;
 	static constexpr float MinFallDelay = 0.1f;
 	static constexpr float FallDelayPerLevel = 0.05f;
@@ -120,7 +128,7 @@ private:
 	Board board;
 	TetrominoBag tetrominoBag;
 	Tetromino currentTetromino;
-	Tetromino nextTetromino;
+	std::deque<Tetromino::Type> nextQueue;
 
 	Phase phase = Phase::Falling;
 

@@ -14,8 +14,12 @@ namespace
 
 GameplaySession::GameplaySession()
 	: currentTetromino(tetrominoBag.Next(), SpawnPosition)
-	, nextTetromino(tetrominoBag.Next(), { 0, 0 })
 {
+	for (int i = 0; i < NextQueueLength; ++i)
+	{
+		nextQueue.push_back(tetrominoBag.Next());
+	}
+
 	ResetLockState();
 }
 
@@ -266,12 +270,20 @@ void GameplaySession::LockAndScan()
 
 bool GameplaySession::SpawnNextTetromino()
 {
-	currentTetromino = { nextTetromino.GetType(), SpawnPosition };
-	nextTetromino = { tetrominoBag.Next(), { 0, 0 } };
+	const Tetromino::Type type = nextQueue.front();
+	nextQueue.pop_front();
+	nextQueue.push_back(tetrominoBag.Next());
+
+	currentTetromino = { type, SpawnPosition };
 
 	ResetLockState();
 
 	return board.CanPlace(currentTetromino);
+}
+
+Tetromino GameplaySession::GetNextPiece(int index) const
+{
+	return { nextQueue.at(static_cast<std::size_t>(index)), { 0, 0 } };
 }
 
 void GameplaySession::ResetLockState()

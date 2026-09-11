@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -20,7 +21,7 @@ namespace sf
 // HOLD and LEVEL on the left, NEXT / SCORE / LINES / TIME on the right -- plus
 // an always-on controls legend under the left column. GameplayState pushes the
 // numbers each frame with Set() and calls the OnX hooks so the matching cell
-// flashes; BoardRenderer draws the next piece at NextPreviewCentre().
+// flashes; BoardRenderer draws the upcoming pieces inside NextPreviewArea().
 class GameplayHud
 {
 public:
@@ -39,7 +40,7 @@ public:
 	void Render(sf::RenderTarget& target) const;
 
 	[[nodiscard]] bool NextVisible() const;
-	[[nodiscard]] sf::Vector2f NextPreviewCentre() const { return nextPreviewCentre; }
+	[[nodiscard]] sf::FloatRect NextPreviewArea() const { return nextCellBounds; }
 
 private:
 	// One framed square: the decorative border, a dark inner fill, the caption
@@ -79,5 +80,5 @@ private:
 	std::vector<ControlEntry> legendEntries;
 	bool showControls = true;
 
-	sf::Vector2f nextPreviewCentre;
+	sf::FloatRect nextCellBounds;
 };

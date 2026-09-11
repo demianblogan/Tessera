@@ -147,7 +147,7 @@ GameplayHud::GameplayHud(Context& context)
 		UI::MenuFrameSourceBorder, FrameTargetBorder)
 	, legendTitle(context.fonts.Get(Assets::FontID::Main),
 		context.localization.GetText(TextKey::Hud::Controls), LegendTitleSize)
-	, nextPreviewCentre{ Centre(SquareAt(RightX, 0)).x, SquareAt(RightX, 0).position.y + Square * 0.56f }
+	, nextCellBounds(SquareAt(RightX, 0))
 {
 	cells.push_back(MakeCell(TextKey::Hud::Hold, SquareAt(LeftX, 0)));
 	cells.push_back(MakeCell(TextKey::Hud::Level, SquareAt(LeftX, 1)));

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/System/Vector2.hpp>
 
 #include "../resources/Assets.h"
@@ -13,6 +14,7 @@ struct Context;
 class GameplaySession;
 class EffectsController;
 class NeonGlow;
+class Tetromino;
 
 // Draws the play area for GameplayState: board gradient, walls, locked cells,
 // the ghost, the active piece (glow + normal passes), the next-piece preview,
@@ -30,12 +32,15 @@ public:
 	// out for the game-over sequence.
 	void Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
 		NeonGlow& glow, float deathProgress = 0.f) const;
-	void RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::Vector2f centre) const;
+	// Draws the upcoming pieces stacked inside `area` (the NEXT HUD cell).
+	void RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const;
 
 private:
 	static constexpr int SpriteSize = 16;
 	static constexpr int WallTextureIndex = 10;
-	static constexpr float PreviewBlockSize = 36.f;
+	static constexpr float NextBlockSize = 15.f;
+
+	void DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece, float blockSize, sf::Vector2f centre) const;
 
 	[[nodiscard]] Assets::TextureID ResolveBlockTexture() const;
 

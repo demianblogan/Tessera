@@ -372,30 +372,50 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 }
 
-void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::Vector2f centre) const
+void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const
+{
+	const int count = session.GetNextCount();
+	if (count <= 0)
+	{
+		return;
+	}
+
+	// A vertical stack inside the NEXT cell: the piece that spawns next on top,
+	// the rest below it, evenly spaced under the caption.
+	const float centreX = area.position.x + area.size.x * 0.5f;
+	const float firstY = area.position.y + area.size.y * 0.32f;
+	const float slotStride = area.size.y * 0.15f;
+
+	for (int i = 0; i < count; ++i)
+	{
+		DrawPiecePreview(target, session.GetNextPiece(i), NextBlockSize,
+			{ centreX, firstY + slotStride * static_cast<float>(i) });
+	}
+}
+
+void BoardRenderer::DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece,
+	float blockSize, sf::Vector2f centre) const
 {
 	sf::Sprite blockSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
 
-	const auto previewBlockPositions = session.GetNextTetromino().GetBlockPositions();
-
 	blockSprite.setTextureRect(
 		{
-			{ static_cast<int>(session.GetNextTetromino().GetType()) * SpriteSize, 0 },
+			{ static_cast<int>(piece.GetType()) * SpriteSize, 0 },
 			{ SpriteSize, SpriteSize }
 		}
 	);
+	blockSprite.setScale({ blockSize / 16.f, blockSize / 16.f });
 
-	blockSprite.setScale({ PreviewBlockSize / 16.f, PreviewBlockSize / 16.f });
+	const auto blockPositions = piece.GetBlockPositions();
 
-	// Different pieces occupy different cells of the 4x4 shape matrix, so centre
-	// the piece's own bounding box on `centre` instead of pinning its top-left
-	// corner there.
+	// Different pieces fill different cells of the 4x4 shape matrix, so centre the
+	// piece's own bounding box on `centre` rather than pinning its top-left there.
 	int minBlockX = TetrominoShapes::MATRIX_SIZE;
 	int maxBlockX = -1;
 	int minBlockY = TetrominoShapes::MATRIX_SIZE;
 	int maxBlockY = -1;
 
-	for (const sf::Vector2i& blockPosition : previewBlockPositions)
+	for (const sf::Vector2i& blockPosition : blockPositions)
 	{
 		minBlockX = std::min(minBlockX, blockPosition.x);
 		maxBlockX = std::max(maxBlockX, blockPosition.x);
@@ -403,18 +423,18 @@ void BoardRenderer::RenderNextPreview(sf::RenderTarget& target, const GameplaySe
 		maxBlockY = std::max(maxBlockY, blockPosition.y);
 	}
 
-	const sf::Vector2f previewOrigin =
+	const sf::Vector2f origin =
 	{
-		centre.x - (minBlockX + maxBlockX + 1) * 0.5f * PreviewBlockSize,
-		centre.y - (minBlockY + maxBlockY + 1) * 0.5f * PreviewBlockSize
+		centre.x - static_cast<float>(minBlockX + maxBlockX + 1) * 0.5f * blockSize,
+		centre.y - static_cast<float>(minBlockY + maxBlockY + 1) * 0.5f * blockSize
 	};
 
-	for (const sf::Vector2i& blockPosition : previewBlockPositions)
+	for (const sf::Vector2i& blockPosition : blockPositions)
 	{
 		blockSprite.setPosition(
 			{
-				previewOrigin.x + blockPosition.x * PreviewBlockSize,
-				previewOrigin.y + blockPosition.y * PreviewBlockSize
+				origin.x + static_cast<float>(blockPosition.x) * blockSize,
+				origin.y + static_cast<float>(blockPosition.y) * blockSize
 			}
 		);
 

@@ -414,7 +414,7 @@ void GameplayState::Render(sf::RenderTarget& target)
 		hud.Render(target);
 		if (hud.NextVisible())
 		{
-			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewCentre());
+			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewArea());
 		}
 	}
 	else

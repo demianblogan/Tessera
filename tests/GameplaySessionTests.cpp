@@ -44,6 +44,55 @@ TEST_CASE("a new piece spawns inside the hidden buffer, above the visible field"
 	}
 }
 
+TEST_CASE("the next queue always holds five pieces")
+{
+	GameplaySession session;
+	CHECK(session.GetNextCount() == 5);
+
+	// Locking pieces refills the queue from the bag each time.
+	for (int i = 0; i < 30 && session.GetPhase() != GameplaySession::Phase::GameOver; i++)
+	{
+		session.HardDrop();
+		session.Update(1.0f);
+		(void)session.ConsumeEvents();
+
+		CHECK(session.GetNextCount() == 5);
+	}
+}
+
+TEST_CASE("the piece that spawns next matches the front of the queue")
+{
+	GameplaySession session;
+	const Tetromino::Type expected = session.GetNextPiece(0).GetType();
+
+	session.HardDrop();
+	session.Update(1.0f);
+	(void)session.ConsumeEvents();
+
+	CHECK(session.GetCurrentTetromino().GetType() == expected);
+}
+
+TEST_CASE("the queue advances by exactly one slot per spawn")
+{
+	GameplaySession session;
+
+	std::array<Tetromino::Type, 5> before{};
+	for (int i = 0; i < 5; i++)
+	{
+		before[static_cast<std::size_t>(i)] = session.GetNextPiece(i).GetType();
+	}
+
+	session.HardDrop();
+	session.Update(1.0f);
+	(void)session.ConsumeEvents();
+
+	// The old slots 1..4 are now the new slots 0..3.
+	for (int i = 0; i < 4; i++)
+	{
+		CHECK(session.GetNextPiece(i).GetType() == before[static_cast<std::size_t>(i) + 1]);
+	}
+}
+
 TEST_CASE("MoveHorizontal(0) is a no-op that reports no movement")
 {
 	GameplaySession session;
