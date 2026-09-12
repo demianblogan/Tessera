@@ -451,16 +451,50 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 			pendingHardDropAnimation = false;
 
 			int landedTopRow = Board::HEIGHT;
-			std::vector<sf::Vector2f> impactPoints;
-			impactPoints.reserve(events.landedBlocks.size());
 			for (const sf::Vector2i& block : events.landedBlocks)
 			{
 				landedTopRow = std::min(landedTopRow, block.y);
-				impactPoints.push_back(CellCentre(block.x, block.y));
 			}
 
 			const int droppedRows = landedTopRow - hardDropStartRow;
 			boardRenderer.TriggerHardDropFlight(hardDropType, events.landedBlocks, droppedRows);
+
+			// Dust only where a cell actually rests on something -- an already-
+			// locked cell, or the floor -- never at a cell of this same piece
+			// that has one of its own other cells beneath it, and never at a
+			// cell left hanging above a gap.
+			const Board::Grid& grid = session.GetBoard().GetGrid();
+			std::vector<sf::Vector2f> impactPoints;
+			for (const sf::Vector2i& block : events.landedBlocks)
+			{
+				const int belowRow = block.y + 1;
+				const bool isOwnCellBelow = std::any_of(events.landedBlocks.begin(), events.landedBlocks.end(),
+					[&](const sf::Vector2i& other) { return other.x == block.x && other.y == belowRow; });
+
+				if (isOwnCellBelow)
+				{
+					continue;
+				}
+
+				const bool restsOnFloor = belowRow >= Board::HEIGHT;
+				const bool restsOnStack = !restsOnFloor
+					&& grid[static_cast<std::size_t>(belowRow)][static_cast<std::size_t>(block.x)].occupied;
+
+				if (!restsOnFloor && !restsOnStack)
+				{
+					continue;
+				}
+
+				// Bottom edge of the cell, not its centre -- dust kicks up from
+				// where it actually touches down.
+				impactPoints.push_back(
+					{
+						BoardRenderer::BoardPosition.x + (static_cast<float>(block.x) + 0.5f) * BoardRenderer::BlockSize,
+						BoardRenderer::BoardPosition.y
+							+ static_cast<float>(block.y - Board::BufferHeight + 1) * BoardRenderer::BlockSize
+					});
+			}
+
 			effects.TriggerHardDropDust(impactPoints);
 		}
 

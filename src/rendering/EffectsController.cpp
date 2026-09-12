@@ -68,17 +68,20 @@ void EffectsController::TriggerRowClear(const std::vector<int>& rows, int rank, 
 
 void EffectsController::TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints)
 {
-	constexpr int PerPoint = 3;
+	constexpr int PerPoint = 4;
 	const sf::Color dustColour(220, 225, 235);
 
 	for (const sf::Vector2f& point : impactPoints)
 	{
 		for (int i = 0; i < PerPoint; ++i)
 		{
+			// Straight up with only a slight left/right scatter -- an impact
+			// bounce, not a burst in every direction -- then gravity (applied
+			// generically to every non-floaty shard) arcs it back down.
 			Shard shard;
 			shard.position = point;
-			shard.velocity = { Random::Float(-45.f, 45.f), Random::Float(-90.f, -25.f) };
-			shard.maxLife = Random::Float(0.2f, 0.35f);
+			shard.velocity = { Random::Float(-25.f, 25.f), -Random::Float(90.f, 160.f) };
+			shard.maxLife = Random::Float(0.3f, 0.45f);
 			shard.life = shard.maxLife;
 			shard.size = Random::Float(0.1f, 0.18f);
 			shard.textureIndex = -1;
