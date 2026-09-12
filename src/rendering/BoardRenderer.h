@@ -65,6 +65,10 @@ public:
 
 	[[nodiscard]] bool IsHoldFlightActive() const { return outgoingFlight || incomingFlight; }
 
+	// Whether the landing-preview ghost piece is drawn. A player preference,
+	// read from settings.
+	void SetGhostEnabled(bool enabled) { ghostEnabled = enabled; }
+
 private:
 	static constexpr int SpriteSize = 16;
 	static constexpr int WallTextureIndex = 10;
@@ -116,4 +120,6 @@ private:
 
 	std::optional<PieceFlight> outgoingFlight;   // board -> HOLD box
 	std::optional<PieceFlight> incomingFlight;   // HOLD box -> board
+
+	bool ghostEnabled = true;
 };

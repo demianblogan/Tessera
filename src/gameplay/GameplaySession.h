@@ -74,7 +74,16 @@ public:
 		GameOverReason gameOverReason = GameOverReason::None;
 	};
 
-	GameplaySession();
+	// Player-configurable rules: how many upcoming pieces are dealt out (the
+	// queue only ever shows this many) and whether the randomiser is the
+	// guideline 7-bag or pure uniform random. Defaults match the guideline.
+	struct Config
+	{
+		int nextQueueLength = 5;   // clamped to [1, 6]
+		bool sevenBagEnabled = true;
+	};
+
+	explicit GameplaySession(Config config = {});
 
 	// Input intents. The horizontal / rotate calls return whether the piece
 	// actually moved so the caller can drive its own move / wall-contact
@@ -157,9 +166,10 @@ private:
 	// A new level every this many total lines cleared.
 	static constexpr int LinesPerLevel = 10;
 
-	// How many upcoming pieces the queue holds (and the HUD shows). Fixed for
-	// now; a player setting for this arrives with the other gameplay toggles.
-	static constexpr int NextQueueLength = 5;
+	// The queue length is a player setting; keep it inside a sane range no
+	// matter what a settings file hands in.
+	static constexpr int MinNextQueueLength = 1;
+	static constexpr int MaxNextQueueLength = 6;
 
 	// However high the level climbs, gravity never gets faster than this --
 	// GravityDelayForLevel() otherwise keeps shrinking indefinitely.
@@ -197,6 +207,7 @@ private:
 	TetrominoBag tetrominoBag;
 	Tetromino currentTetromino;
 	std::deque<Tetromino::Type> nextQueue;
+	int nextQueueLength;
 
 	Phase phase = Phase::Falling;
 

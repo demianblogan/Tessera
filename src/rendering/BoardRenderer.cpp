@@ -257,7 +257,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	// Ghost  (hidden once the piece is locked and rows are clearing)
 	// =====================================================
 
-	if (session.IsFalling())
+	if (ghostEnabled && session.IsFalling())
 	{
 		const Tetromino ghostTetromino = session.GetGhostTetromino();
 

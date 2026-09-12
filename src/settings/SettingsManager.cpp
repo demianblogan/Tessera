@@ -59,7 +59,11 @@ void SettingsManager::Load()
 		>> parsed.hudLines
 		>> parsed.hudLevel
 		>> parsed.hudTime
-		>> parsed.hudControlsLegend;
+		>> parsed.hudControlsLegend
+		>> parsed.ghostPieceEnabled
+		>> parsed.holdEnabled
+		>> parsed.nextQueueLength
+		>> parsed.sevenBagEnabled;
 
 	const auto scancodeInRange = [](int value)
 	{
@@ -72,6 +76,7 @@ void SettingsManager::Load()
 		windowModeValue >= 0 && windowModeValue <= 2 &&
 		parsed.soundVolume <= MaxVolumeStep &&
 		parsed.musicVolume <= MaxVolumeStep &&
+		parsed.nextQueueLength >= MinNextQueueLength && parsed.nextQueueLength <= MaxNextQueueLength &&
 		std::all_of(keys.begin(), keys.end(), scancodeInRange);
 
 	if (!fileIsUsable)
@@ -135,6 +140,10 @@ void SettingsManager::Save() const
 		file << settings.hudLevel << '\n';
 		file << settings.hudTime << '\n';
 		file << settings.hudControlsLegend << '\n';
+		file << settings.ghostPieceEnabled << '\n';
+		file << settings.holdEnabled << '\n';
+		file << settings.nextQueueLength << '\n';
+		file << settings.sevenBagEnabled << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));

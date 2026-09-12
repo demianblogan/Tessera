@@ -4,31 +4,42 @@
 
 #include "../utils/Random.h"
 
+TetrominoBag::TetrominoBag(bool sevenBagEnabled)
+    : sevenBagEnabled(sevenBagEnabled)
+{
+    // No code
+}
+
 Tetromino::Type TetrominoBag::Next()
 {
-	if (bag.empty())
-	{
-		Refill();
-	}
+    if (!sevenBagEnabled)
+    {
+        return static_cast<Tetromino::Type>(Random::Int(0, 6));
+    }
 
-	const Tetromino::Type nextTetromino = bag.back();
-	bag.pop_back();
+    if (bag.empty())
+    {
+        Refill();
+    }
 
-	return nextTetromino;
+    const Tetromino::Type nextTetromino = bag.back();
+    bag.pop_back();
+
+    return nextTetromino;
 }
 
 void TetrominoBag::Refill()
 {
-	bag =
-	{
-		Tetromino::Type::I,
-		Tetromino::Type::O,
-		Tetromino::Type::T,
-		Tetromino::Type::S,
-		Tetromino::Type::Z,
-		Tetromino::Type::J,
-		Tetromino::Type::L
-	};
+    bag =
+    {
+        Tetromino::Type::I,
+        Tetromino::Type::O,
+        Tetromino::Type::T,
+        Tetromino::Type::S,
+        Tetromino::Type::Z,
+        Tetromino::Type::J,
+        Tetromino::Type::L
+    };
 
-	std::shuffle(bag.begin(), bag.end(), Random::Engine());
+    std::shuffle(bag.begin(), bag.end(), Random::Engine());
 }

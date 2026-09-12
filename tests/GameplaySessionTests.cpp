@@ -180,6 +180,21 @@ TEST_CASE("the next queue always holds five pieces")
 	}
 }
 
+TEST_CASE("Config controls the next queue length")
+{
+	const GameplaySession session({ 3, true });
+	CHECK(session.GetNextCount() == 3);
+}
+
+TEST_CASE("Config clamps an out-of-range next queue length")
+{
+	const GameplaySession tooSmall({ 0, true });
+	CHECK(tooSmall.GetNextCount() == 1);
+
+	const GameplaySession tooBig({ 99, true });
+	CHECK(tooBig.GetNextCount() == 6);
+}
+
 TEST_CASE("the piece that spawns next matches the front of the queue")
 {
 	GameplaySession session;

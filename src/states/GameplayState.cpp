@@ -66,6 +66,9 @@ namespace
 GameplayState::GameplayState(Context& context, bool playIntro)
 	: State(context.stateMachine)
 	, context(context)
+	, session(GameplaySession::Config{
+		static_cast<int>(context.settings.GetSettings().nextQueueLength),
+		context.settings.GetSettings().sevenBagEnabled })
 	, boardRenderer(context)
 	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, hud(context)
@@ -96,7 +99,7 @@ void GameplayState::ApplyGameplaySettings()
 {
 	const GameSettings& settings = context.settings.GetSettings();
 
-	hud.SetVisible(GameplayHud::Element::Hold, settings.hudHold);
+	hud.SetVisible(GameplayHud::Element::Hold, settings.hudHold && settings.holdEnabled);
 	hud.SetVisible(GameplayHud::Element::Next, settings.hudNext);
 	hud.SetVisible(GameplayHud::Element::Score, settings.hudScore);
 	hud.SetVisible(GameplayHud::Element::Lines, settings.hudLines);
@@ -105,6 +108,7 @@ void GameplayState::ApplyGameplaySettings()
 	hud.SetVisible(GameplayHud::Element::ControlsLegend, settings.hudControlsLegend);
 
 	effects.SetShakeEnabled(settings.screenShakeEnabled);
+	boardRenderer.SetGhostEnabled(settings.ghostPieceEnabled);
 }
 
 void GameplayState::OnResume()
@@ -347,7 +351,7 @@ void GameplayState::TryRotate(bool clockwise)
 
 void GameplayState::TryHold()
 {
-	if (!session.IsFalling())
+	if (!session.IsFalling() || !context.settings.GetSettings().holdEnabled)
 	{
 		return;
 	}

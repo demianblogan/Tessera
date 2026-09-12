@@ -49,6 +49,18 @@ TEST_CASE("the bag keeps refilling: three bags, each a full set")
 	}
 }
 
+TEST_CASE("pure-random mode always draws a valid piece type")
+{
+	TetrominoBag bag(false);
+
+	for (int i = 0; i < 200; i++)
+	{
+		const auto piece = static_cast<int>(bag.Next());
+		CHECK(piece >= 0);
+		CHECK(piece <= 6);
+	}
+}
+
 TEST_CASE("a piece never repeats before the bag is exhausted")
 {
 	TetrominoBag bag;

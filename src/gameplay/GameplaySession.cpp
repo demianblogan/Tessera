@@ -13,10 +13,12 @@ namespace
 	constexpr sf::Vector2i SpawnPosition{ Board::WIDTH / 2 - 2, Board::BufferHeight - 2 };
 }
 
-GameplaySession::GameplaySession()
-	: currentTetromino(tetrominoBag.Next(), SpawnPosition)
+GameplaySession::GameplaySession(Config config)
+	: tetrominoBag(config.sevenBagEnabled)
+	, currentTetromino(tetrominoBag.Next(), SpawnPosition)
+	, nextQueueLength(std::clamp(config.nextQueueLength, MinNextQueueLength, MaxNextQueueLength))
 {
-	for (int i = 0; i < NextQueueLength; ++i)
+	for (int i = 0; i < nextQueueLength; ++i)
 	{
 		nextQueue.push_back(tetrominoBag.Next());
 	}
