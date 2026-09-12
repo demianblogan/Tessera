@@ -99,8 +99,8 @@ namespace
 	constexpr unsigned int CaptionSize = 34;
 	constexpr unsigned int StatLabelSize = 22;
 	constexpr unsigned int StatValueSize = 40;
-	constexpr unsigned int ControlsLabelSize = 24;
-	constexpr unsigned int ControlsValueSize = 27;
+	constexpr unsigned int ControlsLabelSize = 30;
+	constexpr unsigned int ControlsValueSize = 34;
 
 	constexpr sf::Vector2f FrameTargetBorder{ 32.f, 32.f };
 	constexpr float FillInset = 16.f;
@@ -310,7 +310,7 @@ void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool hold
 
 	const float lineY = Centre(ControlsBounds).y;
 	constexpr float IconGap = 8.f;
-	constexpr float IconScale = 2.1f;
+	constexpr float IconScale = 2.6f;
 
 	// Build every entry first (so its value -- text or icons -- and width are
 	// known), then lay them out with equal gaps, including from the frame's own
