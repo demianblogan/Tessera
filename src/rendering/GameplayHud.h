@@ -40,8 +40,11 @@ public:
 	void Set(int score, int level, int lines, float seconds);
 	void Update(float deltaTime);
 
-	void OnRowsCleared();   // flashes SCORE and LINES
-	void OnLevelUp();       // flashes LEVEL
+	// `rank` (0 Single .. 3 Tetris) scales how hard the right panel (SCORE and
+	// LINES) flashes and shakes -- a Tetris should visibly rattle the HUD, a
+	// Single just barely lights it up.
+	void OnRowsCleared(int rank);
+	void OnLevelUp();   // pulses the left panel (LEVEL) at a fixed strength
 
 	void SetVisible(Element element, bool visible);
 	void Render(sf::RenderTarget& target) const;
@@ -90,6 +93,9 @@ private:
 
 	void DrawStatRow(sf::RenderTarget& target, const StatRow& row) const;
 	void DrawValue(sf::RenderTarget& target, const sf::Text& value, float flash) const;
+	// Draws `frame` shaking and tinted by `pulse` (0..1, decaying) and
+	// `pulseRank` (0..3, how hard the shake is), around its own resting position.
+	void DrawPanelFrame(sf::RenderTarget& target, UI::NineSliceFrame& frame, float pulse, int pulseRank) const;
 	[[nodiscard]] PromptMode CurrentPromptMode() const;
 	void BuildControlsLegend(const ControlSettings& controls, bool holdEnabled, PromptMode mode);
 
@@ -97,7 +103,9 @@ private:
 
 	// Left panel: HOLD placeholder + LEVEL + TIME.
 	sf::RectangleShape leftFill;
-	UI::NineSliceFrame leftFrame;
+	// Mutable: Render() is const, but a level-up pulse tints and shakes the
+	// frame -- the same reasoning BoardRenderer's NeonGlow members use.
+	mutable UI::NineSliceFrame leftFrame;
 	sf::Text holdCaption;
 	sf::FloatRect holdBoxBounds;
 	sf::RectangleShape holdPlaceholder;   // empty outline until the hold mechanic lands
@@ -105,16 +113,19 @@ private:
 	StatRow levelRow;
 	StatRow timeRow;
 	bool holdVisible = true;
+	float leftPanelPulse = 0.f;   // 0..1, decaying -- set by OnLevelUp()
 
 	// Right panel: NEXT queue + SCORE + LINES.
 	sf::RectangleShape rightFill;
-	UI::NineSliceFrame rightFrame;
+	mutable UI::NineSliceFrame rightFrame;   // see leftFrame
 	sf::Text nextCaption;
 	sf::FloatRect nextBoxBounds;
 	sf::RectangleShape rightDivider;
 	StatRow scoreRow;
 	StatRow linesRow;
 	bool nextVisible = true;
+	float rightPanelPulse = 0.f;   // 0..1, decaying -- set by OnRowsCleared()
+	int rightPanelPulseRank = 0;
 
 	// Controls legend: a horizontal strip under the well.
 	sf::RectangleShape controlsFill;

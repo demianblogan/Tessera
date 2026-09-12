@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -11,6 +12,7 @@
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -106,6 +108,8 @@ namespace
 	constexpr float FillInset = 16.f;
 
 	constexpr float FlashDuration = 0.5f;
+	constexpr float PanelPulseDuration = 0.45f;
+	constexpr sf::Color PanelPulseColour{ 255, 235, 150 };
 
 	const sf::Color FillColour{ 8, 11, 17, 214 };
 	const sf::Color CaptionColour{ 150, 172, 196 };
@@ -456,6 +460,9 @@ void GameplayHud::Update(float deltaTime)
 	timeRow.flash = std::max(0.f, timeRow.flash - deltaTime / FlashDuration);
 	scoreRow.flash = std::max(0.f, scoreRow.flash - deltaTime / FlashDuration);
 	linesRow.flash = std::max(0.f, linesRow.flash - deltaTime / FlashDuration);
+
+	leftPanelPulse = std::max(0.f, leftPanelPulse - deltaTime / PanelPulseDuration);
+	rightPanelPulse = std::max(0.f, rightPanelPulse - deltaTime / PanelPulseDuration);
 }
 
 void GameplayHud::SetVisible(Element element, bool visible)
@@ -472,15 +479,18 @@ void GameplayHud::SetVisible(Element element, bool visible)
 	}
 }
 
-void GameplayHud::OnRowsCleared()
+void GameplayHud::OnRowsCleared(int rank)
 {
 	scoreRow.flash = 1.f;
 	linesRow.flash = 1.f;
+	rightPanelPulse = 1.f;
+	rightPanelPulseRank = rank;
 }
 
 void GameplayHud::OnLevelUp()
 {
 	levelRow.flash = 1.f;
+	leftPanelPulse = 1.f;
 }
 
 void GameplayHud::DrawValue(sf::RenderTarget& target, const sf::Text& value, float flash) const
@@ -505,6 +515,28 @@ void GameplayHud::DrawStatRow(sf::RenderTarget& target, const StatRow& row) cons
 	DrawValue(target, row.value, row.flash);
 }
 
+void GameplayHud::DrawPanelFrame(sf::RenderTarget& target, UI::NineSliceFrame& frame, float pulse, int pulseRank) const
+{
+	if (pulse <= 0.f)
+	{
+		frame.SetColor(sf::Color::White);
+		frame.Draw(target);
+		return;
+	}
+
+	const float ease = UI::Easing::EaseOutCubic(pulse);
+	const float shakeMagnitude = (2.f + 2.f * static_cast<float>(pulseRank)) * ease;
+	const sf::Vector2f jitter{
+		shakeMagnitude * std::sin(context.totalTime * 47.f),
+		shakeMagnitude * std::cos(context.totalTime * 53.f) };
+
+	sf::RenderStates states;
+	states.transform.translate(jitter);
+
+	frame.SetColor(MixColour(sf::Color::White, PanelPulseColour, ease));
+	frame.Draw(target, states);
+}
+
 void GameplayHud::Render(sf::RenderTarget& target) const
 {
 	const bool leftPanelVisible = holdVisible || levelRow.visible || timeRow.visible;
@@ -512,7 +544,7 @@ void GameplayHud::Render(sf::RenderTarget& target) const
 	if (leftPanelVisible)
 	{
 		target.draw(leftFill);
-		leftFrame.Draw(target);
+		DrawPanelFrame(target, leftFrame, leftPanelPulse, 0);
 
 		if (holdVisible)
 		{
@@ -534,7 +566,7 @@ void GameplayHud::Render(sf::RenderTarget& target) const
 	if (rightPanelVisible)
 	{
 		target.draw(rightFill);
-		rightFrame.Draw(target);
+		DrawPanelFrame(target, rightFrame, rightPanelPulse, rightPanelPulseRank);
 
 		// The queued pieces themselves are drawn by BoardRenderer, via
 		// NextPreviewArea() -- this only frames the panel and its caption.

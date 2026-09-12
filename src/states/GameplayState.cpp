@@ -494,7 +494,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 
 	if (events.rowsCleared)
 	{
-		hud.OnRowsCleared();
+		hud.OnRowsCleared(std::clamp(events.clearedRowCount - 1, 0, 3));
 		effects.SetCombo(events.comboCount);
 
 		if (events.perfectClear)
