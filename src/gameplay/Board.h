@@ -34,7 +34,9 @@ private:
 	[[nodiscard]] bool IntersectsLockedCells(const Tetromino& tetromino) const;
 
 public:
-	void LockTetromino(const Tetromino& tetromino);
+	// `golden` marks every cell the piece locks into as Cell::Kind::Golden
+	// instead of Normal -- an escalation bonus piece (see EscalationDirector).
+	void LockTetromino(const Tetromino& tetromino, bool golden = false);
 
 	// FindFullRows() only inspects; ClearRows() only removes the rows it is
 	// given and lets everything above fall. Splitting them lets the caller find
@@ -42,6 +44,17 @@ public:
 	// when the animation ends, with no second scan that could disagree.
 	[[nodiscard]] std::vector<int> FindFullRows() const;
 	void ClearRows(const std::vector<int>& rows);
+
+	// True if any cell in the given rows is a golden lock -- checked before
+	// ClearRows() removes them, to decide whether a clear earns the escalation
+	// double-score bonus.
+	[[nodiscard]] bool RowsContainGolden(const std::vector<int>& rows) const;
+
+	// Escalation's "Garbage" tier: raises one row from the bottom (occupied
+	// except for `gapColumn`), pushing every row above up by one. Returns false
+	// (and leaves the board untouched) instead of pushing locked cells off the
+	// top -- the caller should treat that as a top-out.
+	[[nodiscard]] bool PushGarbageRow(int gapColumn);
 
 	[[nodiscard]] bool CanPlace(const Tetromino& tetromino) const;
 	[[nodiscard]] const Grid& GetGrid() const;
