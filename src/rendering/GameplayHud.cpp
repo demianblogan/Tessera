@@ -12,10 +12,14 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 #include "BoardRenderer.h"
 #include "../core/Context.h"
 #include "../gameplay/Board.h"
+#include "../input/GamepadManager.h"
+#include "../input/GamepadPrompts.h"
 #include "../input/KeyName.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
@@ -212,11 +216,29 @@ GameplayHud::GameplayHud(Context& context)
 	controlsFill.setPosition({ ControlsBounds.position.x + FillInset, ControlsBounds.position.y + FillInset });
 	controlsFill.setFillColor(FillColour);
 
-	BuildControlsLegend(context.settings.GetSettings().controls, context.settings.GetSettings().holdEnabled);
+	BuildControlsLegend(context.settings.GetSettings().controls, context.settings.GetSettings().holdEnabled,
+		CurrentPromptMode());
+}
+
+GameplayHud::PromptMode GameplayHud::CurrentPromptMode() const
+{
+	if (!context.gamepad.IsInUse())
+	{
+		return PromptMode::Keyboard;
+	}
+
+	switch (context.gamepad.GetLayout())
+	{
+	case GamepadManager::Layout::Xbox:        return PromptMode::Xbox;
+	case GamepadManager::Layout::PlayStation: return PromptMode::PlayStation;
+	default:                                  return PromptMode::Keyboard;   // Generic has no icon set
+	}
 }
 
 void GameplayHud::RefreshControlsLegend(const ControlSettings& controls, bool holdEnabled)
 {
+	const PromptMode mode = CurrentPromptMode();
+
 	const bool unchanged =
 		controls.moveLeft == legendControls.moveLeft &&
 		controls.moveRight == legendControls.moveRight &&
@@ -226,83 +248,142 @@ void GameplayHud::RefreshControlsLegend(const ControlSettings& controls, bool ho
 		controls.rotateCounterClockwise == legendControls.rotateCounterClockwise &&
 		controls.hold == legendControls.hold &&
 		controls.pause == legendControls.pause &&
-		holdEnabled == legendHoldEnabled;
+		holdEnabled == legendHoldEnabled &&
+		mode == legendPromptMode;
 
 	if (unchanged)
 	{
 		return;
 	}
 
-	BuildControlsLegend(controls, holdEnabled);
+	BuildControlsLegend(controls, holdEnabled, mode);
 }
 
-void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool holdEnabled)
+void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool holdEnabled, PromptMode mode)
 {
 	legendControls = controls;
 	legendHoldEnabled = holdEnabled;
+	legendPromptMode = mode;
 	controlsEntries.clear();
 
-	// One entry per action, spread evenly across the strip; key names are read
-	// from the live bindings (layout-independent, via Input::KeyName).
+	// One entry per action, spread evenly across the strip. In keyboard mode,
+	// key names are read from the live bindings (layout-independent, via
+	// Input::KeyName); in gamepad mode, the value is one or two button-prompt
+	// icons instead -- Xbox or PlayStation, whichever GamepadManager reports.
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
+	const bool useIcons = mode != PromptMode::Keyboard;
+
+	const GamepadManager::Layout layout =
+		mode == PromptMode::PlayStation ? GamepadManager::Layout::PlayStation : GamepadManager::Layout::Xbox;
+	const sf::Texture* atlas = useIcons ? &context.textures.Get(GamepadPrompts::AtlasFor(layout)) : nullptr;
 
 	const auto twoKeys = [](sf::Keyboard::Scancode a, sf::Keyboard::Scancode b)
 	{
 		return Input::KeyName(a) + sf::String(" / ") + Input::KeyName(b);
 	};
 
-	std::vector<std::pair<std::string_view, sf::String>> entries =
+	using Prompt = GamepadPrompts::Action;
+	struct EntryDef
 	{
-		{ TextKey::Hud::Move,     twoKeys(controls.moveLeft, controls.moveRight) },
-		{ TextKey::Hud::SoftDrop, Input::KeyName(controls.softDrop) },
-		{ TextKey::Hud::HardDrop, Input::KeyName(controls.hardDrop) },
-		{ TextKey::Hud::Rotate,   twoKeys(controls.rotateCounterClockwise, controls.rotateClockwise) },
+		std::string_view labelKey;
+		sf::String text;                  // keyboard mode
+		std::vector<Prompt> icons;         // gamepad mode
+	};
+
+	std::vector<EntryDef> defs =
+	{
+		{ TextKey::Hud::Move,     twoKeys(controls.moveLeft, controls.moveRight),
+			{ Prompt::MoveLeft, Prompt::MoveRight } },
+		{ TextKey::Hud::SoftDrop, Input::KeyName(controls.softDrop), { Prompt::SoftDrop } },
+		{ TextKey::Hud::HardDrop, Input::KeyName(controls.hardDrop), { Prompt::HardDrop } },
+		{ TextKey::Hud::Rotate,   twoKeys(controls.rotateCounterClockwise, controls.rotateClockwise),
+			{ Prompt::RotateCounterClockwise, Prompt::RotateClockwise } },
 	};
 
 	// Omitted when hold itself is turned off in Options -- nothing to bind.
 	if (holdEnabled)
 	{
-		entries.push_back({ TextKey::Hud::HoldKey, Input::KeyName(controls.hold) });
+		defs.push_back({ TextKey::Hud::HoldKey, Input::KeyName(controls.hold), { Prompt::Hold } });
 	}
 
-	entries.push_back({ TextKey::Hud::Pause, Input::KeyName(controls.pause) });
+	defs.push_back({ TextKey::Hud::Pause, Input::KeyName(controls.pause), { Prompt::Pause } });
 
 	const float lineY = Centre(ControlsBounds).y;
+	constexpr float IconGap = 8.f;
+	constexpr float IconScale = 2.1f;
 
-	// Build every entry first (so its text -- and width -- is known), then lay
-	// them out with equal gaps, including from the frame's own inner edges: the
-	// gap before the first entry and after the last one is the same size as the
-	// gaps between entries, rather than each entry just centring in an equal
-	// share of the strip (which does not give equal *visual* spacing, since the
-	// entries themselves are different widths).
-	float totalTextWidth = 0.f;
+	// Build every entry first (so its value -- text or icons -- and width are
+	// known), then lay them out with equal gaps, including from the frame's own
+	// inner edges: the gap before the first entry and after the last one is the
+	// same size as the gaps between entries, rather than each entry just
+	// centring in an equal share of the strip (which does not give equal
+	// *visual* spacing, since the entries themselves are different widths).
+	std::vector<float> valueWidths;
+	float totalWidth = 0.f;
 
-	for (const auto& [labelKey, valueString] : entries)
+	for (const EntryDef& def : defs)
 	{
 		ControlEntry entry{
-			sf::Text(font, context.localization.GetText(labelKey) + sf::String(": "), ControlsLabelSize),
-			sf::Text(font, valueString, ControlsValueSize)
+			sf::Text(font, context.localization.GetText(def.labelKey) + sf::String(": "), ControlsLabelSize),
+			sf::Text(font, sf::String(), ControlsValueSize)
 		};
 		entry.label.setFillColor(ControlsLabelColour);
-		entry.value.setFillColor(ControlsValueColour);
 
-		totalTextWidth += entry.label.getLocalBounds().size.x + entry.value.getLocalBounds().size.x;
+		float valueWidth = 0.f;
+
+		if (useIcons)
+		{
+			for (const Prompt icon : def.icons)
+			{
+				sf::Sprite sprite(*atlas);
+				sprite.setTextureRect(GamepadPrompts::IconFor(layout, icon));
+				sprite.setScale({ IconScale, IconScale });
+				valueWidth += sprite.getLocalBounds().size.x * IconScale;
+				entry.icons.push_back(std::move(sprite));
+			}
+			valueWidth += IconGap * static_cast<float>(def.icons.size() - 1);
+		}
+		else
+		{
+			entry.value.setString(def.text);
+			entry.value.setFillColor(ControlsValueColour);
+			valueWidth = entry.value.getLocalBounds().size.x;
+		}
+
+		totalWidth += entry.label.getLocalBounds().size.x + valueWidth;
+		valueWidths.push_back(valueWidth);
 		controlsEntries.push_back(std::move(entry));
 	}
 
 	const float innerLeft = ControlsBounds.position.x + FillInset;
 	const float innerWidth = ControlsBounds.size.x - FillInset * 2.f;
-	const float gap = (innerWidth - totalTextWidth) / static_cast<float>(controlsEntries.size() + 1);
+	const float gap = (innerWidth - totalWidth) / static_cast<float>(controlsEntries.size() + 1);
 
 	float cursorX = innerLeft + gap;
 
-	for (ControlEntry& entry : controlsEntries)
+	for (std::size_t i = 0; i < controlsEntries.size(); ++i)
 	{
+		ControlEntry& entry = controlsEntries[i];
 		const float labelWidth = entry.label.getLocalBounds().size.x;
-		const float valueWidth = entry.value.getLocalBounds().size.x;
+		const float valueWidth = valueWidths[i];
 
 		AlignLeft(entry.label, { cursorX, lineY });
-		AlignLeft(entry.value, { cursorX + labelWidth, lineY });
+
+		if (entry.icons.empty())
+		{
+			AlignLeft(entry.value, { cursorX + labelWidth, lineY });
+		}
+		else
+		{
+			float iconX = cursorX + labelWidth;
+			for (sf::Sprite& icon : entry.icons)
+			{
+				const sf::FloatRect bounds = icon.getLocalBounds();
+				icon.setOrigin({ bounds.position.x, bounds.position.y + bounds.size.y * 0.5f });
+				icon.setPosition({ iconX, lineY });
+				iconX += bounds.size.x * IconScale + IconGap;
+			}
+		}
 
 		cursorX += labelWidth + valueWidth + gap;
 	}
@@ -431,7 +512,17 @@ void GameplayHud::Render(sf::RenderTarget& target) const
 		for (const ControlEntry& entry : controlsEntries)
 		{
 			target.draw(entry.label);
-			target.draw(entry.value);
+			if (entry.icons.empty())
+			{
+				target.draw(entry.value);
+			}
+			else
+			{
+				for (const sf::Sprite& icon : entry.icons)
+				{
+					target.draw(icon);
+				}
+			}
 		}
 	}
 }

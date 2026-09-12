@@ -144,6 +144,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\gameplay\KickDataFile.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
     <ClCompile Include="src\input\GamepadManager.cpp" />
+    <ClCompile Include="src\input\GamepadPrompts.cpp" />
     <ClCompile Include="src\input\gamepad\GamepadHaptics.cpp" />
     <!-- Vendored: Ohjurot/DualSense-Windows (MIT), raw-HID DualSense support.
          Third-party, so it builds at /W3 without warnings-as-errors. -->
@@ -250,6 +251,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\ActionMap.h" />
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
+    <ClInclude Include="src\input\GamepadPrompts.h" />
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h" />
     <ClInclude Include="src\input\gamepad\HapticPulse.h" />
     <ClInclude Include="src\config\HapticSettings.h" />

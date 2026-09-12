@@ -5,6 +5,7 @@
 
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 
@@ -68,19 +69,25 @@ private:
 		bool visible = true;
 	};
 
-	// A controls-legend entry: the action name over the key(s) bound to it.
+	// A controls-legend entry: the action name over the key(s) bound to it, or
+	// -- in gamepad mode -- over one or two button-prompt icons instead.
 	struct ControlEntry
 	{
 		sf::Text label;
-		sf::Text value;
+		sf::Text value;               // keyboard mode
+		std::vector<sf::Sprite> icons; // gamepad mode
 	};
+
+	// Which set of values the legend below is showing right now.
+	enum class PromptMode { Keyboard, Xbox, PlayStation };
 
 	[[nodiscard]] StatRow MakeStatRow(std::string_view labelKey, std::string_view initialValue,
 		float centreX, float rowTop) const;
 
 	void DrawStatRow(sf::RenderTarget& target, const StatRow& row) const;
 	void DrawValue(sf::RenderTarget& target, const sf::Text& value, float flash) const;
-	void BuildControlsLegend(const ControlSettings& controls, bool holdEnabled);
+	[[nodiscard]] PromptMode CurrentPromptMode() const;
+	void BuildControlsLegend(const ControlSettings& controls, bool holdEnabled, PromptMode mode);
 
 	Context& context;
 
@@ -116,4 +123,5 @@ private:
 	// frame where nothing changed.
 	ControlSettings legendControls;
 	bool legendHoldEnabled = true;
+	PromptMode legendPromptMode = PromptMode::Keyboard;
 };
