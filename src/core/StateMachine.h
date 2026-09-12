@@ -28,8 +28,6 @@ public:
     [[nodiscard]] State* GetCurrentState();
 
     void RenderStates(sf::RenderTarget& target);
-    void RenderStatesExceptTop(sf::RenderTarget& target);
-    void RenderTopState(sf::RenderTarget& target);
 
 private:
     enum class TransitionType

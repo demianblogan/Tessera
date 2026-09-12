@@ -49,8 +49,6 @@ public:
 	// header to rise out of it.
 	void OpenOptions(sf::Vector2f from, float fromHeight);
 
-	[[nodiscard]] Backdrop GetBackdrop() const override { return Backdrop::Opaque; }
-
 protected:
 	void UpdateBackground(float deltaTime) override;
 	void RenderBackground(sf::RenderTarget& target) override;

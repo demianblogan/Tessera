@@ -13,15 +13,6 @@ namespace sf
 class State
 {
 public:
-    // What the application should put behind this state. Opaque states cover
-    // the screen themselves; BlurredPrevious asks for the state below to be
-    // rendered and blurred first (the pause overlay).
-    enum class Backdrop
-    {
-        Opaque,
-        BlurredPrevious
-    };
-
     explicit State(StateMachine& stateMachine);
     virtual ~State() = default;
 
@@ -38,11 +29,6 @@ public:
     // state above it was popped (e.g. the pause screen closing). Lets a state
     // pick up settings changed while it was covered.
     virtual void OnResume() {}
-
-    [[nodiscard]] virtual Backdrop GetBackdrop() const
-    {
-        return Backdrop::Opaque;
-    }
 
     // Whether the game's mouse cursor is drawn over this state. The company
     // splash hides it so nothing sits on top of the logo.

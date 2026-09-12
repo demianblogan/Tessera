@@ -57,7 +57,6 @@ namespace Assets
 	enum class ShaderID
 	{
 		CRT,
-		Blur,
 		GhostTetromino,
 		NeonDilate,
 		NeonBlur,
@@ -142,7 +141,6 @@ namespace Assets
 		namespace Shaders
 		{
 			inline constexpr const char* CRT = "assets/shaders/crt.frag";
-			inline constexpr const char* Blur = "assets/shaders/blur.frag";
 			inline constexpr const char* GhostTetromino = "assets/shaders/ghost_tetromino.frag";
 			inline constexpr const char* NeonDilate = "assets/shaders/neon_dilate.frag";
 			inline constexpr const char* NeonBlur = "assets/shaders/neon_blur.frag";

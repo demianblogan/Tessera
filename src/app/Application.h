@@ -47,8 +47,6 @@ private:
 	sf::RenderWindow window;
 
 	sf::RenderTexture renderTexture;
-	sf::RenderTexture gameplayTexture;
-	sf::RenderTexture finalTexture;
 	ShaderManager shaders;
 
 	// The 1920x1080 world the states render into (the render textures' view).

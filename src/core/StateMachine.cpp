@@ -101,25 +101,3 @@ void StateMachine::RenderStates(sf::RenderTarget& target)
 	}
 }
 
-void StateMachine::RenderStatesExceptTop(sf::RenderTarget& target)
-{
-	if (states.size() <= 1)
-	{
-		return;
-	}
-
-	for (std::size_t i = 0; i < states.size() - 1; i++)
-	{
-		states[i]->Render(target);
-	}
-}
-
-void StateMachine::RenderTopState(sf::RenderTarget& target)
-{
-	if (states.empty())
-	{
-		return;
-	}
-
-	states.back()->Render(target);
-}

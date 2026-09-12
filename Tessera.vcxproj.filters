@@ -558,7 +558,6 @@
   <ItemGroup>
     <None Include="assets\shaders\ghost_tetromino.frag" />
     <None Include="assets\shaders\crt.frag" />
-    <None Include="assets\shaders\blur.frag" />
     <None Include="assets\shaders\neon_dilate.frag" />
     <None Include="assets\shaders\neon_blur.frag" />
     <None Include="assets\shaders\menu_aurora.frag" />

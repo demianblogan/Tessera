@@ -130,50 +130,20 @@ void Application::DrawCursor(sf::RenderTarget& target)
 void Application::Render()
 {
 	sf::Shader& crtShader = context.shaders.Get(Assets::ShaderID::CRT);
-	sf::Shader& blurShader = context.shaders.Get(Assets::ShaderID::Blur);
-
-	State* currentState = stateMachine.GetCurrentState();
-
-	const bool blurBackdrop = currentState != nullptr
-		&& currentState->GetBackdrop() == State::Backdrop::BlurredPrevious;
-
-	// =====================================================
-	// Opaque state: render the stack straight to the screen
-	// =====================================================
 
 	window.clear();
 	crtShader.setUniform("time", context.totalTime);
 
 	const bool applyCrt = context.settings.GetSettings().crtFilterEnabled;
 
-	if (!blurBackdrop)
-	{
-		renderTexture.clear();
-		renderTexture.setView(renderView);
-		stateMachine.RenderStates(renderTexture);
-		DrawCursor(renderTexture);
-		renderTexture.display();
+	renderTexture.clear();
+	renderTexture.setView(renderView);
+	stateMachine.RenderStates(renderTexture);
+	DrawCursor(renderTexture);
+	renderTexture.display();
 
-		const sf::Sprite frame(renderTexture.getTexture());
-		if (applyCrt) { window.draw(frame, &crtShader); } else { window.draw(frame); }
-	}
-	else
-	{
-		// The states below, blurred, then the top state drawn crisp on top.
-		gameplayTexture.clear();
-		gameplayTexture.setView(renderView);
-		stateMachine.RenderStatesExceptTop(gameplayTexture);
-		gameplayTexture.display();
-
-		finalTexture.clear();
-		finalTexture.draw(sf::Sprite(gameplayTexture.getTexture()), &blurShader);
-		stateMachine.RenderTopState(finalTexture);
-		DrawCursor(finalTexture);
-		finalTexture.display();
-
-		const sf::Sprite frame(finalTexture.getTexture());
-		if (applyCrt) { window.draw(frame, &crtShader); } else { window.draw(frame); }
-	}
+	const sf::Sprite frame(renderTexture.getTexture());
+	if (applyCrt) { window.draw(frame, &crtShader); } else { window.draw(frame); }
 
 	// A crisp overlay, drawn after the CRT pass so its scanlines / aberration
 	// don't touch the readout.
@@ -239,9 +209,7 @@ Application::Application()
 		static_cast<unsigned int>(VIRTUAL_RESOLUTION.y)
 	};
 
-	if (!renderTexture.resize(renderTextureSize) ||
-		!gameplayTexture.resize(renderTextureSize) ||
-		!finalTexture.resize(renderTextureSize))
+	if (!renderTexture.resize(renderTextureSize))
 	{
 		throw std::runtime_error("Failed to allocate render textures.");
 	}
@@ -273,7 +241,6 @@ Application::Application()
 
 	namespace ShaderPaths = Assets::Paths::Shaders;
 	shaders.Load(Assets::ShaderID::CRT, ShaderPaths::CRT, sf::Shader::Type::Fragment);
-	shaders.Load(Assets::ShaderID::Blur, ShaderPaths::Blur, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::GhostTetromino, ShaderPaths::GhostTetromino, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::NeonDilate, ShaderPaths::NeonDilate, sf::Shader::Type::Fragment);
 	shaders.Load(Assets::ShaderID::NeonBlur, ShaderPaths::NeonBlur, sf::Shader::Type::Fragment);
