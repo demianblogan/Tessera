@@ -3,8 +3,14 @@
 #include <cstddef>
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Text.hpp>
 
 #include "SettingsCategoryPanel.h"
+
+namespace sf
+{
+	class RenderTarget;
+}
 
 struct Context;
 
@@ -27,6 +33,7 @@ protected:
 	void AdjustRow(std::size_t index, int direction) override;
 	void ActivateRow(std::size_t index) override;
 	void RowClicked(std::size_t index) override;
+	void RenderExtra(sf::RenderTarget& target, float alpha) override;
 
 private:
 	// Rows 0-4 are toggles (Feedback, then Rules); rows 5-6 are carousels.
@@ -42,4 +49,9 @@ private:
 	UI::ToggleRow* holdRowPtr = nullptr;
 	UI::CarouselRow* nextLengthRowPtr = nullptr;
 	UI::CarouselRow* randomiserRowPtr = nullptr;
+
+	// "Takes effect next game" -- shown under the two rows that only affect a
+	// GameplaySession that's already running (unlike everything else on this
+	// panel, which applies the moment play resumes).
+	sf::Text restartNote;
 };

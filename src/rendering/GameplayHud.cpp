@@ -212,10 +212,39 @@ GameplayHud::GameplayHud(Context& context)
 	controlsFill.setPosition({ ControlsBounds.position.x + FillInset, ControlsBounds.position.y + FillInset });
 	controlsFill.setFillColor(FillColour);
 
+	BuildControlsLegend(context.settings.GetSettings().controls, context.settings.GetSettings().holdEnabled);
+}
+
+void GameplayHud::RefreshControlsLegend(const ControlSettings& controls, bool holdEnabled)
+{
+	const bool unchanged =
+		controls.moveLeft == legendControls.moveLeft &&
+		controls.moveRight == legendControls.moveRight &&
+		controls.softDrop == legendControls.softDrop &&
+		controls.hardDrop == legendControls.hardDrop &&
+		controls.rotateClockwise == legendControls.rotateClockwise &&
+		controls.rotateCounterClockwise == legendControls.rotateCounterClockwise &&
+		controls.hold == legendControls.hold &&
+		controls.pause == legendControls.pause &&
+		holdEnabled == legendHoldEnabled;
+
+	if (unchanged)
+	{
+		return;
+	}
+
+	BuildControlsLegend(controls, holdEnabled);
+}
+
+void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool holdEnabled)
+{
+	legendControls = controls;
+	legendHoldEnabled = holdEnabled;
+	controlsEntries.clear();
+
 	// One entry per action, spread evenly across the strip; key names are read
-	// once from the live bindings (layout-independent, via Input::KeyName).
+	// from the live bindings (layout-independent, via Input::KeyName).
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
-	const ControlSettings& controls = context.settings.GetSettings().controls;
 
 	const auto twoKeys = [](sf::Keyboard::Scancode a, sf::Keyboard::Scancode b)
 	{
@@ -231,7 +260,7 @@ GameplayHud::GameplayHud(Context& context)
 	};
 
 	// Omitted when hold itself is turned off in Options -- nothing to bind.
-	if (context.settings.GetSettings().holdEnabled)
+	if (holdEnabled)
 	{
 		entries.push_back({ TextKey::Hud::HoldKey, Input::KeyName(controls.hold) });
 	}

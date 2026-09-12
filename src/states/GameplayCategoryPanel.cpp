@@ -1,8 +1,11 @@
 #include "GameplayCategoryPanel.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
+
+#include <SFML/Graphics/RenderTarget.hpp>
 
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
@@ -26,7 +29,10 @@ namespace
 
 GameplayCategoryPanel::GameplayCategoryPanel(Context& context, sf::Color accent)
 	: SettingsCategoryPanel(context, accent, PanelBounds, context.textures.Get(Assets::TextureID::UiFrameCyan))
+	, restartNote(context.fonts.Get(Assets::FontID::Main),
+		context.localization.GetText(TextKey::Options::RestartToApply), 22)
 {
+	restartNote.setFillColor(sf::Color(150, 160, 175));
 	BuildRows();
 }
 
@@ -194,4 +200,19 @@ void GameplayCategoryPanel::RowClicked(std::size_t index)
 {
 	if (index < FirstCarouselRow) { Sfx::Toggle(context.audioPlayer); }
 	else { Sfx::Step(context.audioPlayer, 1); }
+}
+
+void GameplayCategoryPanel::RenderExtra(sf::RenderTarget& target, float alpha)
+{
+	if (randomiserRowPtr == nullptr)
+	{
+		return;
+	}
+
+	const sf::FloatRect bounds = randomiserRowPtr->Bounds();
+	restartNote.setPosition({ bounds.position.x + 26.f, bounds.position.y + bounds.size.y + 10.f });
+	sf::Color c = restartNote.getFillColor();
+	c.a = static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f);
+	restartNote.setFillColor(c);
+	target.draw(restartNote);
 }

@@ -8,6 +8,7 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 
+#include "../settings/GameSettings.h"
 #include "../ui/NineSliceFrame.h"
 
 struct Context;
@@ -44,6 +45,11 @@ public:
 	void SetVisible(Element element, bool visible);
 	void Render(sf::RenderTarget& target) const;
 
+	// Rebuilds the controls-legend text (key names, and whether Hold is listed
+	// at all) if `controls` or `holdEnabled` differ from what it was last built
+	// with -- a no-op most frames, so it is cheap to call every Update().
+	void RefreshControlsLegend(const ControlSettings& controls, bool holdEnabled);
+
 	[[nodiscard]] bool HoldVisible() const { return holdVisible; }
 	[[nodiscard]] sf::FloatRect HoldPreviewArea() const { return holdBoxBounds; }
 
@@ -74,6 +80,7 @@ private:
 
 	void DrawStatRow(sf::RenderTarget& target, const StatRow& row) const;
 	void DrawValue(sf::RenderTarget& target, const sf::Text& value, float flash) const;
+	void BuildControlsLegend(const ControlSettings& controls, bool holdEnabled);
 
 	Context& context;
 
@@ -103,4 +110,10 @@ private:
 	UI::NineSliceFrame controlsFrame;
 	std::vector<ControlEntry> controlsEntries;
 	bool showControls = true;
+
+	// The bindings/flag the legend above was last built for, so
+	// RefreshControlsLegend() can skip the rebuild on the (near-universal)
+	// frame where nothing changed.
+	ControlSettings legendControls;
+	bool legendHoldEnabled = true;
 };

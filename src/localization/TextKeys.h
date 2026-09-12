@@ -70,6 +70,7 @@ namespace TextKey
 		inline constexpr std::string_view GameplayRandomiser = "options.gameplay_randomiser";
 		inline constexpr std::string_view RandomiserSevenBag = "options.randomiser_seven_bag";
 		inline constexpr std::string_view RandomiserRandom   = "options.randomiser_random";
+		inline constexpr std::string_view RestartToApply     = "options.restart_to_apply";
 
 		inline constexpr std::string_view HudHold           = "options.hud_hold";
 		inline constexpr std::string_view HudNext           = "options.hud_next";

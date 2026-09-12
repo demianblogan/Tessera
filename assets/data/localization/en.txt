@@ -52,6 +52,7 @@ options.gameplay_next_length = Next Queue Length:
 options.gameplay_randomiser  = Randomiser:
 options.randomiser_seven_bag = 7-Bag
 options.randomiser_random    = Random
+options.restart_to_apply     = Takes effect next game
 
 options.hud_hold            = Show Hold:
 options.hud_next            = Show Next:

@@ -106,14 +106,10 @@ void GameplayState::ApplyGameplaySettings()
 	hud.SetVisible(GameplayHud::Element::Level, settings.hudLevel);
 	hud.SetVisible(GameplayHud::Element::Time, settings.hudTime);
 	hud.SetVisible(GameplayHud::Element::ControlsLegend, settings.hudControlsLegend);
+	hud.RefreshControlsLegend(settings.controls, settings.holdEnabled);
 
 	effects.SetShakeEnabled(settings.screenShakeEnabled);
 	boardRenderer.SetGhostEnabled(settings.ghostPieceEnabled);
-}
-
-void GameplayState::OnResume()
-{
-	ApplyGameplaySettings();
 }
 
 void GameplayState::SetUpInputBindings()
@@ -162,6 +158,13 @@ void GameplayState::HandleEvent(const sf::Event& event)
 
 void GameplayState::Update(float deltaTime)
 {
+	// Cheap every frame (a handful of bool assignments, plus a change-checked
+	// legend rebuild), so a setting changed from the pause screen -- HUD
+	// visibility, feedback toggles -- shows up the instant play resumes,
+	// with no dependence on exactly when/how the state stack hands control
+	// back to this state.
+	ApplyGameplaySettings();
+
 	effects.Update(deltaTime);
 	neonGlow.Update(deltaTime);
 	hud.Update(deltaTime);

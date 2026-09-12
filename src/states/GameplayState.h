@@ -73,8 +73,9 @@ private:
 	void SetUpInputBindings();
 
 	// Push the current HUD / effects settings into the live HUD and effects
-	// objects. Run at construction and again on OnResume(), so changes made from
-	// the pause screen's Options take effect the moment play resumes.
+	// objects. Run at construction and every Update() after, so a change made
+	// from the pause screen's Options takes effect the instant play resumes,
+	// with no dependence on the state stack's resume timing.
 	void ApplyGameplaySettings();
 
 	void PollHeldInput();
@@ -100,7 +101,6 @@ public:
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
-	void OnResume() override;
 
 	// The mouse plays no part in gameplay -- pausing pushes PauseState on top,
 	// which shows its own cursor via ScreenHost/MenuScreen.
