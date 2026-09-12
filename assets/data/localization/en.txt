@@ -135,6 +135,7 @@ hud.move      = Move
 hud.rotate    = Rotate
 hud.soft_drop = Soft Drop
 hud.hard_drop = Hard Drop
+hud.hold_key  = Hold
 hud.pause     = Pause
 
 callout.single        = SINGLE

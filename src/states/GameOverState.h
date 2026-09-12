@@ -56,6 +56,9 @@ private:
 	[[nodiscard]] bool NameEntered() const;
 	[[nodiscard]] sf::String TrimmedName() const;
 	[[nodiscard]] bool CanSave() const;
+	// True whenever leaving would silently drop a qualifying record -- unlike
+	// CanSave(), this doesn't require a name to have been typed yet.
+	[[nodiscard]] bool HasUnsavedRecord() const { return isRecord && !recordSaved; }
 	void SaveRecord();
 	void BeginLeave();
 	void DrawButton(sf::RenderTarget& target, UI::MenuLabel& label, sf::Vector2f centre,

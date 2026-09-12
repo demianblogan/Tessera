@@ -396,8 +396,9 @@ void GameOverState::Activate()
 		return;
 	}
 
-	// A typed-but-unsaved record: make the player confirm they mean to drop it.
-	if (CanSave())
+	// A qualifying, not-yet-saved record: make the player confirm they mean to
+	// drop it, whether or not they got as far as typing a name for it.
+	if (HasUnsavedRecord())
 	{
 		leaveDialog.Show(context.localization.GetText(TextKey::GameOver::UnsavedRecord),
 			context.localization.GetText(TextKey::Common::Yes),

@@ -169,7 +169,7 @@ private:
 	// The queue length is a player setting; keep it inside a sane range no
 	// matter what a settings file hands in.
 	static constexpr int MinNextQueueLength = 1;
-	static constexpr int MaxNextQueueLength = 6;
+	static constexpr int MaxNextQueueLength = 5;   // 6 no longer fits the NEXT HUD panel
 
 	// However high the level climbs, gravity never gets faster than this --
 	// GravityDelayForLevel() otherwise keeps shrinking indefinitely.

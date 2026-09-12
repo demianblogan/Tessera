@@ -28,7 +28,7 @@ inline constexpr unsigned int MaxVolumeStep = 10;
 // Range of the next-queue-length setting (kept in step with
 // GameplaySession::MinNextQueueLength / MaxNextQueueLength).
 inline constexpr unsigned int MinNextQueueLength = 1;
-inline constexpr unsigned int MaxNextQueueLength = 6;
+inline constexpr unsigned int MaxNextQueueLength = 5;   // 6 no longer fits the NEXT HUD panel
 
 struct GameSettings
 {

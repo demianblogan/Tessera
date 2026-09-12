@@ -192,7 +192,7 @@ TEST_CASE("Config clamps an out-of-range next queue length")
 	CHECK(tooSmall.GetNextCount() == 1);
 
 	const GameplaySession tooBig({ 99, true });
-	CHECK(tooBig.GetNextCount() == 6);
+	CHECK(tooBig.GetNextCount() == 5);
 }
 
 TEST_CASE("the piece that spawns next matches the front of the queue")

@@ -168,6 +168,7 @@ namespace TextKey
 		inline constexpr std::string_view Rotate   = "hud.rotate";
 		inline constexpr std::string_view SoftDrop = "hud.soft_drop";
 		inline constexpr std::string_view HardDrop = "hud.hard_drop";
+		inline constexpr std::string_view HoldKey  = "hud.hold_key";
 		inline constexpr std::string_view Pause    = "hud.pause";
 	}
 

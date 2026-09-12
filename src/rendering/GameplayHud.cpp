@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Rect.hpp>
@@ -221,14 +222,21 @@ GameplayHud::GameplayHud(Context& context)
 		return Input::KeyName(a) + sf::String(" / ") + Input::KeyName(b);
 	};
 
-	const std::array<std::pair<std::string_view, sf::String>, 5> entries =
-	{ {
+	std::vector<std::pair<std::string_view, sf::String>> entries =
+	{
 		{ TextKey::Hud::Move,     twoKeys(controls.moveLeft, controls.moveRight) },
 		{ TextKey::Hud::SoftDrop, Input::KeyName(controls.softDrop) },
 		{ TextKey::Hud::HardDrop, Input::KeyName(controls.hardDrop) },
 		{ TextKey::Hud::Rotate,   twoKeys(controls.rotateCounterClockwise, controls.rotateClockwise) },
-		{ TextKey::Hud::Pause,    Input::KeyName(controls.pause) },
-	} };
+	};
+
+	// Omitted when hold itself is turned off in Options -- nothing to bind.
+	if (context.settings.GetSettings().holdEnabled)
+	{
+		entries.push_back({ TextKey::Hud::HoldKey, Input::KeyName(controls.hold) });
+	}
+
+	entries.push_back({ TextKey::Hud::Pause, Input::KeyName(controls.pause) });
 
 	const float lineY = Centre(ControlsBounds).y;
 
