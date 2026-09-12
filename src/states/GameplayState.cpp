@@ -339,23 +339,34 @@ void GameplayState::ApplyHorizontalRepeat(float deltaTime)
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.wallHit);
 		horizontalWasBlocked = true;
 
-		// Dust from the piece's own edge cells facing the direction it was
-		// pushed -- one per occupied row, at whichever of that row's cells is
-		// furthest in that direction (the one actually touching the wall).
+		// Dust only where a cell actually touches whatever blocked it -- the
+		// board's side wall, or an already-locked cell immediately beside it in
+		// the direction it was pushed -- mirroring the hard-drop dust's
+		// bottom-contact check, just rotated 90 degrees.
 		const auto blocks = session.GetCurrentTetromino().GetBlockPositions();
+		const Board::Grid& grid = session.GetBoard().GetGrid();
 		std::vector<sf::Vector2f> impactPoints;
 		for (const sf::Vector2i& block : blocks)
 		{
-			const bool isEdge = std::none_of(blocks.begin(), blocks.end(), [&](const sf::Vector2i& other)
-				{
-					return other.y == block.y && (direction > 0 ? other.x > block.x : other.x < block.x);
-				});
+			const int besideX = block.x + direction;
+			const bool isOwnCellBeside = std::any_of(blocks.begin(), blocks.end(),
+				[&](const sf::Vector2i& other) { return other.y == block.y && other.x == besideX; });
 
-			if (!isEdge)
+			if (isOwnCellBeside)
 			{
 				continue;
 			}
 
+			const bool hitsWall = besideX < 0 || besideX >= Board::WIDTH;
+			const bool hitsStack = !hitsWall
+				&& grid[static_cast<std::size_t>(block.y)][static_cast<std::size_t>(besideX)].occupied;
+
+			if (!hitsWall && !hitsStack)
+			{
+				continue;
+			}
+
+			// The cell's own edge facing the wall, not its centre.
 			impactPoints.push_back(
 				{
 					BoardRenderer::BoardPosition.x

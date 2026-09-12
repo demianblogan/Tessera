@@ -68,8 +68,12 @@ void EffectsController::TriggerRowClear(const std::vector<int>& rows, int rank, 
 
 void EffectsController::TriggerImpactDust(const std::vector<sf::Vector2f>& impactPoints, sf::Vector2f burstDirection)
 {
-	constexpr int PerPoint = 4;
-	const sf::Color dustColour(150, 150, 150);
+	constexpr int PerSpawnPoint = 2;
+	// How far along the edge (perpendicular to the burst) a spawn point can
+	// land from the cell's own reference point -- a small range rather than
+	// one fixed spot, so repeated impacts on the same cell don't look identical.
+	constexpr float SpawnSpread = 16.f;
+	const sf::Color dustColour(80, 80, 80);
 
 	const float length = std::sqrt(burstDirection.x * burstDirection.x + burstDirection.y * burstDirection.y);
 	const sf::Vector2f direction = length > 0.001f ? burstDirection / length : sf::Vector2f{ 0.f, -1.f };
@@ -77,23 +81,33 @@ void EffectsController::TriggerImpactDust(const std::vector<sf::Vector2f>& impac
 
 	for (const sf::Vector2f& point : impactPoints)
 	{
-		for (int i = 0; i < PerPoint; ++i)
-		{
-			// Mostly along `direction` with only a slight sideways scatter -- an
-			// impact bounce, not a burst in every direction -- then gravity
-			// (applied generically to every non-floaty shard) arcs it back down.
-			const float speed = Random::Float(90.f, 160.f);
-			const float scatter = Random::Float(-25.f, 25.f);
+		// 1-3 spawn points per cell, each jittered along the impacted edge,
+		// rather than every impact spraying from the exact same spot.
+		const int spawnPoints = Random::Int(1, 3);
 
-			Shard shard;
-			shard.position = point;
-			shard.velocity = direction * speed + perpendicular * scatter;
-			shard.maxLife = Random::Float(0.3f, 0.45f);
-			shard.life = shard.maxLife;
-			shard.size = Random::Float(0.1f, 0.18f);
-			shard.textureIndex = -1;
-			shard.tint = dustColour;
-			shards.push_back(shard);
+		for (int spawn = 0; spawn < spawnPoints; ++spawn)
+		{
+			const sf::Vector2f spawnPosition = point + perpendicular * Random::Float(-SpawnSpread * 0.5f, SpawnSpread * 0.5f);
+
+			for (int i = 0; i < PerSpawnPoint; ++i)
+			{
+				// Mostly along `direction` with only a slight sideways scatter --
+				// an impact bounce, not a burst in every direction -- then
+				// gravity (applied generically to every non-floaty shard) arcs
+				// it back down.
+				const float speed = Random::Float(90.f, 160.f);
+				const float scatter = Random::Float(-25.f, 25.f);
+
+				Shard shard;
+				shard.position = spawnPosition;
+				shard.velocity = direction * speed + perpendicular * scatter;
+				shard.maxLife = Random::Float(0.3f, 0.45f);
+				shard.life = shard.maxLife;
+				shard.size = Random::Float(0.1f, 0.18f);
+				shard.textureIndex = -1;
+				shard.tint = dustColour;
+				shards.push_back(shard);
+			}
 		}
 	}
 }
