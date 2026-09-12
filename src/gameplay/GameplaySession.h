@@ -76,6 +76,7 @@ public:
 		bool speedSurgeStarted = false;
 		bool speedSurgeEnded = false;
 		bool goldenLineBonus = false;
+		bool garbagePushed = false;
 
 		bool gameOver = false;
 		GameOverReason gameOverReason = GameOverReason::None;

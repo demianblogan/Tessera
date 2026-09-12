@@ -61,6 +61,10 @@ namespace
 	const sf::Color BackToBackColour{ 255, 190, 80 };
 	const sf::Color PerfectClearColour{ 255, 215, 60 };
 	const sf::Color ComboColour{ 160, 220, 255 };
+
+	// Escalation (see EscalationDirector).
+	const sf::Color SpeedSurgeColour{ 255, 90, 70 };
+	const sf::Color GoldenColour{ 255, 205, 40 };
 }
 
 GameplayState::GameplayState(Context& context, bool playIntro)
@@ -446,6 +450,24 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		dying = true;
 		deathTimer = 0.f;
 	}
+
+	// Escalation (see EscalationDirector): a Speed Surge is telegraphed with a
+	// callout, a shake and a rumble, so a sudden gravity spike reads as a fair
+	// warning rather than a glitch. A garbage row is deliberately quiet -- just
+	// a dull thud -- since it happens often once unlocked.
+	if (events.speedSurgeStarted)
+	{
+		boardCallouts.Show(
+			{ { context.localization.GetText(TextKey::Callout::SpeedSurge), SpeedSurgeColour, CalloutBaseSize } },
+			1, SpeedSurgeColour);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.speedSurge);
+		effects.TriggerShake(0.25f, 10.f);
+	}
+
+	if (events.garbagePushed)
+	{
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.garbageRow);
+	}
 }
 
 void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
@@ -476,6 +498,7 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 	if (events.tSpin) { rank = std::max(rank, events.tSpinMini ? 2 : 4); }
 	if (events.tSpin && events.clearedRowCount >= 2) { rank += 1; }
 	if (events.backToBack) { rank += 1; }
+	if (events.goldenLineBonus) { rank += 1; }
 	if (events.perfectClear) { rank = std::max(rank, 5) + 1; }
 
 	const unsigned int mainSize = CalloutBaseSize + static_cast<unsigned int>(rank) * CalloutSizePerRank;
@@ -487,6 +510,15 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 	{
 		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColour, mainSize });
 		accent = PerfectClearColour;
+	}
+
+	if (events.goldenLineBonus)
+	{
+		lines.push_back({ text.GetText(TextKey::Callout::Golden), GoldenColour, mainSize });
+		if (!events.perfectClear)
+		{
+			accent = GoldenColour;
+		}
 	}
 
 	sf::String main;

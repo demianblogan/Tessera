@@ -210,6 +210,22 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 						RowTop(y)
 					}
 				);
+
+				// Escalation cells (see EscalationDirector) read distinctly from a
+				// normal lock: garbage flattened to grey, a golden lock pulsing warm.
+				if (cell.kind == Cell::Kind::Garbage)
+				{
+					blockSprite.setColor(sf::Color(175, 178, 190));
+				}
+				else if (cell.kind == Cell::Kind::Golden)
+				{
+					const float pulse = 0.5f + 0.5f * std::sin(context.totalTime * 6.f);
+					blockSprite.setColor(sf::Color(255, static_cast<std::uint8_t>(190.f + pulse * 60.f), 60));
+				}
+				else
+				{
+					blockSprite.setColor(sf::Color::White);
+				}
 			}
 
 			target.draw(blockSprite);
@@ -346,9 +362,11 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 		const int visibleMinY = std::max(minY, Board::BufferHeight);
 
-		// The neon halo colour for the active piece; matches the game's cyan accent.
+		// An escalation Chaos-tier bonus piece glows gold instead of the usual
+		// cyan accent, so it reads as special the instant it spawns.
+		const bool isGolden = session.IsCurrentPieceGolden();
 		const HapticSettings::Colour& glowColour = context.hapticSettings.activePieceGlow;
-		const sf::Color neonTint(glowColour.r, glowColour.g, glowColour.b);
+		const sf::Color neonTint = isGolden ? sf::Color(255, 210, 60) : sf::Color(glowColour.r, glowColour.g, glowColour.b);
 
 		if (maxY >= Board::BufferHeight)
 		{
@@ -386,7 +404,7 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 		blockSprite.setTextureRect(pieceTextureRect);
 		blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
-		blockSprite.setColor(sf::Color::White);
+		blockSprite.setColor(isGolden ? sf::Color(255, 215, 80) : sf::Color::White);
 
 		for (const sf::Vector2i& blockPosition : blockPositions)
 		{

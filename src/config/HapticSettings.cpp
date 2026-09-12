@@ -124,6 +124,8 @@ HapticSettings::HapticSettings(const std::filesystem::path& path)
 		ReadRumble(*rumble, "t_spin", tSpin);
 		ReadRumble(*rumble, "back_to_back", backToBack);
 		ReadRumble(*rumble, "perfect_clear", perfectClear);
+		ReadRumble(*rumble, "speed_surge", speedSurge);
+		ReadRumble(*rumble, "garbage_row", garbageRow);
 	}
 
 	if (const auto lightbar = data.find("lightbar"); lightbar != data.end() && lightbar->is_object())

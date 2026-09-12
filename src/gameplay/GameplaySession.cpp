@@ -441,6 +441,7 @@ bool GameplaySession::SpawnNextTetromino()
 		{
 			return false;
 		}
+		pendingEvents.garbagePushed = true;
 	}
 
 	const Tetromino::Type type = nextQueue.front();

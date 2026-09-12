@@ -148,3 +148,5 @@ callout.t_spin_mini   = T-SPIN MINI
 callout.back_to_back  = BACK-TO-BACK
 callout.perfect_clear = PERFECT CLEAR
 callout.combo         = COMBO
+callout.speed_surge   = SPEED UP!
+callout.golden        = GOLDEN x2

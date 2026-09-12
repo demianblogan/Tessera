@@ -70,6 +70,12 @@ public:
 	// The rarest event in the game -- close to game-over in weight.
 	Rumble perfectClear{ 0.85f, 0.85f, 0.40f };
 
+	// Escalation (see EscalationDirector). speedSurge fires as the warning
+	// pulse when one starts; garbageRow is a dull thud, deliberately duller
+	// than a normal clear since it happens often once unlocked.
+	Rumble speedSurge{ 0.35f, 0.65f, 0.20f };
+	Rumble garbageRow{ 0.30f, 0.15f, 0.10f };
+
 	// --- DualSense lightbar (pure primaries -- the diffuser tints anything
 	//     off-axis, so e.g. a green with any blue reads as cyan) --------------
 

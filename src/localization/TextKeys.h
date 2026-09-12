@@ -186,5 +186,9 @@ namespace TextKey
 		inline constexpr std::string_view BackToBack   = "callout.back_to_back";
 		inline constexpr std::string_view PerfectClear = "callout.perfect_clear";
 		inline constexpr std::string_view Combo        = "callout.combo";   // + "xN " prefix in code
+
+		// Escalation (see EscalationDirector).
+		inline constexpr std::string_view SpeedSurge = "callout.speed_surge";
+		inline constexpr std::string_view Golden     = "callout.golden";
 	}
 }
