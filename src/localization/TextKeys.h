@@ -64,6 +64,12 @@ namespace TextKey
 		inline constexpr std::string_view GameplayVibration = "options.gameplay_vibration";
 		inline constexpr std::string_view GameplayLightbar  = "options.gameplay_lightbar";
 		inline constexpr std::string_view GameplayShake     = "options.gameplay_shake";
+		inline constexpr std::string_view GameplayGhost      = "options.gameplay_ghost";
+		inline constexpr std::string_view GameplayHold       = "options.gameplay_hold";
+		inline constexpr std::string_view GameplayNextLength = "options.gameplay_next_length";
+		inline constexpr std::string_view GameplayRandomiser = "options.gameplay_randomiser";
+		inline constexpr std::string_view RandomiserSevenBag = "options.randomiser_seven_bag";
+		inline constexpr std::string_view RandomiserRandom   = "options.randomiser_random";
 
 		inline constexpr std::string_view HudHold           = "options.hud_hold";
 		inline constexpr std::string_view HudNext           = "options.hud_next";

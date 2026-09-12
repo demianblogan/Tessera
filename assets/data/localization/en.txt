@@ -46,6 +46,12 @@ options.controls_back     = Back
 options.gameplay_vibration = Gamepad Vibration:
 options.gameplay_lightbar  = Gamepad Lightbar:
 options.gameplay_shake     = Screen Shake:
+options.gameplay_ghost       = Ghost Piece:
+options.gameplay_hold        = Hold Piece:
+options.gameplay_next_length = Next Queue Length:
+options.gameplay_randomiser  = Randomiser:
+options.randomiser_seven_bag = 7-Bag
+options.randomiser_random    = Random
 
 options.hud_hold            = Show Hold:
 options.hud_next            = Show Next:

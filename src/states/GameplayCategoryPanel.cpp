@@ -1,10 +1,15 @@
 #include "GameplayCategoryPanel.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../settings/GameSettings.h"
 #include "../settings/SettingsManager.h"
 #include "OptionsSfx.h"
 
@@ -12,11 +17,11 @@ namespace
 {
 	namespace Sfx = OptionsSfx;
 
-	constexpr sf::FloatRect PanelBounds{ { 680.f, 286.f }, { 1120.f, 508.f } };
-	constexpr float RowsTop = PanelBounds.position.y + 60.f;
+	constexpr sf::FloatRect PanelBounds{ { 680.f, 200.f }, { 1120.f, 720.f } };
+	constexpr float RowsTop = PanelBounds.position.y + 88.f;
 	constexpr float RowMargin = 88.f;
-	constexpr float RowHeight = 92.f;
-	constexpr float RowGap = 14.f;
+	constexpr float RowHeight = 58.f;
+	constexpr float RowGap = 10.f;
 }
 
 GameplayCategoryPanel::GameplayCategoryPanel(Context& context, sf::Color accent)
@@ -29,7 +34,11 @@ bool GameplayCategoryPanel::SettingsEqual(const GameSettings& a, const GameSetti
 {
 	return a.gamepadVibrationEnabled == b.gamepadVibrationEnabled
 		&& a.gamepadLightbarEnabled == b.gamepadLightbarEnabled
-		&& a.screenShakeEnabled == b.screenShakeEnabled;
+		&& a.screenShakeEnabled == b.screenShakeEnabled
+		&& a.ghostPieceEnabled == b.ghostPieceEnabled
+		&& a.holdEnabled == b.holdEnabled
+		&& a.nextQueueLength == b.nextQueueLength
+		&& a.sevenBagEnabled == b.sevenBagEnabled;
 }
 
 GameSettings GameplayCategoryPanel::DefaultSettings() const
@@ -37,11 +46,17 @@ GameSettings GameplayCategoryPanel::DefaultSettings() const
 	return GameSettings{};
 }
 
+std::size_t GameplayCategoryPanel::NextLengthIndexFor(unsigned int length) const
+{
+	return static_cast<std::size_t>(std::clamp(length, MinNextQueueLength, MaxNextQueueLength) - MinNextQueueLength);
+}
+
 void GameplayCategoryPanel::BuildRows()
 {
 	const LocalizationManager& text = context.localization;
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 	const sf::Texture& checkbox = context.textures.Get(Assets::TextureID::Checkbox);
+	const sf::Texture& arrow = context.textures.Get(Assets::TextureID::CarouselArrow);
 
 	rows.clear();
 
@@ -60,6 +75,41 @@ void GameplayCategoryPanel::BuildRows()
 	shakeRowPtr = shakeRow.get();
 	rows.push_back(std::move(shakeRow));
 
+	auto ghostRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::GameplayGhost),
+		checkbox, working.ghostPieceEnabled, [this](bool on) { working.ghostPieceEnabled = on; });
+	ghostRowPtr = ghostRow.get();
+	rows.push_back(std::move(ghostRow));
+
+	auto holdRow = std::make_unique<UI::ToggleRow>(font, text.GetText(TextKey::Options::GameplayHold),
+		checkbox, working.holdEnabled, [this](bool on) { working.holdEnabled = on; });
+	holdRowPtr = holdRow.get();
+	rows.push_back(std::move(holdRow));
+
+	std::vector<sf::String> lengthOptions;
+	for (unsigned int length = MinNextQueueLength; length <= MaxNextQueueLength; ++length)
+	{
+		lengthOptions.push_back(sf::String(std::to_string(length)));
+	}
+
+	auto nextLengthRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::GameplayNextLength),
+		std::move(lengthOptions), NextLengthIndexFor(working.nextQueueLength), arrow,
+		[this](std::size_t index)
+		{
+			working.nextQueueLength = MinNextQueueLength + static_cast<unsigned int>(index);
+		});
+	nextLengthRowPtr = nextLengthRow.get();
+	rows.push_back(std::move(nextLengthRow));
+
+	std::vector<sf::String> randomiserOptions{
+		text.GetText(TextKey::Options::RandomiserSevenBag),
+		text.GetText(TextKey::Options::RandomiserRandom) };
+
+	auto randomiserRow = std::make_unique<UI::CarouselRow>(font, text.GetText(TextKey::Options::GameplayRandomiser),
+		std::move(randomiserOptions), working.sevenBagEnabled ? 0 : 1, arrow,
+		[this](std::size_t index) { working.sevenBagEnabled = (index == 0); });
+	randomiserRowPtr = randomiserRow.get();
+	rows.push_back(std::move(randomiserRow));
+
 	LayOutRows(RowsTop, RowMargin, RowHeight, RowGap);
 	selectedRow = 0;
 }
@@ -69,6 +119,10 @@ void GameplayCategoryPanel::SyncRows()
 	vibrationRowPtr->SetOn(working.gamepadVibrationEnabled);
 	lightbarRowPtr->SetOn(working.gamepadLightbarEnabled);
 	shakeRowPtr->SetOn(working.screenShakeEnabled);
+	ghostRowPtr->SetOn(working.ghostPieceEnabled);
+	holdRowPtr->SetOn(working.holdEnabled);
+	nextLengthRowPtr->SetCurrent(NextLengthIndexFor(working.nextQueueLength));
+	randomiserRowPtr->SetCurrent(working.sevenBagEnabled ? 0 : 1);
 }
 
 void GameplayCategoryPanel::ApplyWorking()
@@ -77,6 +131,10 @@ void GameplayCategoryPanel::ApplyWorking()
 	saved.gamepadVibrationEnabled = working.gamepadVibrationEnabled;
 	saved.gamepadLightbarEnabled = working.gamepadLightbarEnabled;
 	saved.screenShakeEnabled = working.screenShakeEnabled;
+	saved.ghostPieceEnabled = working.ghostPieceEnabled;
+	saved.holdEnabled = working.holdEnabled;
+	saved.nextQueueLength = working.nextQueueLength;
+	saved.sevenBagEnabled = working.sevenBagEnabled;
 
 	context.settings.Apply(context);   // the gamepad toggles take effect immediately
 	context.settings.Save();
@@ -88,28 +146,52 @@ void GameplayCategoryPanel::ResetWorking()
 	working.gamepadVibrationEnabled = defaults.gamepadVibrationEnabled;
 	working.gamepadLightbarEnabled = defaults.gamepadLightbarEnabled;
 	working.screenShakeEnabled = defaults.screenShakeEnabled;
+	working.ghostPieceEnabled = defaults.ghostPieceEnabled;
+	working.holdEnabled = defaults.holdEnabled;
+	working.nextQueueLength = defaults.nextQueueLength;
+	working.sevenBagEnabled = defaults.sevenBagEnabled;
 	SyncRows();
 }
 
 void GameplayCategoryPanel::AdjustRow(std::size_t index, int direction)
 {
-	if (index < rows.size())
+	if (index >= rows.size())
+	{
+		return;
+	}
+
+	if (index < FirstCarouselRow)
 	{
 		rows[index]->Adjust(direction);
 		Sfx::Toggle(context.audioPlayer);
+	}
+	else
+	{
+		auto* carousel = static_cast<UI::CarouselRow*>(rows[index].get());
+		const std::size_t before = carousel->Current();
+		carousel->Adjust(direction);
+		if (carousel->Current() != before)
+		{
+			Sfx::Step(context.audioPlayer, direction);
+		}
 	}
 }
 
 void GameplayCategoryPanel::ActivateRow(std::size_t index)
 {
-	if (index < rows.size())
+	if (index >= rows.size())
 	{
-		rows[index]->Activate();
+		return;
+	}
+	rows[index]->Activate();
+	if (index < FirstCarouselRow)
+	{
 		Sfx::Toggle(context.audioPlayer);
 	}
 }
 
-void GameplayCategoryPanel::RowClicked(std::size_t /*index*/)
+void GameplayCategoryPanel::RowClicked(std::size_t index)
 {
-	Sfx::Toggle(context.audioPlayer);
+	if (index < FirstCarouselRow) { Sfx::Toggle(context.audioPlayer); }
+	else { Sfx::Step(context.audioPlayer, 1); }
 }
