@@ -4,10 +4,10 @@
 // per-level gravity curve (GameplaySession's own job), but periodic twists
 // layered on top as tiers pass, each cumulative with the ones before it:
 //
-//   Base       [0:00, 1:00)  -- nothing extra, the guideline curve alone.
-//   SpeedSurge [1:00, 3:00)  -- periodic short gravity spikes.
-//   Garbage    [3:00, 5:00)  -- adds a rising garbage row every so often.
-//   Chaos      [5:00, inf)   -- adds a rare golden piece worth double.
+//   Base       [0:00, 0:30)  -- nothing extra, the guideline curve alone.
+//   SpeedSurge [0:30, 2:30)  -- periodic short gravity spikes.
+//   Garbage    [2:30, 4:30)  -- adds a rising garbage row every so often.
+//   Chaos      [4:30, inf)   -- adds a rare golden piece worth double.
 //
 // Headless and driven entirely by GameplaySession: it feeds elapsed time,
 // line-clear counts and spawn notifications in, and reads back what to do
@@ -27,15 +27,15 @@ public:
 		bool surgeEnded = false;
 	};
 
-	static constexpr float SpeedSurgeTierStart = 60.f;
-	static constexpr float GarbageTierStart = 180.f;
-	static constexpr float ChaosTierStart = 300.f;
+	static constexpr float SpeedSurgeTierStart = 30.f;
+	static constexpr float GarbageTierStart = 150.f;
+	static constexpr float ChaosTierStart = 270.f;
 
 	// A surge fires this often once unlocked, doubling fall speed for its
 	// duration. The first one waits a full interval too, so a run doesn't open
 	// its new tier with an immediate spike.
 	static constexpr float SurgeInterval = 35.f;
-	static constexpr float SurgeDuration = 2.f;
+	static constexpr float SurgeDuration = 5.f;
 	static constexpr float SurgeFallMultiplier = 2.f;
 
 	// One garbage row per this many lines cleared, once unlocked.

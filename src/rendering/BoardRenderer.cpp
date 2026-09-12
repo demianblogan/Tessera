@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -40,12 +41,15 @@ namespace
 
 BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
+	, goldenGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	// No code
 }
 
 void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
 {
+	goldenGlow.Update(deltaTime);
+
 	const int spawnCount = session.GetSpawnCount();
 
 	if (previousSpawnCount && *previousSpawnCount != spawnCount)
@@ -169,6 +173,48 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 
 	const Board::Grid& grid = session.GetBoard().GetGrid();
 
+	// A golden lock (see EscalationDirector) gets a standing pulsing halo, drawn
+	// once behind every such cell before the crisp pass below -- one shared
+	// glow call over a fixed area (the whole visible field) rather than one per
+	// cell, so this never triggers NeonGlow's resize cost as cells move/clear.
+	if (deathProgress <= 0.f)
+	{
+		std::vector<sf::Vector2i> goldenCells;
+		for (int y = Board::BufferHeight; y < Board::HEIGHT; y++)
+		{
+			for (int x = 0; x < Board::WIDTH; x++)
+			{
+				if (grid[y][x].occupied && grid[y][x].kind == Cell::Kind::Golden)
+				{
+					goldenCells.push_back({ x, y });
+				}
+			}
+		}
+
+		if (!goldenCells.empty())
+		{
+			const sf::FloatRect boardArea{
+				BoardPosition,
+				{ Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize }
+			};
+
+			goldenGlow.Draw(target, boardArea,
+				[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
+				{
+					sf::Sprite goldSprite(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline));
+					goldSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+					goldSprite.setTextureRect({ { WallTextureIndex * SpriteSize, 0 }, { SpriteSize, SpriteSize } });
+
+					for (const sf::Vector2i& cellPos : goldenCells)
+					{
+						goldSprite.setPosition({ BoardPosition.x + cellPos.x * BlockSize, RowTop(cellPos.y) });
+						buffer.draw(goldSprite, states);
+					}
+				},
+				sf::Color(255, 200, 60));
+		}
+	}
+
 	for (int y = Board::BufferHeight; y < Board::HEIGHT; y++)
 	{
 		for (int x = 0; x < Board::WIDTH; x++)
@@ -180,9 +226,15 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				continue;
 			}
 
+			// A garbage row (see EscalationDirector) borrows the wall tile instead
+			// of a tetromino colour, so it reads as structural rather than a piece
+			// once darkened below -- a normal lock never looks like this.
+			const bool isGarbage = cell.kind == Cell::Kind::Garbage;
+			const int textureIndex = isGarbage ? WallTextureIndex : static_cast<int>(cell.tetrominoType);
+
 			blockSprite.setTextureRect(
 				{
-					{ static_cast<int>(cell.tetrominoType) * SpriteSize, 0 },
+					{ textureIndex * SpriteSize, 0 },
 					{ SpriteSize, SpriteSize }
 				}
 			);
@@ -212,10 +264,11 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				);
 
 				// Escalation cells (see EscalationDirector) read distinctly from a
-				// normal lock: garbage flattened to grey, a golden lock pulsing warm.
-				if (cell.kind == Cell::Kind::Garbage)
+				// normal lock: garbage is the wall tile, darkened well below any
+				// piece colour; a golden lock pulses warm (see below).
+				if (isGarbage)
 				{
-					blockSprite.setColor(sf::Color(175, 178, 190));
+					blockSprite.setColor(sf::Color(60, 62, 72));
 				}
 				else if (cell.kind == Cell::Kind::Golden)
 				{

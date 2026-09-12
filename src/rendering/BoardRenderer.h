@@ -9,6 +9,7 @@
 
 #include "../gameplay/Tetromino.h"
 #include "../resources/Assets.h"
+#include "NeonGlow.h"
 
 namespace sf
 {
@@ -18,7 +19,6 @@ namespace sf
 struct Context;
 class GameplaySession;
 class EffectsController;
-class NeonGlow;
 
 // Draws the play area for GameplayState: board gradient, walls, locked cells,
 // the ghost, the active piece (glow + normal passes), the next-piece preview,
@@ -122,4 +122,10 @@ private:
 	std::optional<PieceFlight> incomingFlight;   // HOLD box -> board
 
 	bool ghostEnabled = true;
+
+	// A standing pulsing halo around every golden lock (see EscalationDirector),
+	// so a bonus piece stays visible after it lands, not just while falling.
+	// Mutable: Render() is const (it only reads game state), but NeonGlow keeps
+	// GPU-side scratch buffers it has to mutate to draw.
+	mutable NeonGlow goldenGlow;
 };
