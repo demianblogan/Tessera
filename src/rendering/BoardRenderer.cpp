@@ -67,6 +67,7 @@ namespace
 BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
 	, goldenGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, comboGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	// No code
 }
@@ -74,6 +75,7 @@ BoardRenderer::BoardRenderer(Context& context)
 void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
 {
 	goldenGlow.Update(deltaTime);
+	comboGlow.Update(deltaTime);
 
 	const int spawnCount = session.GetSpawnCount();
 
@@ -413,11 +415,11 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
-	// Combo glow -- a border around the well that builds with each clear that
-	// directly follows another, and lingers/fades once the chain breaks
-	// (EffectsController eases the level itself). Past ComboPeakLevel it shifts
-	// from cool blue to a hot gold, so a long chain keeps escalating instead of
-	// plateauing at "still blue".
+	// Combo glow -- a real soft neon bloom around the well (not just a flat
+	// line) that builds with each clear that directly follows another, and
+	// lingers/fades once the chain breaks (EffectsController eases the level
+	// itself). Past ComboPeakLevel it shifts from blue to a hot gold and
+	// pulses faster, so a long chain keeps escalating rather than plateauing.
 	// =====================================================
 
 	if (const float comboLevel = effects.GetComboGlowLevel(); comboLevel > 0.02f)
@@ -427,32 +429,66 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		const float hot = std::clamp((comboLevel - ComboPeakLevel) / 3.f, 0.f, 1.f);
 
 		const sf::Color colour = LerpColour(
-			LerpColour(sf::Color(110, 170, 255), sf::Color(180, 220, 255), t),
-			sf::Color(255, 225, 120), hot);
+			LerpColour(sf::Color(70, 140, 255), sf::Color(140, 200, 255), t),
+			sf::Color(255, 210, 70), hot);
 
-		const float pulse = 0.78f + 0.22f * std::sin(context.totalTime * (5.f + hot * 4.f));
-		const float thickness = 5.f + 9.f * t;
-		const auto alpha = static_cast<std::uint8_t>((70.f + 130.f * t) * pulse);
+		const float pulse = 0.55f + 0.45f * std::sin(context.totalTime * (7.f + hot * 6.f));
+		const float thickness = 8.f + 10.f * t;
+		const float glowAlpha = std::clamp((0.55f + 0.45f * t) * pulse, 0.f, 1.f);
 
 		const sf::FloatRect boardRect{ BoardPosition, { Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize } };
-		const sf::Color edgeColour(colour.r, colour.g, colour.b, alpha);
+		constexpr float GlowPadding = 26.f;
+		const sf::FloatRect glowArea{
+			{ boardRect.position.x - GlowPadding, boardRect.position.y - GlowPadding },
+			{ boardRect.size.x + GlowPadding * 2.f, boardRect.size.y + GlowPadding * 2.f } };
 
-		sf::RectangleShape edge;
-		edge.setFillColor(edgeColour);
+		comboGlow.Draw(target, glowArea,
+			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
+			{
+				sf::RectangleShape edge;
+				edge.setFillColor(sf::Color::White);
 
-		edge.setSize({ boardRect.size.x + thickness * 2.f, thickness });
-		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
-		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+				edge.setSize({ boardRect.size.x + thickness * 2.f, thickness });
+				edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
+				buffer.draw(edge, states);
 
-		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y + boardRect.size.y });
-		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+				edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y + boardRect.size.y });
+				buffer.draw(edge, states);
 
-		edge.setSize({ thickness, boardRect.size.y + thickness * 2.f });
-		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
-		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+				edge.setSize({ thickness, boardRect.size.y + thickness * 2.f });
+				edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
+				buffer.draw(edge, states);
 
-		edge.setPosition({ boardRect.position.x + boardRect.size.x, boardRect.position.y - thickness });
-		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+				edge.setPosition({ boardRect.position.x + boardRect.size.x, boardRect.position.y - thickness });
+				buffer.draw(edge, states);
+			},
+			sf::Color(
+				static_cast<std::uint8_t>(colour.r * glowAlpha),
+				static_cast<std::uint8_t>(colour.g * glowAlpha),
+				static_cast<std::uint8_t>(colour.b * glowAlpha)),
+			false);
+
+		// The glow alone reads as soft/hazy at low intensity; a crisp crackling
+		// core edge on top of it sells the "electric" energy the further the
+		// chain has built.
+		sf::RectangleShape core;
+		const auto coreAlpha = static_cast<std::uint8_t>(glowAlpha * 220.f);
+		core.setFillColor(sf::Color(255, 255, 255, coreAlpha));
+
+		const float coreThickness = 2.f + 2.f * t;
+		core.setSize({ boardRect.size.x + coreThickness * 2.f, coreThickness });
+		core.setPosition({ boardRect.position.x - coreThickness, boardRect.position.y - coreThickness });
+		target.draw(core, sf::RenderStates(sf::BlendAdd));
+
+		core.setPosition({ boardRect.position.x - coreThickness, boardRect.position.y + boardRect.size.y });
+		target.draw(core, sf::RenderStates(sf::BlendAdd));
+
+		core.setSize({ coreThickness, boardRect.size.y + coreThickness * 2.f });
+		core.setPosition({ boardRect.position.x - coreThickness, boardRect.position.y - coreThickness });
+		target.draw(core, sf::RenderStates(sf::BlendAdd));
+
+		core.setPosition({ boardRect.position.x + boardRect.size.x, boardRect.position.y - coreThickness });
+		target.draw(core, sf::RenderStates(sf::BlendAdd));
 	}
 
 	// =====================================================

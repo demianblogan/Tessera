@@ -74,6 +74,10 @@ private:
 	int recordRank = 0;
 	const float panelTop;
 	const float buttonY;
+	// Recomputed once saveLabel has its (localized) text, from the field's
+	// actual right edge plus a fixed gap -- "Save Record" runs far longer in
+	// some languages than in English and would otherwise overlap the field.
+	float saveCentreX = 0.f;
 
 	sf::Sprite backdrop;
 	UI::NineSliceFrame panel;

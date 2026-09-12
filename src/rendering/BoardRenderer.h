@@ -132,4 +132,8 @@ private:
 	// Mutable: Render() is const (it only reads game state), but NeonGlow keeps
 	// GPU-side scratch buffers it has to mutate to draw.
 	mutable NeonGlow goldenGlow;
+
+	// The combo streak's border bloom around the well (see EffectsController::
+	// GetComboGlowLevel), a real soft neon glow rather than a flat rectangle.
+	mutable NeonGlow comboGlow;
 };

@@ -54,7 +54,6 @@ namespace
 	constexpr float FieldWidth = 520.f;
 	constexpr float FieldHeight = 96.f;
 	constexpr float FieldCentreX = 960.f - 170.f;
-	constexpr float SaveCentreX = 960.f + 340.f;
 	constexpr float FieldTextInset = 30.f;
 
 	constexpr float StatSpread = 400.f;
@@ -246,6 +245,13 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 	playAgainLabel.SetText(context.localization.GetText(TextKey::GameOver::PlayAgain));
 	mainMenuLabel.SetText(context.localization.GetText(TextKey::GameOver::MainMenu));
 	saveLabel.SetText(context.localization.GetText(TextKey::GameOver::SaveRecord));
+
+	// "Save Record" runs much longer in some languages than in English (which
+	// is why saveCentreX used to be a fixed offset) -- anchor it from the
+	// field's actual right edge instead, so it can never creep onto the field.
+	constexpr float SaveButtonGap = 40.f;
+	const sf::FloatRect nameFieldBounds = NameFieldBounds(panelTop);
+	saveCentreX = nameFieldBounds.position.x + nameFieldBounds.size.x + SaveButtonGap + saveLabel.InkSize().x * 0.5f;
 
 	BuildContent();
 
@@ -504,7 +510,7 @@ void GameOverState::HandleEvent(const sf::Event& event)
 	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 	{
 		const sf::Vector2f point = context.window.mapPixelToCoords(moved->position);
-		if (CanSave() && hit(point, saveLabel, { SaveCentreX, panelTop + NameRowOffset }))
+		if (CanSave() && hit(point, saveLabel, { saveCentreX, panelTop + NameRowOffset }))
 		{
 			focus = Focus::Save;
 		}
@@ -524,7 +530,7 @@ void GameOverState::HandleEvent(const sf::Event& event)
 			return;
 		}
 		const sf::Vector2f point = context.window.mapPixelToCoords(pressed->position);
-		if (CanSave() && hit(point, saveLabel, { SaveCentreX, panelTop + NameRowOffset }))
+		if (CanSave() && hit(point, saveLabel, { saveCentreX, panelTop + NameRowOffset }))
 		{
 			SaveRecord();
 			return;
@@ -754,10 +760,10 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 			if (saveFocused)
 			{
-				saveLabel.DrawGlow(target, buttonGlow, { SaveCentreX, rowY }, saveScale,
+				saveLabel.DrawGlow(target, buttonGlow, { saveCentreX, rowY }, saveScale,
 					sf::Color(saveHue.r, saveHue.g, saveHue.b, ToAlpha(contentAlpha * ButtonGlowIntensity)));
 			}
-			saveLabel.Draw(target, { SaveCentreX, rowY }, saveScale, saveHue, saveAlpha, PressFlash * pulse);
+			saveLabel.Draw(target, { saveCentreX, rowY }, saveScale, saveHue, saveAlpha, PressFlash * pulse);
 		}
 	}
 
