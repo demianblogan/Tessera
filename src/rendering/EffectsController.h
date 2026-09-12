@@ -68,10 +68,20 @@ public:
 	void TriggerShake(float duration, float intensity);
 	void TriggerLandingFlash(const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& blocks);
 
-	// A hard drop just landed: a small puff of dust at each of the piece's
-	// (screen-space) cell centres, distinct from the ordinary landing flash
+	// A generic impact puff: a few grey dust shards per point, shot mostly
+	// along `burstDirection` (needn't be normalised) with a slight random
+	// sideways scatter, arcing back down under gravity afterwards.
+	void TriggerImpactDust(const std::vector<sf::Vector2f>& impactPoints, sf::Vector2f burstDirection);
+
+	// A hard drop just landed: dust kicked straight up from each of the
+	// piece's bottom-contact cells, distinct from the ordinary landing flash
 	// every lock gets.
 	void TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints);
+
+	// The piece was just blocked pushing into a wall (or another piece) --
+	// dust kicked away from it. `wallDirection` is the direction the piece was
+	// trying to move (+1 right, -1 left); the dust bursts the opposite way.
+	void TriggerWallDust(const std::vector<sf::Vector2f>& impactPoints, int wallDirection);
 
 	// `rank` (0 Single .. 3 Tetris) scales the flash/sweep and the shatter
 	// spawned from `cells` (every occupied cell in the clearing rows).

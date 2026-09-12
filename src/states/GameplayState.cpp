@@ -338,6 +338,34 @@ void GameplayState::ApplyHorizontalRepeat(float deltaTime)
 		effects.TriggerShake(0.06f, 4.f);
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.wallHit);
 		horizontalWasBlocked = true;
+
+		// Dust from the piece's own edge cells facing the direction it was
+		// pushed -- one per occupied row, at whichever of that row's cells is
+		// furthest in that direction (the one actually touching the wall).
+		const auto blocks = session.GetCurrentTetromino().GetBlockPositions();
+		std::vector<sf::Vector2f> impactPoints;
+		for (const sf::Vector2i& block : blocks)
+		{
+			const bool isEdge = std::none_of(blocks.begin(), blocks.end(), [&](const sf::Vector2i& other)
+				{
+					return other.y == block.y && (direction > 0 ? other.x > block.x : other.x < block.x);
+				});
+
+			if (!isEdge)
+			{
+				continue;
+			}
+
+			impactPoints.push_back(
+				{
+					BoardRenderer::BoardPosition.x
+						+ static_cast<float>(block.x + (direction > 0 ? 1 : 0)) * BoardRenderer::BlockSize,
+					BoardRenderer::BoardPosition.y
+						+ (static_cast<float>(block.y - Board::BufferHeight) + 0.5f) * BoardRenderer::BlockSize
+				});
+		}
+
+		effects.TriggerWallDust(impactPoints, direction);
 	}
 }
 

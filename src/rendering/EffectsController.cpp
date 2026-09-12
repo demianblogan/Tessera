@@ -66,21 +66,28 @@ void EffectsController::TriggerRowClear(const std::vector<int>& rows, int rank, 
 	}
 }
 
-void EffectsController::TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints)
+void EffectsController::TriggerImpactDust(const std::vector<sf::Vector2f>& impactPoints, sf::Vector2f burstDirection)
 {
 	constexpr int PerPoint = 4;
-	const sf::Color dustColour(220, 225, 235);
+	const sf::Color dustColour(150, 150, 150);
+
+	const float length = std::sqrt(burstDirection.x * burstDirection.x + burstDirection.y * burstDirection.y);
+	const sf::Vector2f direction = length > 0.001f ? burstDirection / length : sf::Vector2f{ 0.f, -1.f };
+	const sf::Vector2f perpendicular{ -direction.y, direction.x };
 
 	for (const sf::Vector2f& point : impactPoints)
 	{
 		for (int i = 0; i < PerPoint; ++i)
 		{
-			// Straight up with only a slight left/right scatter -- an impact
-			// bounce, not a burst in every direction -- then gravity (applied
-			// generically to every non-floaty shard) arcs it back down.
+			// Mostly along `direction` with only a slight sideways scatter -- an
+			// impact bounce, not a burst in every direction -- then gravity
+			// (applied generically to every non-floaty shard) arcs it back down.
+			const float speed = Random::Float(90.f, 160.f);
+			const float scatter = Random::Float(-25.f, 25.f);
+
 			Shard shard;
 			shard.position = point;
-			shard.velocity = { Random::Float(-25.f, 25.f), -Random::Float(90.f, 160.f) };
+			shard.velocity = direction * speed + perpendicular * scatter;
 			shard.maxLife = Random::Float(0.3f, 0.45f);
 			shard.life = shard.maxLife;
 			shard.size = Random::Float(0.1f, 0.18f);
@@ -89,6 +96,16 @@ void EffectsController::TriggerHardDropDust(const std::vector<sf::Vector2f>& imp
 			shards.push_back(shard);
 		}
 	}
+}
+
+void EffectsController::TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints)
+{
+	TriggerImpactDust(impactPoints, { 0.f, -1.f });
+}
+
+void EffectsController::TriggerWallDust(const std::vector<sf::Vector2f>& impactPoints, int wallDirection)
+{
+	TriggerImpactDust(impactPoints, { -static_cast<float>(wallDirection), 0.f });
 }
 
 void EffectsController::TriggerTSpinBurst(sf::Vector2f centre)
