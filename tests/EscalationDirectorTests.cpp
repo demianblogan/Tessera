@@ -39,8 +39,8 @@ TEST_CASE("Speed Surge only fires once the SpeedSurge tier is reached")
 {
 	EscalationDirector director;
 
-	// Still Base -- run well past a surge interval and nothing should happen.
-	director.Update(EscalationDirector::SurgeInterval * 3.f);
+	// Still Base -- right up to the tier boundary, nothing should happen.
+	director.Update(EscalationDirector::SpeedSurgeTierStart - 1.f);
 	CHECK_FALSE(director.FallSpeedMultiplier() > 1.f);
 
 	(void)director.ConsumeEvents();
