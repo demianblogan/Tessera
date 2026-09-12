@@ -151,9 +151,9 @@ namespace TextKey
 
 	namespace Loading
 	{
-		inline constexpr std::string_view Audio     = "loading.audio";
-		inline constexpr std::string_view Music     = "loading.music";
-		inline constexpr std::string_view Interface = "loading.interface";
+		// The whole load finishes in about a second -- one label for all of it
+		// reads far better than per-stage text nobody has time to actually read.
+		inline constexpr std::string_view Label = "loading.label";
 	}
 
 	namespace Hud

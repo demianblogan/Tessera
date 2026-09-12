@@ -52,19 +52,6 @@ namespace
 	constexpr sf::Color BarFrame{ 90, 120, 160 };
 	constexpr sf::Color BarTrack{ 8, 10, 16, 220 };
 
-	[[nodiscard]] std::string_view StageKey(Loading::Stage stage) noexcept
-	{
-		switch (stage)
-		{
-		case Loading::Stage::Audio:     return TextKey::Loading::Audio;
-		case Loading::Stage::Music:     return TextKey::Loading::Music;
-		case Loading::Stage::Interface:
-		case Loading::Stage::Count:     return TextKey::Loading::Interface;
-		}
-
-		return TextKey::Loading::Interface;
-	}
-
 	using UI::Easing::EaseOutCubic;
 }
 
@@ -73,9 +60,14 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 	, context(context)
 	, job(context.soundBuffers, context.music, context.fonts)
 	, onLoaded(std::move(onLoaded))
-	, stageLabel(context.fonts.Get(Assets::FontID::Loading), "", LabelSize)
+	, label(context.fonts.Get(Assets::FontID::Loading), context.localization.GetText(TextKey::Loading::Label), LabelSize)
 {
-	stageLabel.setFillColor(sf::Color::White);
+	label.setFillColor(sf::Color::White);
+
+	const sf::FloatRect bounds = label.getLocalBounds();
+	label.setOrigin({
+		bounds.position.x + bounds.size.x * 0.5f,
+		bounds.position.y + bounds.size.y });
 
 	// The shell music runs from here through the splash and into the menu.
 	// (Loaded synchronously by Application so it is ready this early.)
@@ -91,8 +83,6 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 		{
 			job.Run(std::move(stopToken), progress);
 		});
-
-	RefreshStageLabel();
 }
 
 void LoadingState::HandleEvent(const sf::Event& /*event*/)
@@ -100,27 +90,9 @@ void LoadingState::HandleEvent(const sf::Event& /*event*/)
 	// No skipping: the assets have to finish loading regardless.
 }
 
-void LoadingState::RefreshStageLabel()
-{
-	const Loading::Stage stage = progress.GetStage();
-	stageLabel.setString(context.localization.GetText(StageKey(stage)));
-
-	const sf::FloatRect bounds = stageLabel.getLocalBounds();
-	stageLabel.setOrigin({
-		bounds.position.x + bounds.size.x * 0.5f,
-		bounds.position.y + bounds.size.y });
-
-	labelledStage = stage;
-}
-
 void LoadingState::Update(float deltaTime)
 {
 	elapsed += deltaTime;
-
-	if (progress.GetStage() != labelledStage)
-	{
-		RefreshStageLabel();
-	}
 
 	const float target = progress.Fraction();
 	displayedFraction += (target - displayedFraction) * std::min(1.f, FractionSmoothing * deltaTime);
@@ -215,6 +187,6 @@ void LoadingState::Render(sf::RenderTarget& target)
 		}
 	}
 
-	stageLabel.setPosition({ VirtualSize.x * 0.5f, barTopLeft.y - LabelGap });
-	target.draw(stageLabel);
+	label.setPosition({ VirtualSize.x * 0.5f, barTopLeft.y - LabelGap });
+	target.draw(label);
 }
