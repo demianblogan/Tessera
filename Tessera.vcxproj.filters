@@ -576,4 +576,9 @@
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\Tessera.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
 </Project>

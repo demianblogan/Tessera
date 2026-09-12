@@ -354,6 +354,9 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\Tessera.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
