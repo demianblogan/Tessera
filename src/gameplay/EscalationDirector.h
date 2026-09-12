@@ -6,16 +6,17 @@
 //
 //   Base       [0:00, 0:30)  -- nothing extra, the guideline curve alone.
 //   SpeedSurge [0:30, 0:55)  -- periodic short gravity spikes.
-//   Garbage    [0:55, 1:35)  -- adds a rising garbage row every so often.
+//   Garbage    [0:55, 1:35)  -- a rising garbage row on a random timer.
 //   Chaos      [1:35, inf)   -- adds a rare golden piece worth double.
 //
 // Every tier's *first* effect is deterministic and time-gated (not left to
-// however fast the player happens to clear lines or burn through spawns), so
-// it reliably lands in a fixed window after entering the tier: a Speed Surge
-// within 30-40s of the run starting, the first garbage row within 60-70s, and
-// the first golden piece within 120-130s. Every effect after the first one
-// falls back to its normal cadence (a fixed interval, a line-clear count, a
-// spawn count).
+// however fast the player happens to burn through spawns), so it reliably
+// lands in a fixed window after entering the tier: a Speed Surge within
+// 30-40s of the run starting, and the first golden piece within 120-130s.
+// The first garbage row instead follows the same random 10-30s timer as
+// every one after it (see GarbageMinInterval/GarbageMaxInterval) -- tying it
+// to line clears instead read as arbitrary to the player (sometimes right
+// after a clear, sometimes long after, with no felt rhythm either way).
 //
 // Headless and driven entirely by GameplaySession: it feeds elapsed time,
 // line-clear counts and spawn notifications in, and reads back what to do
@@ -47,11 +48,11 @@ public:
 	static constexpr float SurgeDuration = 5.f;
 	static constexpr float SurgeFallMultiplier = 2.f;
 
-	// One garbage row per this many lines cleared, once unlocked. The first one
-	// instead waits a fixed FirstGarbageDelay after entering the tier (lands it
-	// at 55 + 10 = 1:05) -- clearing four real lines that fast isn't guaranteed.
-	static constexpr int LinesPerGarbageRow = 4;
-	static constexpr float FirstGarbageDelay = 10.f;
+	// A garbage row arrives on a random timer once unlocked, re-rolled after
+	// every row (including the first) -- a plain countdown, not tied to how
+	// the player is actually playing.
+	static constexpr float GarbageMinInterval = 10.f;
+	static constexpr float GarbageMaxInterval = 30.f;
 
 	// One golden piece every this many spawns, once unlocked. The first one
 	// instead waits a fixed FirstGoldenDelay after entering the tier (lands it
@@ -60,15 +61,6 @@ public:
 	static constexpr float FirstGoldenDelay = 30.f;
 
 	void Update(float deltaTime);
-
-	// Call once per real line clear (i.e. once per resolved ClearingRows, with
-	// however many rows it took), so Garbage-tier counting matches actual play.
-	// Queues a garbage row for every LinesPerGarbageRow crossed -- a burst clear
-	// can queue more than one, drained one at a time by ConsumePendingGarbageRow.
-	// The very first garbage row ignores this and is granted once
-	// FirstGarbageDelay has passed since entering the tier, regardless of
-	// whether four lines have actually cleared yet.
-	void NotifyLinesCleared(int rowCount);
 
 	// True (at most once per call) if a queued garbage row is waiting; the
 	// caller applies exactly one to the board right before the next spawn, so
@@ -91,6 +83,7 @@ public:
 private:
 	void UpdateTier();
 	void UpdateSurge(float deltaTime);
+	void UpdateGarbage(float deltaTime);
 
 	float elapsedSeconds = 0.f;
 	Tier tier = Tier::Base;
@@ -99,15 +92,16 @@ private:
 	bool surgeActive = false;
 	float surgeTimer = 0.f;
 
-	// When Garbage/Chaos were entered, so NotifyLinesCleared() and
-	// ShouldSpawnGoldenPiece() can time-gate each tier's first effect instead
-	// of leaving it to the player's clear/spawn rate.
-	float garbageTierEnteredAt = -1.f;
+	// When Chaos was entered, so ShouldSpawnGoldenPiece() can time-gate the
+	// tier's first effect instead of leaving it to the player's spawn rate.
 	float chaosTierEnteredAt = -1.f;
-	bool firstGarbageGranted = false;
 	bool firstGoldenGranted = false;
 
-	int linesSinceGarbage = 0;
+	// Counts down to the next garbage row once Garbage is reached; re-rolled
+	// (GarbageMinInterval..GarbageMaxInterval) after every row, including the
+	// first -- set negative so UpdateGarbage() rolls it the moment the tier
+	// starts, rather than on the next Update() after that.
+	float garbageCooldown = -1.f;
 	int pendingGarbageRows = 0;
 	int piecesSinceGolden = 0;
 

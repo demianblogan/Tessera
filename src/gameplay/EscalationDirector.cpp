@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "../utils/Random.h"
+
 namespace
 {
 	[[nodiscard]] EscalationDirector::Tier TierForElapsed(float elapsedSeconds)
@@ -20,6 +22,7 @@ void EscalationDirector::Update(float deltaTime)
 	elapsedSeconds += deltaTime;
 	UpdateTier();
 	UpdateSurge(deltaTime);
+	UpdateGarbage(deltaTime);
 }
 
 void EscalationDirector::UpdateTier()
@@ -32,7 +35,6 @@ void EscalationDirector::UpdateTier()
 		pendingEvents.tierChanged = true;
 		pendingEvents.tier = tier;
 
-		if (tier == Tier::Garbage) { garbageTierEnteredAt = elapsedSeconds; }
 		if (tier == Tier::Chaos) { chaosTierEnteredAt = elapsedSeconds; }
 	}
 }
@@ -69,34 +71,31 @@ void EscalationDirector::UpdateSurge(float deltaTime)
 	}
 }
 
-void EscalationDirector::NotifyLinesCleared(int rowCount)
+void EscalationDirector::UpdateGarbage(float deltaTime)
 {
-	if (tier < Tier::Garbage || rowCount <= 0)
+	if (tier < Tier::Garbage)
 	{
 		return;
 	}
 
-	linesSinceGarbage += rowCount;
-
-	while (linesSinceGarbage >= LinesPerGarbageRow)
+	// Negative means "not rolled yet" -- rolls the first interval the moment
+	// the tier starts, rather than waiting a full Update() for it.
+	if (garbageCooldown < 0.f)
 	{
-		linesSinceGarbage -= LinesPerGarbageRow;
+		garbageCooldown = Random::Float(GarbageMinInterval, GarbageMaxInterval);
+	}
+
+	garbageCooldown -= deltaTime;
+
+	if (garbageCooldown <= 0.f)
+	{
 		++pendingGarbageRows;
+		garbageCooldown = Random::Float(GarbageMinInterval, GarbageMaxInterval);
 	}
 }
 
 bool EscalationDirector::ConsumePendingGarbageRow()
 {
-	// The first garbage row is time-gated rather than earned by actual clears --
-	// clearing four lines within FirstGarbageDelay of entering the tier isn't
-	// guaranteed, but the tier's own arrival should still be felt on schedule.
-	if (tier >= Tier::Garbage && !firstGarbageGranted
-		&& elapsedSeconds - garbageTierEnteredAt >= FirstGarbageDelay)
-	{
-		firstGarbageGranted = true;
-		return true;
-	}
-
 	if (pendingGarbageRows <= 0)
 	{
 		return false;

@@ -212,8 +212,6 @@ void GameplaySession::Update(float deltaTime)
 		board.ClearRows(clearingRows);
 		clearingRows.clear();
 
-		escalation.NotifyLinesCleared(clearedRows);
-
 		const TSpinRule::Result tSpin = pendingTSpinResult;
 		pendingTSpinResult = TSpinRule::Result::None;
 
