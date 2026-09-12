@@ -49,6 +49,11 @@ public:
 		sf::Vector2f fromCentre, float fromHeight, std::size_t entryIndex);
 	void BeginBack();
 
+	// Re-labels the header without touching its current rise/sink pose -- a
+	// screen calls this on its own header text when the language changes while
+	// it's the one showing.
+	void SetHeaderText(const sf::String& text) { header.SetText(text); }
+
 	// A home screen reports navigation (ring rotation etc.) so the host can react
 	// -- MenuShell shoves its drifting-tetromino backdrop. Default: nothing.
 	virtual void OnNavigate(float /*direction*/) {}

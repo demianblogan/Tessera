@@ -228,6 +228,12 @@ void GraphicsCategoryPanel::RowClicked(std::size_t index)
 	else { Sfx::Step(context.audioPlayer, 1); }
 }
 
+void GraphicsCategoryPanel::RefreshText()
+{
+	SettingsCategoryPanel::RefreshText();
+	borderlessNote.setString(context.localization.GetText(TextKey::Options::BorderlessNote));
+}
+
 void GraphicsCategoryPanel::RenderExtra(sf::RenderTarget& target, float alpha)
 {
 	if (working.display.windowMode != Display::WindowMode::Borderless || resolutionRowPtr == nullptr)

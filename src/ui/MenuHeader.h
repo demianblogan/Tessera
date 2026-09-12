@@ -29,6 +29,10 @@ namespace UI
 		void RiseFrom(sf::Vector2f fromCentre, float fromHeight, const sf::String& label, sf::Color colour);
 		void SinkTo(sf::Vector2f toCentre, float toHeight);
 
+		// Re-labels the header in place (a language switch) without touching its
+		// current rise/sink pose.
+		void SetText(const sf::String& text);
+
 		void Update(float deltaTime);
 		void Render(sf::RenderTarget& target) const;
 

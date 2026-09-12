@@ -35,6 +35,7 @@ protected:
 	void ActivateRow(std::size_t index) override;
 	void RowClicked(std::size_t index) override;
 	void RenderExtra(sf::RenderTarget& target, float alpha) override;
+	void RefreshText() override;
 
 private:
 	static constexpr std::size_t FirstToggleRow = 2;   // rows 0-1 carousels, 2-4 toggles

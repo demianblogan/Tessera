@@ -69,6 +69,14 @@ namespace UI
 			std::move(label), std::move(onActivate), enabled, colour.value_or(sf::Color::White), {} });
 	}
 
+	void MenuButtonColumn::SetButtonText(std::size_t index, const sf::String& text)
+	{
+		if (index < buttons.size())
+		{
+			buttons[index].label.SetText(text);
+		}
+	}
+
 	void MenuButtonColumn::SetLayout(sf::Vector2f newTopLeft, float newRowGap)
 	{
 		topLeft = newTopLeft;

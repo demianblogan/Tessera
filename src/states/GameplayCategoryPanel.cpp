@@ -207,6 +207,12 @@ void GameplayCategoryPanel::RowClicked(std::size_t index)
 	else { Sfx::Step(context.audioPlayer, 1); }
 }
 
+void GameplayCategoryPanel::RefreshText()
+{
+	SettingsCategoryPanel::RefreshText();
+	restartNote.setString(context.localization.GetText(TextKey::Options::RestartToApply));
+}
+
 void GameplayCategoryPanel::RenderExtra(sf::RenderTarget& target, float alpha)
 {
 	sf::Color c = restartNote.getFillColor();

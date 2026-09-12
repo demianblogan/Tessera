@@ -46,6 +46,10 @@ public:
 	void SetVisible(Element element, bool visible);
 	void Render(sf::RenderTarget& target) const;
 
+	// The active language changed -- re-fetch every caption and force the
+	// controls legend to rebuild (its own change-check only watches bindings).
+	void RefreshText();
+
 	// Rebuilds the controls-legend text (key names, and whether Hold is listed
 	// at all) if `controls` or `holdEnabled` differ from what it was last built
 	// with -- a no-op most frames, so it is cheap to call every Update().

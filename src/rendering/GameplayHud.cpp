@@ -220,6 +220,21 @@ GameplayHud::GameplayHud(Context& context)
 		CurrentPromptMode());
 }
 
+void GameplayHud::RefreshText()
+{
+	const LocalizationManager& text = context.localization;
+
+	holdCaption.setString(text.GetText(TextKey::Hud::Hold));
+	nextCaption.setString(text.GetText(TextKey::Hud::Next));
+	levelRow.label.setString(text.GetText(TextKey::Hud::Level));
+	timeRow.label.setString(text.GetText(TextKey::Hud::Time));
+	scoreRow.label.setString(text.GetText(TextKey::Hud::Score));
+	linesRow.label.setString(text.GetText(TextKey::Hud::Lines));
+
+	BuildControlsLegend(context.settings.GetSettings().controls, context.settings.GetSettings().holdEnabled,
+		CurrentPromptMode());
+}
+
 GameplayHud::PromptMode GameplayHud::CurrentPromptMode() const
 {
 	if (!context.gamepad.IsInUse())

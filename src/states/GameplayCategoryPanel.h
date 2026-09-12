@@ -34,6 +34,7 @@ protected:
 	void ActivateRow(std::size_t index) override;
 	void RowClicked(std::size_t index) override;
 	void RenderExtra(sf::RenderTarget& target, float alpha) override;
+	void RefreshText() override;
 
 private:
 	// Rows 0-4 are toggles (Feedback, then Rules); rows 5-6 are carousels.

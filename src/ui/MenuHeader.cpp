@@ -45,6 +45,11 @@ namespace UI
 		timer = 0.f;
 	}
 
+	void MenuHeader::SetText(const sf::String& text)
+	{
+		label.SetText(text);
+	}
+
 	void MenuHeader::SinkTo(sf::Vector2f toCentre, float toHeight)
 	{
 		fromPosition = HeaderCentre;

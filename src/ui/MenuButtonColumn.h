@@ -39,6 +39,10 @@ namespace UI
 			std::optional<sf::Color> colour = std::nullopt);
 		void SetLayout(sf::Vector2f topLeft, float rowGap);
 
+		// Re-labels an existing button in place (a language switch) without
+		// touching its callback, enabled state or position.
+		void SetButtonText(std::size_t index, const sf::String& text);
+
 		// Fired with the new index whenever the selection moves (keyboard, pad or
 		// hover) -- the screen uses it to swap the preview panel.
 		void SetSelectionChangedCallback(std::function<void(std::size_t)> callback);

@@ -182,6 +182,17 @@ void SettingsCategoryPanel::Close()
 	closeRequested = false;
 }
 
+void SettingsCategoryPanel::RefreshText()
+{
+	const LocalizationManager& text = context.localization;
+	buttons[ButtonId::Apply].SetText(text.GetText(TextKey::Options::Apply));
+	buttons[ButtonId::Reset].SetText(text.GetText(TextKey::Options::Reset));
+	buttons[ButtonId::Back].SetText(text.GetText(TextKey::Options::BackButton));
+
+	BuildRows();
+	LayOutButtons();
+}
+
 void SettingsCategoryPanel::MoveVertical(int direction)
 {
 	if (focus == Focus::Buttons)

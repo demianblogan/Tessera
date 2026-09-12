@@ -34,6 +34,7 @@ class SettingsCategoryPanel : public OptionsCategoryPanel
 public:
 	void Open() override;
 	void Close() override;
+	void RefreshText() override;
 
 	void SetVisibility(Visibility visibility, float previewFade) override;
 	void Update(float deltaTime) override;

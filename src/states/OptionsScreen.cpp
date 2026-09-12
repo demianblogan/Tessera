@@ -13,6 +13,7 @@
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
+#include "../settings/SettingsManager.h"
 #include "../ui/Easing.h"
 #include "AudioCategoryPanel.h"
 #include "GameplayCategoryPanel.h"
@@ -79,6 +80,7 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, languageColumn(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
+	, seenLocalizationRevision(context.localization.Revision())
 {
 	const LocalizationManager& text = context.localization;
 
@@ -113,13 +115,16 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 	controlsColumn.SetSelectionChangedCallback(subSelectionSound);
 	controlsColumn.AppearInstantly();
 
-	// Language: only English is live for now; localisation lands in a later version.
-	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageEnglish),
-		[this] { context.audioPlayer.Play(Assets::SoundID::MenuItemPressed); }, true, LanguageColour);
-	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageSpanish), nullptr, false);
-	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageGerman), nullptr, false);
-	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageRussian), nullptr, false);
-	languageColumn.AddButton(text.GetText(TextKey::Options::LanguageUkrainian), nullptr, false);
+	languageColumn.AddButton(LanguageButtonLabel(Language::English, TextKey::Options::LanguageEnglish),
+		[this] { SelectLanguage(Language::English); }, true, LanguageColour);
+	languageColumn.AddButton(LanguageButtonLabel(Language::Spanish, TextKey::Options::LanguageSpanish),
+		[this] { SelectLanguage(Language::Spanish); }, true, LanguageColour);
+	languageColumn.AddButton(LanguageButtonLabel(Language::German, TextKey::Options::LanguageGerman),
+		[this] { SelectLanguage(Language::German); }, true, LanguageColour);
+	languageColumn.AddButton(LanguageButtonLabel(Language::Russian, TextKey::Options::LanguageRussian),
+		[this] { SelectLanguage(Language::Russian); }, true, LanguageColour);
+	languageColumn.AddButton(LanguageButtonLabel(Language::Ukrainian, TextKey::Options::LanguageUkrainian),
+		[this] { SelectLanguage(Language::Ukrainian); }, true, LanguageColour);
 	languageColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseSub(); }, true);   // plain white
 	languageColumn.SetLayout(ColumnTopLeft, SubRowGap);
 	languageColumn.SetSelectionChangedCallback(subSelectionSound);
@@ -140,6 +145,64 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 UI::MenuButtonColumn& OptionsScreen::SubColumnFor(std::size_t categoryRow)
 {
 	return categoryRow == Row::Language ? languageColumn : controlsColumn;
+}
+
+sf::String OptionsScreen::LanguageButtonLabel(::Language language, std::string_view key) const
+{
+	sf::String label = context.localization.GetText(key);
+	if (language == context.localization.GetLanguage())
+	{
+		label += " *";
+	}
+	return label;
+}
+
+void OptionsScreen::SelectLanguage(::Language language)
+{
+	if (language != context.localization.GetLanguage())
+	{
+		context.localization.SetLanguage(language);
+		context.settings.GetSettings().language = language;
+		context.settings.GetSettings().languageChosen = true;
+		context.settings.Save();
+	}
+
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
+}
+
+void OptionsScreen::RefreshText()
+{
+	const LocalizationManager& text = context.localization;
+
+	column.SetButtonText(Row::Gameplay, text.GetText(TextKey::Options::Gameplay));
+	column.SetButtonText(Row::Hud, text.GetText(TextKey::Options::Hud));
+	column.SetButtonText(Row::Graphics, text.GetText(TextKey::Options::Graphics));
+	column.SetButtonText(Row::Audio, text.GetText(TextKey::Options::Audio));
+	column.SetButtonText(Row::Controls, text.GetText(TextKey::Options::Controls));
+	column.SetButtonText(Row::Language, text.GetText(TextKey::Options::Language));
+	column.SetButtonText(Row::Back, text.GetText(TextKey::Options::Back));
+
+	controlsColumn.SetButtonText(CtrlKeyboard, text.GetText(TextKey::Options::ControlsKeyboard));
+	controlsColumn.SetButtonText(CtrlGamepad, text.GetText(TextKey::Options::ControlsGamepad));
+	controlsColumn.SetButtonText(CtrlBack, text.GetText(TextKey::Options::ControlsBack));
+
+	languageColumn.SetButtonText(0, LanguageButtonLabel(Language::English, TextKey::Options::LanguageEnglish));
+	languageColumn.SetButtonText(1, LanguageButtonLabel(Language::Spanish, TextKey::Options::LanguageSpanish));
+	languageColumn.SetButtonText(2, LanguageButtonLabel(Language::German, TextKey::Options::LanguageGerman));
+	languageColumn.SetButtonText(3, LanguageButtonLabel(Language::Russian, TextKey::Options::LanguageRussian));
+	languageColumn.SetButtonText(4, LanguageButtonLabel(Language::Ukrainian, TextKey::Options::LanguageUkrainian));
+	languageColumn.SetButtonText(5, text.GetText(TextKey::Options::ControlsBack));
+
+	for (const std::unique_ptr<OptionsCategoryPanel>& panel : panels)
+	{
+		if (panel) { panel->RefreshText(); }
+	}
+	for (const std::unique_ptr<OptionsCategoryPanel>& panel : controlsPanels)
+	{
+		if (panel) { panel->RefreshText(); }
+	}
+
+	host.SetHeaderText(text.GetText(TextKey::Options::Title));
 }
 
 void OptionsScreen::PlayIntro()
@@ -410,6 +473,12 @@ void OptionsScreen::HandleEvent(const sf::Event& event)
 
 void OptionsScreen::Update(float deltaTime)
 {
+	if (seenLocalizationRevision != context.localization.Revision())
+	{
+		seenLocalizationRevision = context.localization.Revision();
+		RefreshText();
+	}
+
 	column.Update(deltaTime);
 	controlsColumn.Update(deltaTime);
 	languageColumn.Update(deltaTime);

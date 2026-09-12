@@ -80,6 +80,7 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	, gameplayInput(gameplayActions)
 	, horizontalRepeater({ context.hapticSettings.delayedAutoShift, context.hapticSettings.autoRepeatRate })
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameplayBackground))
+	, seenLocalizationRevision(context.localization.Revision())
 {
 	introActive = playIntro;
 
@@ -101,6 +102,12 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 
 void GameplayState::ApplyGameplaySettings()
 {
+	if (seenLocalizationRevision != context.localization.Revision())
+	{
+		seenLocalizationRevision = context.localization.Revision();
+		hud.RefreshText();
+	}
+
 	const GameSettings& settings = context.settings.GetSettings();
 
 	hud.SetVisible(GameplayHud::Element::Hold, settings.hudHold && settings.holdEnabled);

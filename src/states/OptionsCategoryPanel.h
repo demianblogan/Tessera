@@ -27,6 +27,10 @@ public:
 	virtual void Open() {}
 	virtual void Close() {}
 
+	// The active language changed -- re-fetch every cached label from the
+	// catalog. Default: nothing cached, nothing to do.
+	virtual void RefreshText() {}
+
 	// Called every frame with what the screen wants this panel to be and the
 	// screen's 0..1 preview cross-fade.
 	virtual void SetVisibility(Visibility visibility, float previewFade) = 0;

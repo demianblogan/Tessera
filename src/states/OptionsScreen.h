@@ -8,7 +8,9 @@
 #include <utility>
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/String.hpp>
 
+#include "../localization/Language.h"
 #include "../ui/MenuButtonColumn.h"
 #include "MenuScreen.h"
 #include "OptionsCategoryPanel.h"
@@ -61,6 +63,15 @@ private:
 	[[nodiscard]] UI::MenuButtonColumn& SubColumnFor(std::size_t categoryRow);
 	[[nodiscard]] UI::MenuButtonColumn& ActiveSubColumn() { return SubColumnFor(subRow); }
 
+	// Marks the currently active language's own entry so it stays identifiable
+	// after leaving and returning to this sub-page.
+	[[nodiscard]] sf::String LanguageButtonLabel(Language language, std::string_view key) const;
+	void SelectLanguage(Language language);
+
+	// The active language changed underneath this screen -- re-fetch every
+	// cached label, including the ones in the category panels and the sub-pages.
+	void RefreshText();
+
 	// The haptics.json key and on-screen fallback colour for whatever is focused.
 	[[nodiscard]] std::pair<std::string_view, sf::Color> CurrentLightbar() const;
 
@@ -83,4 +94,6 @@ private:
 	float pageT = 0.f;        // 0..1 progress through a slide
 
 	bool leaving = false;
+
+	unsigned int seenLocalizationRevision;
 };

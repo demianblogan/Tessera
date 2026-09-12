@@ -69,6 +69,17 @@ namespace
 		text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
 		text.setPosition(centre);
 	}
+
+	using Prompt = GamepadPrompts::Action;
+	struct ActionDef { std::string_view key; Prompt action; };
+	const std::array<ActionDef, 7> ActionDefs{ {
+		{ TextKey::Options::KeyMoveLeft,  Prompt::MoveLeft },
+		{ TextKey::Options::KeyMoveRight, Prompt::MoveRight },
+		{ TextKey::Options::KeySoftDrop,  Prompt::SoftDrop },
+		{ TextKey::Options::KeyHardDrop,  Prompt::HardDrop },
+		{ TextKey::Options::KeyRotateCw,  Prompt::RotateClockwise },
+		{ TextKey::Options::KeyRotateCcw, Prompt::RotateCounterClockwise },
+		{ TextKey::Options::KeyHold,      Prompt::Hold } } };
 }
 
 GamepadCategoryPanel::GamepadCategoryPanel(Context& context, sf::Color accent)
@@ -85,19 +96,8 @@ GamepadCategoryPanel::GamepadCategoryPanel(Context& context, sf::Color accent)
 	const LocalizationManager& text = context.localization;
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
-	using Prompt = GamepadPrompts::Action;
-	struct Def { std::string_view key; Prompt action; };
-	const std::array<Def, 7> defs{ {
-		{ TextKey::Options::KeyMoveLeft,  Prompt::MoveLeft },
-		{ TextKey::Options::KeyMoveRight, Prompt::MoveRight },
-		{ TextKey::Options::KeySoftDrop,  Prompt::SoftDrop },
-		{ TextKey::Options::KeyHardDrop,  Prompt::HardDrop },
-		{ TextKey::Options::KeyRotateCw,  Prompt::RotateClockwise },
-		{ TextKey::Options::KeyRotateCcw, Prompt::RotateCounterClockwise },
-		{ TextKey::Options::KeyHold,      Prompt::Hold } } };
-
-	rows.reserve(defs.size());
-	for (const Def& def : defs)
+	rows.reserve(ActionDefs.size());
+	for (const ActionDef& def : ActionDefs)
 	{
 		sf::Text label(font, text.GetText(def.key), LabelSize);
 		const sf::IntRect xbox = GamepadPrompts::IconFor(GamepadManager::Layout::Xbox, def.action);
@@ -155,6 +155,23 @@ void GamepadCategoryPanel::Open()
 	closeRequested = false;
 	focus = Focus::Rows;
 	selectedRow = 0;
+}
+
+void GamepadCategoryPanel::RefreshText()
+{
+	const LocalizationManager& text = context.localization;
+
+	xboxHeader.setString(text.GetText(TextKey::Options::GamepadXbox));
+	playStationHeader.setString(text.GetText(TextKey::Options::GamepadPlayStation));
+
+	for (std::size_t i = 0; i < rows.size() && i < ActionDefs.size(); ++i)
+	{
+		rows[i].label.setString(text.GetText(ActionDefs[i].key));
+	}
+
+	backButton.SetText(text.GetText(TextKey::Options::BackButton));
+
+	LayOut();
 }
 
 void GamepadCategoryPanel::Close()

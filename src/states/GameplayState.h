@@ -70,6 +70,10 @@ private:
 
 	sf::Sprite backgroundSprite;
 
+	// The language ApplyGameplaySettings() last refreshed the HUD's cached
+	// captions for.
+	unsigned int seenLocalizationRevision;
+
 	void SetUpInputBindings();
 
 	// Push the current HUD / effects settings into the live HUD and effects

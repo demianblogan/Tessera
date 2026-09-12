@@ -32,6 +32,7 @@ public:
 
 	void Open() override;
 	void Close() override;
+	void RefreshText() override;
 	void SetVisibility(Visibility visibility, float previewFade) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
