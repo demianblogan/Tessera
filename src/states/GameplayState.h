@@ -101,4 +101,8 @@ public:
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 	void OnResume() override;
+
+	// The mouse plays no part in gameplay -- pausing pushes PauseState on top,
+	// which shows its own cursor via ScreenHost/MenuScreen.
+	[[nodiscard]] bool ShowsCursor() const override { return false; }
 };
