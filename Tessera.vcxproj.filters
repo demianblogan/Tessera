@@ -33,6 +33,9 @@
     <ClCompile Include="src\states\CompanySplashState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\LanguagePickerState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\states\LoadingState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -258,6 +261,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\CompanySplashState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\LanguagePickerState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\LoadingState.h">

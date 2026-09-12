@@ -11,6 +11,8 @@
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../resources/Assets.h"
+#include "../settings/SettingsManager.h"
+#include "LanguagePickerState.h"
 #include "MenuShell.h"
 
 CompanySplashState::CompanySplashState(Context& context)
@@ -76,7 +78,15 @@ void CompanySplashState::Finish()
 	}
 
 	isFinishing = true;
-	RequestChange(std::make_unique<MenuShell>(context));
+
+	if (context.settings.GetSettings().languageChosen)
+	{
+		RequestChange(std::make_unique<MenuShell>(context));
+	}
+	else
+	{
+		RequestChange(std::make_unique<LanguagePickerState>(context));
+	}
 }
 
 void CompanySplashState::UpdateOpacity()
