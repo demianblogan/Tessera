@@ -67,6 +67,7 @@ options.language_spanish   = Español
 options.language_german    = Deutsch
 options.language_russian   = Русский
 options.language_ukrainian = Українська
+options.language_selected  = Selected
 
 options.key_move_left   = Move Piece Left
 options.key_move_right  = Move Piece Right

@@ -67,6 +67,7 @@ options.language_spanish = Español
 options.language_german = Deutsch
 options.language_russian = Русский
 options.language_ukrainian = Українська
+options.language_selected = Ausgewählt
 
 options.key_move_left = Stein Nach Links Bewegen
 options.key_move_right = Stein Nach Rechts Bewegen

@@ -67,6 +67,7 @@ options.language_spanish = Español
 options.language_german = Deutsch
 options.language_russian = Русский
 options.language_ukrainian = Українська
+options.language_selected = Выбран
 
 options.key_move_left = Двигать Фигуру Влево
 options.key_move_right = Двигать Фигуру Вправо

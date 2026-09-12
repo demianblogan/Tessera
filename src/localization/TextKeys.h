@@ -85,6 +85,7 @@ namespace TextKey
 		inline constexpr std::string_view LanguageGerman    = "options.language_german";
 		inline constexpr std::string_view LanguageRussian   = "options.language_russian";
 		inline constexpr std::string_view LanguageUkrainian = "options.language_ukrainian";
+		inline constexpr std::string_view LanguageSelected  = "options.language_selected";
 
 		inline constexpr std::string_view KeyMoveLeft  = "options.key_move_left";
 		inline constexpr std::string_view KeyMoveRight = "options.key_move_right";

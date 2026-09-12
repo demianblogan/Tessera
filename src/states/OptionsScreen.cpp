@@ -153,7 +153,9 @@ sf::String OptionsScreen::LanguageButtonLabel(::Language language, std::string_v
 	sf::String label = context.localization.GetText(key);
 	if (language == context.localization.GetLanguage())
 	{
-		label += " *";
+		label += " [";
+		label += context.localization.GetText(TextKey::Options::LanguageSelected);
+		label += "]";
 	}
 	return label;
 }
