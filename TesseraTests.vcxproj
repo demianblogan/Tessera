@@ -91,6 +91,7 @@
     <ClCompile Include="src\gameplay\TSpinRule.cpp" />
     <ClCompile Include="src\gameplay\TetrominoBag.cpp" />
     <ClCompile Include="src\gameplay\GameplaySession.cpp" />
+    <ClCompile Include="src\gameplay\EscalationDirector.cpp" />
     <ClCompile Include="src\utils\Random.cpp" />
     <!-- Test runner and suites. -->
     <ClCompile Include="tests\TestMain.cpp" />
@@ -100,6 +101,7 @@
     <ClCompile Include="tests\KickDataTests.cpp" />
     <ClCompile Include="tests\TSpinRuleTests.cpp" />
     <ClCompile Include="tests\TetrominoBagTests.cpp" />
+    <ClCompile Include="tests\EscalationDirectorTests.cpp" />
     <ClCompile Include="tests\GameplaySessionTests.cpp" />
   </ItemGroup>
   <ItemGroup>
