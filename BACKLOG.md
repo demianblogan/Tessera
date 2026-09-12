@@ -35,6 +35,32 @@ Cross-cutting decisions:
 
 ## Released
 
+### v1.6.0 — Gameplay depth & escalation
+
+Third version of the wound-down roadmap. The version that finishes the
+gameplay: modern rules, the feedback toggles that go with them, and the
+escalation that makes the one endless mode get harder over time.
+
+- **Modern rules** — SRS rotation + wall kicks + T-spin (3-corner rule), lock
+  delay + move reset, hold piece, 5-deep next queue, 7-bag, buffer rows above
+  the field + block-out / lock-out, guideline-style scoring (Single / Double /
+  Triple / Tetris multipliers, combo, back-to-back, Perfect Clear), on-board
+  callouts. Authored piece shapes and SRS kick tables load from
+  `assets/data/pieces.json` / `srs_kicks.json`, overriding the built-in tables
+  if present.
+- **Gameplay-settings toggles** with a mechanic behind them now: ghost piece,
+  hold, next-queue length, 7-bag vs random, plus a Hold rebind key —
+  `GameplayCategoryPanel` rows + `GameSettings` format 9.
+- **Gamepad vibration on gameplay actions** — land, hard-drop, wall contact,
+  row-clear, tetris, level-up, top-out, T-spin, gated by the existing
+  Vibration toggle.
+- **`gameplay/EscalationDirector`** — 4 cumulative tiers by elapsed time
+  (Base, Speed Surge, Garbage, Chaos), each tier's first effect time-gated to
+  a guaranteed window rather than left to play speed. In-game callouts,
+  haptics, and golden-lock / garbage-row visuals react to the current tier.
+- In-game controls legend swaps to Xbox / PlayStation icons when a pad is in
+  use (`input/GamepadPrompts`).
+
 ### v1.5.0 — Gameplay presentation & Game Over
 
 Second version of the wound-down roadmap. The in-game screen and the game-over
@@ -472,51 +498,35 @@ did) and forcing months of Tetris content is the wrong trade. The menu framework
 was always meant as a reusable cross-project UI library — it carries forward
 regardless.
 
-**v1.4.0 — Menu cleanup & flow** and **v1.5.0 — Gameplay presentation & Game
-Over** shipped (see Released).
-
-### v1.6.0 — Gameplay depth & escalation
-
-The version that finishes the gameplay. Likely splits in two as it is built
-(rules first, then escalation content).
-
-- **Modern rules, so it feels right to play:** SRS rotation + wall kicks +
-  T-spin (3-corner rule), lock delay + move reset, hold piece, 5-deep next
-  queue, 7-bag confirmed, buffer rows above the field + block-out / lock-out,
-  guideline-style scoring (Single / Double / Triple / Tetris multipliers, combo,
-  back-to-back, Perfect Clear), on-board callouts.
-- **Gameplay-settings toggles** that now have a mechanic behind them: ghost
-  piece, hold, next-queue length, 7-bag vs random. Extend `GameplayCategoryPanel`
-  (rows + `GameSettings` fields, bump FormatVersion). Hold needs a new
-  rebindable key — `ControlSettings` field, a Keyboard row, a Gamepad
-  assignment. If Gameplay grows past ~6 rows, split it into sub-sections.
-- **Gamepad vibration on gameplay actions** — land / hard-drop / wall contact /
-  row-clear / tetris / level-up / top-out / T-spin, gated by the existing
-  Vibration toggle. `input/gamepad/GamepadHaptics` is already in the tree and
-  wired; only the gameplay firing is missing.
-- **Escalation design** — how the single endless mode gets harder over time:
-  which bonuses, obstacles and rule modifiers appear at which point, and the
-  pacing of pressure vs breather stretches. (This absorbs the old campaign
-  "modifier pool" idea as escalation tiers rather than discrete levels.)
+**v1.4.0 — Menu cleanup & flow**, **v1.5.0 — Gameplay presentation & Game
+Over** and **v1.6.0 — Gameplay depth & escalation** shipped (see Released).
 
 ### v1.7.0 — Localization & final refactor
 
 The final version. After it the game is done — there is no v2.0.
 
-- **Localization** — the multi-language load + first-run picker + live switch
-  for the settled five (English, Spanish, German, Russian, Ukrainian). The UI
-  scaffold shipped in v1.2.0; port `LocalizationRevision` + a text-warmup pass
-  from ULA. Deferred to here because retranslating churning strings mid-build is
-  wasteful.
+- **Localization** — ✅ done. Language enum + `GameSettings` persistence
+  (format 10), catalog loading with an English fallback merge, a revision
+  counter so every open screen switches live with no restart, a first-run
+  picker before the main menu, and full translations (English, Spanish,
+  German, Russian, Ukrainian) for every catalog key including the on-board
+  callouts. The UI scaffold shipped in v1.2.0.
+- **Audio pass** — a lot of gameplay sounds are missing or use
+  placeholder/mismatched files; needs a proper pass. Not started.
+- **Gameplay visual effects** — explosions, distinct feedback for clearing
+  different numbers of lines, etc. Not started.
+- **A shortcut to the game** — desktop/Start Menu, or bundled in the release
+  zip. Approach (plain `.lnk` vs. a real installer) not yet decided. Not
+  started.
 - **Project-wide refactor and polish** — tighten the feel, clean the code, pull
   back any improvements from ULA's shared helpers (`NineSliceFrame`,
   `TextLayout`, `NeonGlow`, `GamepadHaptics`), a final dead-code sweep.
-  Known dead-on-arrival for that sweep: the blurred-backdrop render path —
-  `State::Backdrop::BlurredPrevious` is returned by no state (Pause moved to
-  `mosaic.frag`), leaving the `else` branch in `Application::Render`,
-  `blur.frag` / `ShaderID::Blur`, `Application::gameplayTexture` /
-  `finalTexture`, and `StateMachine::RenderStatesExceptTop` / `RenderTopState`
-  all unreachable.
+  ✅ The one specifically known dead-on-arrival piece is removed: the
+  blurred-backdrop render path (`State::Backdrop::BlurredPrevious` was
+  returned by no state once Pause moved to `mosaic.frag`) — `blur.frag` /
+  `ShaderID::Blur`, `Application::gameplayTexture` / `finalTexture`, and
+  `StateMachine::RenderStatesExceptTop` / `RenderTopState` are all gone.
+  A broader project-wide pass is still open.
 - **Release** — README as a finished piece, screenshots / GIFs, itch.io page,
   `Tessera-v1.7.0-win64.zip`, GitHub Release as the last one.
 
