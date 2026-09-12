@@ -32,7 +32,12 @@ GameplayCategoryPanel::GameplayCategoryPanel(Context& context, sf::Color accent)
 	, restartNote(context.fonts.Get(Assets::FontID::Main),
 		context.localization.GetText(TextKey::Options::RestartToApply), 22)
 {
-	restartNote.setFillColor(sf::Color(150, 160, 175));
+	restartNote.setFillColor(sf::Color(255, 245, 140));   // light yellow -- a warning, not a label
+
+	const sf::FloatRect noteBounds = restartNote.getLocalBounds();
+	restartNote.setOrigin({ noteBounds.position.x + noteBounds.size.x * 0.5f, noteBounds.position.y });
+	restartNote.setPosition({ PanelBounds.position.x + PanelBounds.size.x * 0.5f, PanelBounds.position.y + 34.f });
+
 	BuildRows();
 }
 
@@ -204,13 +209,6 @@ void GameplayCategoryPanel::RowClicked(std::size_t index)
 
 void GameplayCategoryPanel::RenderExtra(sf::RenderTarget& target, float alpha)
 {
-	if (randomiserRowPtr == nullptr)
-	{
-		return;
-	}
-
-	const sf::FloatRect bounds = randomiserRowPtr->Bounds();
-	restartNote.setPosition({ bounds.position.x + 26.f, bounds.position.y + bounds.size.y + 10.f });
 	sf::Color c = restartNote.getFillColor();
 	c.a = static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f);
 	restartNote.setFillColor(c);

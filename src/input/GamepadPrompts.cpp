@@ -24,12 +24,12 @@ namespace
 	// PlayStation atlas (a different layout, its own coordinates).
 	constexpr sf::IntRect PFaceButton = Sprite(49, 64, 13, 15);       // Cross -- hard drop
 	constexpr sf::IntRect PTopFaceButton = Sprite(49, 32, 13, 15);    // Triangle -- hold
-	constexpr sf::IntRect PStartButton = Sprite(257, 227, 13, 9);     // "ST" prompt pill -- pause
+	constexpr sf::IntRect PStartButton = Sprite(340, 51, 7, 10);      // Options/Start glyph -- pause
 	constexpr sf::IntRect PDpadLeft = Sprite(370, 198, 12, 10);
 	constexpr sf::IntRect PDpadRight = Sprite(369, 166, 12, 10);
 	constexpr sf::IntRect PDpadDown = Sprite(372, 177, 7, 14);
-	constexpr sf::IntRect PLeftBumper = Sprite(369, 116, 13, 11);
-	constexpr sf::IntRect PRightBumper = Sprite(369, 132, 13, 11);
+	constexpr sf::IntRect PLeftBumper = Sprite(96, 228, 15, 7);
+	constexpr sf::IntRect PRightBumper = Sprite(96, 224, 15, 7);
 
 	using Action = GamepadPrompts::Action;
 	constexpr std::size_t ActionCount = 8;
