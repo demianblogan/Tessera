@@ -59,8 +59,8 @@ TEST_CASE("Speed Surge fires periodically once unlocked, doubles fall speed whil
 	director.Update(0.02f);
 	(void)director.ConsumeEvents();
 
-	// Just short of the first interval: not yet.
-	director.Update(EscalationDirector::SurgeInterval - 0.1f);
+	// Just short of the first (shorter) delay: not yet.
+	director.Update(EscalationDirector::FirstSurgeDelay - 0.1f);
 	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
 
@@ -73,6 +73,13 @@ TEST_CASE("Speed Surge fires periodically once unlocked, doubles fall speed whil
 	director.Update(EscalationDirector::SurgeDuration + 0.1f);
 	CHECK(director.ConsumeEvents().surgeEnded);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
+
+	// The next one waits a full SurgeInterval, not the shorter first delay.
+	director.Update(EscalationDirector::SurgeInterval - 0.1f);
+	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
+
+	director.Update(0.2f);
+	CHECK(director.ConsumeEvents().surgeStarted);
 }
 
 TEST_CASE("garbage rows are queued every LinesPerGarbageRow, only once the Garbage tier is reached")

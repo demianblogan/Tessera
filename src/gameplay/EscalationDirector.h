@@ -32,9 +32,11 @@ public:
 	static constexpr float ChaosTierStart = 270.f;
 
 	// A surge fires this often once unlocked, doubling fall speed for its
-	// duration. The first one waits a full interval too, so a run doesn't open
-	// its new tier with an immediate spike.
+	// duration. The very first one after entering the tier comes sooner
+	// (FirstSurgeDelay), so the tier starting is actually felt close to when it
+	// starts, rather than up to another full SurgeInterval later.
 	static constexpr float SurgeInterval = 35.f;
+	static constexpr float FirstSurgeDelay = 8.f;
 	static constexpr float SurgeDuration = 5.f;
 	static constexpr float SurgeFallMultiplier = 2.f;
 
@@ -75,7 +77,7 @@ private:
 	float elapsedSeconds = 0.f;
 	Tier tier = Tier::Base;
 
-	float surgeCooldown = SurgeInterval;
+	float surgeCooldown = FirstSurgeDelay;
 	bool surgeActive = false;
 	float surgeTimer = 0.f;
 
