@@ -10,6 +10,7 @@
 #include "../config/HapticSettings.h"
 #include "../core/Context.h"
 #include "../input/MenuInput.h"
+#include "../localization/LanguageAccent.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
@@ -116,15 +117,15 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 	controlsColumn.AppearInstantly();
 
 	languageColumn.AddButton(LanguageButtonLabel(Language::English, TextKey::Options::LanguageEnglish),
-		[this] { SelectLanguage(Language::English); }, true, LanguageColour);
+		[this] { SelectLanguage(Language::English); }, true, LanguageAccent(Language::English));
 	languageColumn.AddButton(LanguageButtonLabel(Language::Spanish, TextKey::Options::LanguageSpanish),
-		[this] { SelectLanguage(Language::Spanish); }, true, LanguageColour);
+		[this] { SelectLanguage(Language::Spanish); }, true, LanguageAccent(Language::Spanish));
 	languageColumn.AddButton(LanguageButtonLabel(Language::German, TextKey::Options::LanguageGerman),
-		[this] { SelectLanguage(Language::German); }, true, LanguageColour);
+		[this] { SelectLanguage(Language::German); }, true, LanguageAccent(Language::German));
 	languageColumn.AddButton(LanguageButtonLabel(Language::Russian, TextKey::Options::LanguageRussian),
-		[this] { SelectLanguage(Language::Russian); }, true, LanguageColour);
+		[this] { SelectLanguage(Language::Russian); }, true, LanguageAccent(Language::Russian));
 	languageColumn.AddButton(LanguageButtonLabel(Language::Ukrainian, TextKey::Options::LanguageUkrainian),
-		[this] { SelectLanguage(Language::Ukrainian); }, true, LanguageColour);
+		[this] { SelectLanguage(Language::Ukrainian); }, true, LanguageAccent(Language::Ukrainian));
 	languageColumn.AddButton(text.GetText(TextKey::Options::ControlsBack), [this] { CloseSub(); }, true);   // plain white
 	languageColumn.SetLayout(ColumnTopLeft, SubRowGap);
 	languageColumn.SetSelectionChangedCallback(subSelectionSound);

@@ -509,6 +509,9 @@
     <ClInclude Include="src\localization\Language.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\localization\LanguageAccent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\localization\LocalizationManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
