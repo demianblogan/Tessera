@@ -427,6 +427,14 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
 		sceneMotion.Nudge({ 0.f, LandNudge });
 
+		// A lock that starts no clear breaks any combo chain in progress --
+		// fade the glow out. One that does clear leaves the combo level alone
+		// here; rowsCleared sets its real value once the delay resolves.
+		if (!events.rowsDetected)
+		{
+			effects.SetCombo(0);
+		}
+
 		// A T-spin's own tell, independent of whether it cleared any lines --
 		// decided at lock time, same batch as landed.
 		if (events.tSpin)
@@ -480,6 +488,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.rowsCleared)
 	{
 		hud.OnRowsCleared();
+		effects.SetCombo(events.comboCount);
 
 		if (events.perfectClear)
 		{

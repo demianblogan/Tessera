@@ -78,6 +78,12 @@ public:
 	// wide golden burst and the whole area gets a slow-fading flash.
 	void TriggerPerfectClearBurst(sf::FloatRect boardArea);
 
+	// `count` is GameplaySession::Events::comboCount (0 on the first clear of
+	// a chain, incrementing with each one that directly follows); 0 or below
+	// fades the glow out instead of holding it, for the lock that broke the
+	// chain. Eased in Update(), so it rises and lingers rather than snapping.
+	void SetCombo(int count);
+
 	void Update(float deltaTime);
 
 	[[nodiscard]] sf::Vector2f GetViewOffset() const { return shakeOffset; }
@@ -92,6 +98,10 @@ public:
 	[[nodiscard]] bool HasPerfectClearFlash() const { return perfectClearFlashTimer > 0.f; }
 	[[nodiscard]] float GetPerfectClearFlashProgress() const;
 
+	// Eased combo level, roughly in [0, comboTarget]; >0 while a chain of
+	// clears is holding or fading out. Drives the well's border glow.
+	[[nodiscard]] float GetComboGlowLevel() const { return comboGlowLevel; }
+
 private:
 	bool shakeEnabled = true;
 	float shakeTimer = 0.f;
@@ -105,4 +115,7 @@ private:
 	std::vector<RowClearEffect> rowClearEffects;
 	std::vector<Shard> shards;
 	float perfectClearFlashTimer = 0.f;
+
+	float comboTargetLevel = 0.f;
+	float comboGlowLevel = 0.f;
 };

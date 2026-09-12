@@ -413,6 +413,49 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
+	// Combo glow -- a border around the well that builds with each clear that
+	// directly follows another, and lingers/fades once the chain breaks
+	// (EffectsController eases the level itself). Past ComboPeakLevel it shifts
+	// from cool blue to a hot gold, so a long chain keeps escalating instead of
+	// plateauing at "still blue".
+	// =====================================================
+
+	if (const float comboLevel = effects.GetComboGlowLevel(); comboLevel > 0.02f)
+	{
+		constexpr float ComboPeakLevel = 5.f;
+		const float t = std::clamp(comboLevel / ComboPeakLevel, 0.f, 1.f);
+		const float hot = std::clamp((comboLevel - ComboPeakLevel) / 3.f, 0.f, 1.f);
+
+		const sf::Color colour = LerpColour(
+			LerpColour(sf::Color(110, 170, 255), sf::Color(180, 220, 255), t),
+			sf::Color(255, 225, 120), hot);
+
+		const float pulse = 0.78f + 0.22f * std::sin(context.totalTime * (5.f + hot * 4.f));
+		const float thickness = 5.f + 9.f * t;
+		const auto alpha = static_cast<std::uint8_t>((70.f + 130.f * t) * pulse);
+
+		const sf::FloatRect boardRect{ BoardPosition, { Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize } };
+		const sf::Color edgeColour(colour.r, colour.g, colour.b, alpha);
+
+		sf::RectangleShape edge;
+		edge.setFillColor(edgeColour);
+
+		edge.setSize({ boardRect.size.x + thickness * 2.f, thickness });
+		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
+		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+
+		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y + boardRect.size.y });
+		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+
+		edge.setSize({ thickness, boardRect.size.y + thickness * 2.f });
+		edge.setPosition({ boardRect.position.x - thickness, boardRect.position.y - thickness });
+		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+
+		edge.setPosition({ boardRect.position.x + boardRect.size.x, boardRect.position.y - thickness });
+		target.draw(edge, sf::RenderStates(sf::BlendAdd));
+	}
+
+	// =====================================================
 	// Ghost  (hidden once the piece is locked and rows are clearing)
 	// =====================================================
 

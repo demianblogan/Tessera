@@ -119,6 +119,11 @@ void EffectsController::TriggerPerfectClearBurst(sf::FloatRect boardArea)
 	perfectClearFlashTimer = PerfectClearFlashDuration;
 }
 
+void EffectsController::SetCombo(int count)
+{
+	comboTargetLevel = static_cast<float>(std::max(0, count));
+}
+
 void EffectsController::Update(float deltaTime)
 {
 	// =====================================================
@@ -161,6 +166,24 @@ void EffectsController::Update(float deltaTime)
 	if (perfectClearFlashTimer > 0.f)
 	{
 		perfectClearFlashTimer = std::max(0.f, perfectClearFlashTimer - deltaTime);
+	}
+
+	// =====================================================
+	// Combo glow -- rises quickly as the chain builds, lingers and fades
+	// slowly once it breaks, rather than snapping to the new (lower) target.
+	// =====================================================
+
+	{
+		const float speed = comboTargetLevel > comboGlowLevel ? 14.f : 2.5f;
+		const float step = speed * deltaTime;
+		if (comboGlowLevel < comboTargetLevel)
+		{
+			comboGlowLevel = std::min(comboTargetLevel, comboGlowLevel + step);
+		}
+		else
+		{
+			comboGlowLevel = std::max(comboTargetLevel, comboGlowLevel - step);
+		}
 	}
 
 	// =====================================================
