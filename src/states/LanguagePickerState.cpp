@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <fstream>
+#include <sstream>
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -29,18 +31,37 @@ namespace
 	constexpr sf::Vector2f ColumnTopLeft{ 800.f, 420.f };
 	constexpr float RowGap = 110.f;
 
-	// Not routed through the catalog -- it has to read before any language is
-	// chosen, so every language gets its own line instead of one translation.
-	const sf::String Prompt =
-		"Choose your language  ·  Elige tu idioma  ·  Wähle deine Sprache  ·  "
-		"Выберите язык  ·  "
-		"Оберіть мову";
+	// Not routed through the per-language catalogs -- it has to read before any
+	// language is chosen, so it carries one line per language instead of one
+	// translation. Lives in its own plain UTF-8 text file (not a C++ string
+	// literal) so it goes through the same byte-exact fromUtf8 decode as every
+	// other piece of non-ASCII text in the game, instead of the compiler's
+	// narrow-literal execution charset.
+	[[nodiscard]] sf::String LoadPrompt()
+	{
+		std::ifstream file(Assets::Paths::Data::LanguagePickerPrompt);
+		if (!file.is_open())
+		{
+			return "Choose your language";
+		}
+
+		std::ostringstream contents;
+		contents << file.rdbuf();
+		std::string text = contents.str();
+
+		while (!text.empty() && (text.back() == '\n' || text.back() == '\r'))
+		{
+			text.pop_back();
+		}
+
+		return sf::String::fromUtf8(text.begin(), text.end());
+	}
 }
 
 LanguagePickerState::LanguagePickerState(Context& context)
 	: State(context.stateMachine)
 	, context(context)
-	, prompt(context.fonts.Get(Assets::FontID::Main), Prompt, PromptSize)
+	, prompt(context.fonts.Get(Assets::FontID::Main), LoadPrompt(), PromptSize)
 	, column(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {

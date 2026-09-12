@@ -569,6 +569,7 @@
     <None Include="assets\data\localization\de.txt" />
     <None Include="assets\data\localization\ru.txt" />
     <None Include="assets\data\localization\uk.txt" />
+    <None Include="assets\data\localization\language_picker_prompt.txt" />
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
   </ItemGroup>

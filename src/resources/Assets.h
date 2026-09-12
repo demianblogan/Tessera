@@ -136,6 +136,12 @@ namespace Assets
 		namespace Data
 		{
 			inline constexpr const char* LocalizationDir = "assets/data/localization";
+
+			// Shown by the first-run language picker, before any language is
+			// chosen -- one line per language, so it has to live outside the
+			// per-language catalogs. Plain UTF-8 text file (no key=value), read
+			// and decoded the same way LocalizationManager reads its catalogs.
+			inline constexpr const char* LanguagePickerPrompt = "assets/data/localization/language_picker_prompt.txt";
 		}
 
 		namespace Shaders
