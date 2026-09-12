@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "KickData.h"
+#include "../utils/Random.h"
 
 namespace
 {
@@ -102,6 +103,9 @@ bool GameplaySession::Hold()
 		const Tetromino::Type swapped = *heldType;
 		heldType = currentType;
 		currentTetromino = { swapped, SpawnPosition };
+		// A swap, not a spawn -- the piece coming back out never carries a
+		// golden bonus (and the one going in loses whatever it had).
+		currentPieceIsGolden = false;
 		ResetLockState();
 
 		if (!board.CanPlace(currentTetromino))
@@ -184,6 +188,11 @@ void GameplaySession::Update(float deltaTime)
 	if (phase != Phase::GameOver)
 	{
 		elapsedSeconds += deltaTime;
+		escalation.Update(deltaTime);
+
+		const EscalationDirector::Events escalationEvents = escalation.ConsumeEvents();
+		pendingEvents.speedSurgeStarted = pendingEvents.speedSurgeStarted || escalationEvents.surgeStarted;
+		pendingEvents.speedSurgeEnded = pendingEvents.speedSurgeEnded || escalationEvents.surgeEnded;
 	}
 
 	if (phase == Phase::ClearingRows)
@@ -196,8 +205,14 @@ void GameplaySession::Update(float deltaTime)
 		}
 
 		const int clearedRows = static_cast<int>(clearingRows.size());
+
+		// Checked before ClearRows() erases the rows it would otherwise read.
+		const bool goldenBonus = board.RowsContainGolden(clearingRows);
+
 		board.ClearRows(clearingRows);
 		clearingRows.clear();
+
+		escalation.NotifyLinesCleared(clearedRows);
 
 		const TSpinRule::Result tSpin = pendingTSpinResult;
 		pendingTSpinResult = TSpinRule::Result::None;
@@ -236,6 +251,13 @@ void GameplaySession::Update(float deltaTime)
 		}
 		backToBackActive = isDifficultClear;
 
+		// Escalation's Chaos-tier golden bonus: a clear that took a golden lock
+		// doubles the line-clear score, on top of any back-to-back multiplier.
+		if (goldenBonus)
+		{
+			lineScore *= 2;
+		}
+
 		// Combo: every clear beyond the first in an unbroken chain adds its own
 		// bonus, on top of (not multiplied by) the line-clear score above.
 		++comboCount;
@@ -263,6 +285,7 @@ void GameplaySession::Update(float deltaTime)
 		pendingEvents.comboCount = comboCount;   // never negative here: it was just incremented from >= -1
 		pendingEvents.backToBack = earnedBackToBack;
 		pendingEvents.perfectClear = isPerfectClear;
+		pendingEvents.goldenLineBonus = goldenBonus;
 		pendingEvents.tSpin = tSpin != TSpinRule::Result::None;
 		pendingEvents.tSpinMini = tSpin == TSpinRule::Result::Mini;
 		pendingEvents.leveledUp = level > previousLevel;
@@ -285,12 +308,16 @@ void GameplaySession::Update(float deltaTime)
 	}
 
 	// Gravity: step the piece down for each fall-delay's worth of time. Stop at
-	// the first step it can't take -- the lock delay below takes over there.
+	// the first step it can't take -- the lock delay below takes over there. A
+	// Speed Surge (see EscalationDirector) divides the delay instead of scaling
+	// fallTimer, so it can turn on and off mid-descent without losing progress.
+	const float effectiveFallDelay = fallDelay / escalation.FallSpeedMultiplier();
+
 	fallTimer += deltaTime;
 
-	while (fallTimer >= fallDelay)
+	while (fallTimer >= effectiveFallDelay)
 	{
-		fallTimer -= fallDelay;
+		fallTimer -= effectiveFallDelay;
 
 		Tetromino movedTetromino = currentTetromino;
 		movedTetromino.Move(0, 1);
@@ -358,7 +385,7 @@ void GameplaySession::LockAndScan()
 	// field, so the stack has overflowed the top.
 	const bool lockedOut = IsEntirelyInBuffer(currentTetromino);
 
-	board.LockTetromino(currentTetromino);
+	board.LockTetromino(currentTetromino, currentPieceIsGolden);
 
 	if (lockedOut)
 	{
@@ -405,12 +432,24 @@ void GameplaySession::LockAndScan()
 
 bool GameplaySession::SpawnNextTetromino()
 {
+	// Escalation's Garbage tier: applied here, right before a new piece takes
+	// the field, so it never appears out from under one mid-fall. A push that
+	// tops out fails the spawn exactly like an unspawnable position would.
+	if (escalation.ConsumePendingGarbageRow())
+	{
+		if (!board.PushGarbageRow(Random::Int(0, Board::WIDTH - 1)))
+		{
+			return false;
+		}
+	}
+
 	const Tetromino::Type type = nextQueue.front();
 	nextQueue.pop_front();
 	nextQueue.push_back(tetrominoBag.Next());
 	++spawnCount;
 
 	currentTetromino = { type, SpawnPosition };
+	currentPieceIsGolden = escalation.ShouldSpawnGoldenPiece();
 
 	ResetLockState();
 

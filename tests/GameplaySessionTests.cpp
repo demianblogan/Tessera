@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "gameplay/Board.h"
+#include "gameplay/EscalationDirector.h"
 #include "gameplay/GameplaySession.h"
 
 namespace
@@ -566,6 +567,65 @@ TEST_CASE("combo tracks consecutive clears exactly, and back-to-back / perfect-c
 	}
 
 	CHECK(sawAnyClear);
+}
+
+TEST_CASE("escalation tiers, a garbage row and a golden piece all arrive on schedule")
+{
+	GameplaySession session;
+
+	// Jump straight to each tier in one big Update() apiece rather than playing
+	// minutes of real pieces to get there: Update() only ever resolves one lock
+	// per call (gravity crashes the active piece down, then the lock-delay check
+	// at the end locks it), so a huge deltaTime just locks that one piece
+	// straight down and leaves a fresh one falling -- the board stays small and
+	// this stays unrelated to how long the hole-avoiding bot can actually survive.
+	session.Update(EscalationDirector::SpeedSurgeTierStart + 1.f);
+	(void)session.ConsumeEvents();
+	CHECK(session.GetEscalationTier() == EscalationDirector::Tier::SpeedSurge);
+
+	session.Update(EscalationDirector::GarbageTierStart - session.GetElapsedSeconds() + 1.f);
+	(void)session.ConsumeEvents();
+	CHECK(session.GetEscalationTier() == EscalationDirector::Tier::Garbage);
+
+	session.Update(EscalationDirector::ChaosTierStart - session.GetElapsedSeconds() + 1.f);
+	(void)session.ConsumeEvents();
+	CHECK(session.GetEscalationTier() == EscalationDirector::Tier::Chaos);
+
+	REQUIRE(session.GetPhase() != GameplaySession::Phase::GameOver);
+
+	// From here, play for real (hole-avoiding, so rows actually complete) --
+	// the Garbage tier needs genuine clears, the Chaos tier just enough spawns.
+	bool sawGarbageCell = false;
+	bool sawGoldenPiece = false;
+
+	for (int piece = 0; piece < 200 && session.GetPhase() != GameplaySession::Phase::GameOver
+		&& !(sawGarbageCell && sawGoldenPiece); piece++)
+	{
+		DropAvoidingHoles(session);
+		session.Update(1.0f);
+		(void)session.ConsumeEvents();
+
+		if (session.IsCurrentPieceGolden())
+		{
+			sawGoldenPiece = true;
+		}
+
+		if (!sawGarbageCell)
+		{
+			for (const Board::GridRow& row : session.GetBoard().GetGrid())
+			{
+				if (std::any_of(row.begin(), row.end(),
+					[](const Cell& cell) { return cell.kind == Cell::Kind::Garbage; }))
+				{
+					sawGarbageCell = true;
+					break;
+				}
+			}
+		}
+	}
+
+	CHECK(sawGarbageCell);
+	CHECK(sawGoldenPiece);
 }
 
 TEST_CASE("four rotations return the active piece to its spawn orientation")

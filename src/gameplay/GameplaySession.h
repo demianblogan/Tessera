@@ -8,6 +8,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include "Board.h"
+#include "EscalationDirector.h"
 #include "TSpinRule.h"
 #include "Tetromino.h"
 #include "TetrominoBag.h"
@@ -69,6 +70,12 @@ public:
 		bool tSpinMini = false;
 
 		bool leveledUp = false;
+
+		// Escalation (see EscalationDirector): a Speed Surge starting/ending, and
+		// whether this clear included a golden lock (its score was doubled).
+		bool speedSurgeStarted = false;
+		bool speedSurgeEnded = false;
+		bool goldenLineBonus = false;
 
 		bool gameOver = false;
 		GameOverReason gameOverReason = GameOverReason::None;
@@ -132,6 +139,11 @@ public:
 	[[nodiscard]] int GetLevel() const { return level; }
 	[[nodiscard]] int GetLinesCleared() const { return totalLinesCleared; }
 	[[nodiscard]] float GetElapsedSeconds() const { return elapsedSeconds; }
+
+	// True while the active piece is an escalation bonus piece (Chaos tier) --
+	// lost if it goes into Hold, since Hold swaps rather than spawns.
+	[[nodiscard]] bool IsCurrentPieceGolden() const { return currentPieceIsGolden; }
+	[[nodiscard]] EscalationDirector::Tier GetEscalationTier() const { return escalation.CurrentTier(); }
 
 private:
 	// Guideline scoring: points per line clear (Single/Double/Triple/Tetris, by
@@ -242,6 +254,9 @@ private:
 	TSpinRule::Result pendingTSpinResult = TSpinRule::Result::None;
 
 	GameOverReason gameOverReason = GameOverReason::None;
+
+	EscalationDirector escalation;
+	bool currentPieceIsGolden = false;
 
 	Events pendingEvents;
 };
