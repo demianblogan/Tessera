@@ -136,9 +136,4 @@ private:
 	// The combo streak's border bloom around the well (see EffectsController::
 	// GetComboGlowLevel), a real soft neon glow rather than a flat rectangle.
 	mutable NeonGlow comboGlow;
-
-	// The current escalation tier's standing border bloom (see
-	// EffectsController::GetTierGlowLevel) -- red from Garbage on, gold once
-	// Chaos is reached.
-	mutable NeonGlow tierGlow;
 };

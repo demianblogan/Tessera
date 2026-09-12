@@ -551,7 +551,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.garbagePushed)
 	{
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.garbageRow);
-		effects.TriggerGarbageImpact();
+		effects.TriggerGarbageWave();
 		effects.TriggerShake(0.15f, 7.f);
 	}
 }

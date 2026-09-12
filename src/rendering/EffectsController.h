@@ -87,18 +87,20 @@ public:
 	void SetCombo(int count);
 
 	// Escalation tier ambience (see EscalationDirector::Tier): 0 Base,
-	// 1 SpeedSurge, 2 Garbage, 3 Chaos. Called every frame -- the well's border
-	// glow eases toward the target tier's colour/strength instead of snapping,
-	// and `boardArea` is where Chaos's ambient motes spawn.
+	// 1 SpeedSurge, 2 Garbage, 3 Chaos. Called every frame. Doesn't draw
+	// anything on its own below Chaos -- it just tracks `boardArea` for where
+	// Chaos's ambient motes spawn; Garbage's own tell is the one-off wave from
+	// TriggerGarbageWave() below, not a standing effect.
 	void SetEscalationTier(int tierLevel, sf::FloatRect boardArea);
 
 	// A Speed Surge started: a reddish board-wide wash for `duration` (pass
 	// EscalationDirector::SurgeDuration), fading out over its second half.
 	void TriggerSpeedSurgeGlow(float duration);
 
-	// A garbage row was just pushed up from below: a brief red board flash,
-	// distinct from the standing Garbage-tier border glow.
-	void TriggerGarbageImpact();
+	// A garbage row was just pushed up from below: a bright band sweeps from
+	// the bottom of the well to the top over GarbageWaveDuration, like a
+	// shockwave from whatever just shoved the stack up.
+	void TriggerGarbageWave();
 
 	void Update(float deltaTime);
 
@@ -118,16 +120,13 @@ public:
 	// clears is holding or fading out. Drives the well's border glow.
 	[[nodiscard]] float GetComboGlowLevel() const { return comboGlowLevel; }
 
-	// 0..1, how strongly the current tier's ambience should show; the colour
-	// to show it in (red past Garbage, gold once Chaos is reached).
-	[[nodiscard]] float GetTierGlowLevel() const { return tierGlowLevel; }
-	[[nodiscard]] sf::Color GetTierGlowColour() const { return tierGlowColour; }
-
 	[[nodiscard]] bool HasSpeedSurgeGlow() const { return surgeGlowTimer > 0.f; }
 	[[nodiscard]] float GetSpeedSurgeGlowProgress() const;
 
-	[[nodiscard]] bool HasGarbageFlash() const { return garbageFlashTimer > 0.f; }
-	[[nodiscard]] float GetGarbageFlashProgress() const;
+	// 0 the instant TriggerGarbageWave() fires (band at the bottom of the
+	// well) rising to 1 as it reaches the top.
+	[[nodiscard]] bool HasGarbageWave() const { return garbageWaveTimer > 0.f; }
+	[[nodiscard]] float GetGarbageWaveProgress() const;
 
 private:
 	bool shakeEnabled = true;
@@ -146,17 +145,15 @@ private:
 	float comboTargetLevel = 0.f;
 	float comboGlowLevel = 0.f;
 
-	static constexpr float GarbageFlashDuration = 0.3f;
+	static constexpr float GarbageWaveDuration = 0.5f;
 	static constexpr float ChaosMotesPerSecond = 3.f;
 
 	int escalationTierLevel = 0;
 	sf::FloatRect ambientArea{};
-	float tierGlowLevel = 0.f;
-	sf::Color tierGlowColour{ 235, 90, 70 };
 	float chaosSpawnCarry = 0.f;
 
 	float surgeGlowTimer = 0.f;
 	float surgeGlowDuration = 1.f;
 
-	float garbageFlashTimer = 0.f;
+	float garbageWaveTimer = 0.f;
 };

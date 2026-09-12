@@ -68,7 +68,6 @@ BoardRenderer::BoardRenderer(Context& context)
 	: context(context)
 	, goldenGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 	, comboGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-	, tierGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
 	// No code
 }
@@ -77,7 +76,6 @@ void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
 {
 	goldenGlow.Update(deltaTime);
 	comboGlow.Update(deltaTime);
-	tierGlow.Update(deltaTime);
 
 	const int spawnCount = session.GetSpawnCount();
 
@@ -417,52 +415,10 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
-	// Escalation tier glow -- a standing border bloom once Garbage (or Chaos)
-	// is reached, so the run visibly looking more dangerous isn't only a
-	// once-off callout. Speed Surge gets its own board-wide reddish wash for
-	// each surge's duration instead (a border alone wouldn't read as "faster"),
-	// and a garbage-row push gets a sharp, brief red flash distinct from the
-	// standing glow.
+	// Speed Surge -- a reddish board-wide wash for the whole surge, so
+	// something stays visibly different while it's active, not just at the
+	// instant it starts.
 	// =====================================================
-
-	if (const float tierLevel = effects.GetTierGlowLevel(); tierLevel > 0.02f)
-	{
-		const sf::Color tierColour = effects.GetTierGlowColour();
-		const float pulse = 0.8f + 0.2f * std::sin(context.totalTime * 2.2f);
-		const sf::Color sourceTint(
-			static_cast<std::uint8_t>(tierColour.r * tierLevel * pulse),
-			static_cast<std::uint8_t>(tierColour.g * tierLevel * pulse),
-			static_cast<std::uint8_t>(tierColour.b * tierLevel * pulse));
-
-		const sf::FloatRect boardRect{ BoardPosition, { Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize } };
-		constexpr float Thickness = 6.f;
-		constexpr float GlowPadding = 22.f;
-		const sf::FloatRect glowArea{
-			{ boardRect.position.x - GlowPadding, boardRect.position.y - GlowPadding },
-			{ boardRect.size.x + GlowPadding * 2.f, boardRect.size.y + GlowPadding * 2.f } };
-
-		tierGlow.Draw(target, glowArea,
-			[&](sf::RenderTarget& buffer, const sf::RenderStates& states)
-			{
-				sf::RectangleShape edge;
-				edge.setFillColor(sf::Color::White);
-
-				edge.setSize({ boardRect.size.x + Thickness * 2.f, Thickness });
-				edge.setPosition({ boardRect.position.x - Thickness, boardRect.position.y - Thickness });
-				buffer.draw(edge, states);
-
-				edge.setPosition({ boardRect.position.x - Thickness, boardRect.position.y + boardRect.size.y });
-				buffer.draw(edge, states);
-
-				edge.setSize({ Thickness, boardRect.size.y + Thickness * 2.f });
-				edge.setPosition({ boardRect.position.x - Thickness, boardRect.position.y - Thickness });
-				buffer.draw(edge, states);
-
-				edge.setPosition({ boardRect.position.x + boardRect.size.x, boardRect.position.y - Thickness });
-				buffer.draw(edge, states);
-			},
-			sourceTint, false);
-	}
 
 	if (effects.HasSpeedSurgeGlow())
 	{
@@ -475,15 +431,34 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 		target.draw(wash, sf::RenderStates(sf::BlendAdd));
 	}
 
-	if (effects.HasGarbageFlash())
-	{
-		const float progress = effects.GetGarbageFlashProgress();
-		const auto alpha = static_cast<std::uint8_t>(progress * 150.f);
+	// =====================================================
+	// Garbage wave -- a bright band shockwaves from the bottom of the well
+	// (where the new row just shoved everything up) to the top, instead of a
+	// glow held for the rest of the run.
+	// =====================================================
 
-		sf::RectangleShape wash({ Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize });
-		wash.setPosition(BoardPosition);
-		wash.setFillColor(sf::Color(255, 70, 60, alpha));
-		target.draw(wash, sf::RenderStates(sf::BlendAdd));
+	if (effects.HasGarbageWave())
+	{
+		const float progress = effects.GetGarbageWaveProgress();
+		constexpr float BandHeight = BlockSize * 1.6f;
+
+		const float bottomY = BoardPosition.y + Board::VisibleHeight * BlockSize + BandHeight * 0.5f;
+		const float topY = BoardPosition.y - BandHeight * 0.5f;
+		const float centreY = bottomY + progress * (topY - bottomY);
+
+		const auto alpha = static_cast<std::uint8_t>((1.f - progress * 0.3f) * 150.f);
+
+		sf::RectangleShape band({ Board::WIDTH * BlockSize, BandHeight });
+		band.setOrigin({ 0.f, BandHeight * 0.5f });
+		band.setPosition({ BoardPosition.x, centreY });
+		band.setFillColor(sf::Color(255, 80, 60, alpha));
+		target.draw(band, sf::RenderStates(sf::BlendAdd));
+
+		sf::RectangleShape core({ Board::WIDTH * BlockSize, 4.f });
+		core.setOrigin({ 0.f, 2.f });
+		core.setPosition({ BoardPosition.x, centreY });
+		core.setFillColor(sf::Color(255, 210, 200, static_cast<std::uint8_t>(std::min(255.f, alpha * 1.4f))));
+		target.draw(core, sf::RenderStates(sf::BlendAdd));
 	}
 
 	// =====================================================
