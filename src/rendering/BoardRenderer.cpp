@@ -378,48 +378,6 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
-	// Shards -- the row-clear shatter, the T-spin swirl, the Perfect Clear
-	// burst. Fragments of the block spritesheet (textureIndex >= 0) tumble and
-	// fade; plain colour dots (textureIndex < 0) do the same without a sprite.
-	// =====================================================
-
-	for (const EffectsController::Shard& shard : effects.GetShards())
-	{
-		const float lifeT = std::clamp(shard.life / shard.maxLife, 0.f, 1.f);
-		const auto alpha = static_cast<std::uint8_t>(lifeT * 255.f);
-
-		if (shard.textureIndex >= 0)
-		{
-			blockSprite.setTextureRect(
-				{
-					{ shard.textureIndex * SpriteSize, 0 },
-					{ SpriteSize, SpriteSize }
-				}
-			);
-			blockSprite.setScale({ BlockSize / 16.f * shard.size, BlockSize / 16.f * shard.size });
-			blockSprite.setOrigin({ SpriteSize * 0.5f, SpriteSize * 0.5f });
-			blockSprite.setRotation(sf::degrees(shard.rotation));
-			blockSprite.setPosition(shard.position);
-			blockSprite.setColor(sf::Color(255, 255, 255, alpha));
-			target.draw(blockSprite);
-		}
-		else
-		{
-			sf::RectangleShape dot({ shard.size * BlockSize, shard.size * BlockSize });
-			dot.setOrigin({ dot.getSize().x * 0.5f, dot.getSize().y * 0.5f });
-			dot.setRotation(sf::degrees(shard.rotation));
-			dot.setPosition(shard.position);
-			dot.setFillColor(sf::Color(shard.tint.r, shard.tint.g, shard.tint.b, alpha));
-			target.draw(dot, sf::RenderStates(sf::BlendAdd));
-		}
-	}
-
-	blockSprite.setRotation(sf::degrees(0.f));
-	blockSprite.setOrigin({ 0.f, 0.f });
-	blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
-	blockSprite.setColor(sf::Color::White);
-
-	// =====================================================
 	// Perfect Clear -- a slow-fading golden wash over the whole board, timed
 	// with the shard burst TriggerPerfectClearBurst spawned into GetShards().
 	// =====================================================
@@ -815,6 +773,45 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				}
 			);
 			target.draw(blockSprite);
+		}
+	}
+
+	// =====================================================
+	// Shards -- the row-clear shatter, the T-spin swirl, the Perfect Clear
+	// burst, impact dust. Fragments of the block spritesheet (textureIndex >=
+	// 0) tumble and fade; plain colour dots (textureIndex < 0) do the same
+	// without a sprite. Drawn last so dust and debris read as being flung out
+	// in front of the piece/board, not tucked behind it.
+	// =====================================================
+
+	for (const EffectsController::Shard& shard : effects.GetShards())
+	{
+		const float lifeT = std::clamp(shard.life / shard.maxLife, 0.f, 1.f);
+		const auto alpha = static_cast<std::uint8_t>(lifeT * 255.f);
+
+		if (shard.textureIndex >= 0)
+		{
+			blockSprite.setTextureRect(
+				{
+					{ shard.textureIndex * SpriteSize, 0 },
+					{ SpriteSize, SpriteSize }
+				}
+			);
+			blockSprite.setScale({ BlockSize / 16.f * shard.size, BlockSize / 16.f * shard.size });
+			blockSprite.setOrigin({ SpriteSize * 0.5f, SpriteSize * 0.5f });
+			blockSprite.setRotation(sf::degrees(shard.rotation));
+			blockSprite.setPosition(shard.position);
+			blockSprite.setColor(sf::Color(255, 255, 255, alpha));
+			target.draw(blockSprite);
+		}
+		else
+		{
+			sf::RectangleShape dot({ shard.size * BlockSize, shard.size * BlockSize });
+			dot.setOrigin({ dot.getSize().x * 0.5f, dot.getSize().y * 0.5f });
+			dot.setRotation(sf::degrees(shard.rotation));
+			dot.setPosition(shard.position);
+			dot.setFillColor(sf::Color(shard.tint.r, shard.tint.g, shard.tint.b, alpha));
+			target.draw(dot, sf::RenderStates(sf::BlendAdd));
 		}
 	}
 }
