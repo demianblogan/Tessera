@@ -357,9 +357,10 @@ void GameplayState::TryHold()
 
 	if (session.Hold())
 	{
-		// Placeholder cue borrowed from rotate -- a dedicated hold sound/rumble
-		// lands with the rest of the new-action feedback.
+		// Placeholder sound borrowed from rotate -- a dedicated hold sound
+		// lands with v1.7.0's audio pass. The rumble is its own, though.
 		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.hold);
 		sceneMotion.Nudge({ 0.f, -HoldNudge });
 
 		// Fly the outgoing piece to the HOLD box; if one was already held, fly
@@ -418,6 +419,7 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.rowsCleared || events.tSpin)
 	{
 		ShowClearCallout(events);
+		FireClearHaptics(events);
 	}
 
 	if (events.leveledUp)
@@ -522,6 +524,26 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 	if (!lines.empty())
 	{
 		boardCallouts.Show(std::move(lines), rank, accent);
+	}
+}
+
+void GameplayState::FireClearHaptics(const GameplaySession::Events& events)
+{
+	// One pulse for whichever is the headline reason this clear stands out --
+	// the row-count pulse (row_cleared / tetris) already fired separately, at
+	// lock time, before this verdict was even decided.
+	if (events.perfectClear)
+	{
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.perfectClear);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.perfectClearLightbar, 0.6f, 2);
+	}
+	else if (events.backToBack)
+	{
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.backToBack);
+	}
+	else if (events.tSpin)
+	{
+		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.tSpin);
 	}
 }
 

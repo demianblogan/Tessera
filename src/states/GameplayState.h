@@ -87,6 +87,7 @@ private:
 	void TryHold();
 	void ReactToEvents(const GameplaySession::Events& events);
 	void ShowClearCallout(const GameplaySession::Events& events);
+	void FireClearHaptics(const GameplaySession::Events& events);
 
 	// Snapshot the current frame and hand it to a new PauseState, so the pause
 	// screen can "solidify" the frozen picture behind its menu.

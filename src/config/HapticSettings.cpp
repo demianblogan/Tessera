@@ -120,6 +120,10 @@ HapticSettings::HapticSettings(const std::filesystem::path& path)
 		ReadRumble(*rumble, "tetris", tetris);
 		ReadRumble(*rumble, "level_up", levelUp);
 		ReadRumble(*rumble, "game_over", gameOver);
+		ReadRumble(*rumble, "hold", hold);
+		ReadRumble(*rumble, "t_spin", tSpin);
+		ReadRumble(*rumble, "back_to_back", backToBack);
+		ReadRumble(*rumble, "perfect_clear", perfectClear);
 	}
 
 	if (const auto lightbar = data.find("lightbar"); lightbar != data.end() && lightbar->is_object())
@@ -127,6 +131,7 @@ HapticSettings::HapticSettings(const std::filesystem::path& path)
 		ReadColour(*lightbar, "menu", menuLightbar);
 		ReadColour(*lightbar, "row_clear", rowClearLightbar);
 		ReadColour(*lightbar, "game_over", gameOverLightbar);
+		ReadColour(*lightbar, "perfect_clear", perfectClearLightbar);
 
 		// Keep every [r,g,b] entry by key, so menus can look their own up.
 		for (const auto& [key, value] : lightbar->items())
