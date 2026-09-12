@@ -5,12 +5,11 @@
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <utility>
 
-#include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -25,23 +24,22 @@
 #include "../settings/SettingsManager.h"
 #include "../ui/ColourUtils.h"
 #include "../ui/Easing.h"
+#include "../ui/TextLayout.h"
 #include "MenuShell.h"
 
 namespace
 {
-	constexpr unsigned int PromptSize = 34;
-	constexpr sf::Vector2f PromptCentre{ 960.f, 260.f };
-	constexpr float PromptDropHeight = 260.f;
-	constexpr float PromptFallSpread = 0.9f;   // total stagger across every glyph
+	constexpr unsigned int PromptSize = 46;
+	constexpr sf::Vector2f PromptCentre{ 960.f, 190.f };
+	constexpr float PromptDropHeight = 220.f;
+	constexpr float PromptFallSpread = 0.9f;   // total stagger across every letter
 
 	constexpr unsigned int ButtonTextSize = 46;
-	constexpr sf::Vector2f ColumnTopLeft{ 800.f, 420.f };
+	constexpr sf::Vector2f ColumnTopLeft{ 800.f, 360.f };
 	constexpr float RowGap = 110.f;
 
-	constexpr float HighlightSpeed = 8.f;       // 1/seconds to reach the target highlight
+	constexpr float HighlightSpeed = 8.f;   // 1/seconds to reach the target highlight
 	constexpr float HighlightScale = 1.15f;
-	constexpr float HighlightHaloScale = 1.12f; // extra, on top of HighlightScale
-	constexpr float HighlightHaloAlpha = 90.f;
 	constexpr float RestDesaturate = 0.35f;
 	constexpr float RestDarken = 0.55f;
 
@@ -54,6 +52,11 @@ namespace
 			UI::ToByte(static_cast<float>(a.g) + (static_cast<float>(b.g) - a.g) * t),
 			UI::ToByte(static_cast<float>(a.b) + (static_cast<float>(b.b) - a.b) * t),
 			UI::ToByte(static_cast<float>(a.a) + (static_cast<float>(b.a) - a.a) * t) };
+	}
+
+	[[nodiscard]] sf::Color RestColourFor(Language language)
+	{
+		return UI::Darken(UI::Desaturate(LanguageAccent(language), RestDesaturate), RestDarken);
 	}
 
 	[[nodiscard]] std::string_view LanguageNameKey(Language language)
@@ -109,6 +112,15 @@ LanguagePickerState::LanguagePickerState(Context& context)
 	, backgroundSprite(context.textures.Get(Assets::TextureID::MenuBackground))
 	, aurora(context.shaders.Get(Assets::ShaderID::MenuAurora))
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
+	// Placeholder text -- BuildPrompt() below fully rebuilds string, layout
+	// and colour for every entry; this only exists to give sf::Text (which
+	// has no default constructor) something to hold until then.
+	, segments{ {
+		{ Language::English, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f },
+		{ Language::Spanish, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f },
+		{ Language::German, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f },
+		{ Language::Russian, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f },
+		{ Language::Ukrainian, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f } } }
 	, column(context.fonts.Get(Assets::FontID::MenuList), ButtonTextSize,
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
 {
@@ -139,58 +151,88 @@ void LanguagePickerState::BuildPrompt()
 	const std::array<sf::String, LanguageCount> lines = LoadPromptLines();
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
-	sf::String divider;
-	divider += U' ';
-	divider += U' ';
-	divider += static_cast<char32_t>(0x00b7);
-	divider += U' ';
-	divider += U' ';
+	sf::String dividerString;
+	dividerString += U' ';
+	dividerString += U' ';
+	dividerString += static_cast<char32_t>(0x00b7);
+	dividerString += U' ';
+	dividerString += U' ';
 
-	promptGlyphs.clear();
+	introGlyphs.clear();
+	dividers.clear();
+
 	float x = 0.f;
-
-	const auto appendCodepoint = [&](char32_t codepoint, int segmentIndex)
-	{
-		sf::String single;
-		single += codepoint;
-
-		promptGlyphs.push_back(PromptGlyph{ sf::Text(font, single, PromptSize), segmentIndex, x, PromptCentre.y, 0.f });
-		x += font.getGlyph(codepoint, PromptSize, false).advance;
-	};
 
 	for (std::size_t i = 0; i < LanguageCount; ++i)
 	{
-		const float segmentStartX = x;
+		segments[i].language = AllLanguages[i];
+		segments[i].text = sf::Text(font, lines[i], PromptSize);
+		segments[i].highlight = 0.f;
+
+		// Per-letter breakdown for the intro fall, starting at the same x the
+		// combined phrase below will occupy.
+		float charX = x;
 		for (std::size_t c = 0; c < lines[i].getSize(); ++c)
 		{
-			appendCodepoint(lines[i][c], static_cast<int>(i));
+			const char32_t codepoint = lines[i][c];
+			sf::String single;
+			single += codepoint;
+
+			introGlyphs.push_back(
+				IntroGlyph{ sf::Text(font, single, PromptSize), i, charX, PromptCentre.y, 0.f });
+			charX += font.getGlyph(codepoint, PromptSize, false).advance;
 		}
 
-		segments[i].language = AllLanguages[i];
-		segments[i].pivotX = (segmentStartX + x) * 0.5f;
-		segments[i].highlight = 0.f;
+		x += segments[i].text.getLocalBounds().size.x;
 
 		if (i + 1 < LanguageCount)
 		{
-			for (std::size_t c = 0; c < divider.getSize(); ++c)
-			{
-				appendCodepoint(divider[c], -1);
-			}
+			sf::Text divider(font, dividerString, PromptSize);
+			x += divider.getLocalBounds().size.x;
+			dividers.push_back(std::move(divider));
 		}
 	}
 
-	const float startX = PromptCentre.x - x * 0.5f;
-	fallStagger = promptGlyphs.empty() ? 0.f : PromptFallSpread / static_cast<float>(promptGlyphs.size());
+	const float startXShift = PromptCentre.x - x * 0.5f;
 
-	for (std::size_t i = 0; i < promptGlyphs.size(); ++i)
+	// Now that the row's total width is known, place the steady-state phrases
+	// (origin at their own centre, so a later setScale grows them in place)
+	// and the dividers between them.
+	float cursor = 0.f;
+	std::size_t dividerIndex = 0;
+	for (std::size_t i = 0; i < LanguageCount; ++i)
 	{
-		promptGlyphs[i].restX += startX;
-		promptGlyphs[i].startDelay = static_cast<float>(i) * fallStagger;
+		const sf::FloatRect bounds = segments[i].text.getLocalBounds();
+		UI::TextLayout::CentreOrigin(segments[i].text);
+		segments[i].text.setPosition({ cursor + bounds.size.x * 0.5f + startXShift, PromptCentre.y });
+		cursor += bounds.size.x;
+
+		if (i + 1 < LanguageCount)
+		{
+			sf::Text& divider = dividers[dividerIndex++];
+			const sf::FloatRect divBounds = divider.getLocalBounds();
+			UI::TextLayout::CentreOrigin(divider);
+			divider.setFillColor(DividerColour);
+			divider.setPosition({ cursor + divBounds.size.x * 0.5f + startXShift, PromptCentre.y });
+			cursor += divBounds.size.x;
+		}
 	}
-	for (PromptSegment& segment : segments)
+
+	fallStagger = introGlyphs.empty() ? 0.f : PromptFallSpread / static_cast<float>(introGlyphs.size());
+	for (std::size_t i = 0; i < introGlyphs.size(); ++i)
 	{
-		segment.pivotX += startX;
+		introGlyphs[i].restX += startXShift;
+		introGlyphs[i].startDelay = static_cast<float>(i) * fallStagger;
 	}
+
+	introTotalDuration = introGlyphs.empty()
+		? 0.f
+		: static_cast<float>(introGlyphs.size() - 1) * fallStagger + fallDuration;
+}
+
+bool LanguagePickerState::IntroDone() const
+{
+	return introElapsed >= introTotalDuration;
 }
 
 void LanguagePickerState::SetHovered(Language language)
@@ -250,7 +292,7 @@ void LanguagePickerState::HandleEvent(const sf::Event& event)
 
 void LanguagePickerState::Update(float deltaTime)
 {
-	promptElapsed += deltaTime;
+	introElapsed += deltaTime;
 
 	for (PromptSegment& segment : segments)
 	{
@@ -285,51 +327,39 @@ void LanguagePickerState::Render(sf::RenderTarget& target)
 	backdrop.Render(target);
 	sparks.Render(target);
 
-	for (const PromptGlyph& glyph : promptGlyphs)
+	if (!IntroDone())
 	{
-		if (promptElapsed <= glyph.startDelay)
+		for (IntroGlyph& glyph : introGlyphs)
 		{
-			continue;   // hasn't started falling yet -- not drawn at all
-		}
-
-		const float rawT = (promptElapsed - glyph.startDelay) / fallDuration;
-		const float eased = UI::Easing::EaseInCubic(rawT);
-		const sf::Vector2f fallenPosition{ glyph.restX, glyph.restY - PromptDropHeight * (1.f - eased) };
-
-		sf::Color colour = DividerColour;
-		float scale = 1.f;
-		sf::Vector2f position = fallenPosition;
-
-		if (glyph.segmentIndex >= 0)
-		{
-			const PromptSegment& segment = segments[static_cast<std::size_t>(glyph.segmentIndex)];
-			const sf::Color accent = LanguageAccent(segment.language);
-			const sf::Color restColour = UI::Darken(UI::Desaturate(accent, RestDesaturate), RestDarken);
-
-			colour = LerpColour(restColour, accent, segment.highlight);
-			scale = UI::Easing::Lerp(1.f, HighlightScale, segment.highlight);
-
-			const sf::Vector2f pivot{ segment.pivotX, PromptCentre.y };
-			position = pivot + (fallenPosition - pivot) * scale;
-
-			if (segment.highlight > 0.02f)
+			if (introElapsed <= glyph.startDelay)
 			{
-				const float haloScale = scale * HighlightHaloScale;
-				sf::Text halo = glyph.text;
-				halo.setScale({ haloScale, haloScale });
-				sf::Color haloColour = accent;
-				haloColour.a = static_cast<std::uint8_t>(HighlightHaloAlpha * segment.highlight);
-				halo.setFillColor(haloColour);
-				halo.setPosition(pivot + (fallenPosition - pivot) * haloScale);
-				target.draw(halo, sf::RenderStates(sf::BlendAdd));
+				continue;   // hasn't started falling yet -- not drawn at all
 			}
+
+			const float rawT = (introElapsed - glyph.startDelay) / fallDuration;
+			const float eased = UI::Easing::EaseInCubic(rawT);
+
+			glyph.text.setFillColor(RestColourFor(segments[glyph.segmentIndex].language));
+			glyph.text.setPosition({ glyph.restX, glyph.restY - PromptDropHeight * (1.f - eased) });
+			target.draw(glyph.text);
+		}
+	}
+	else
+	{
+		for (PromptSegment& segment : segments)
+		{
+			const sf::Color accent = LanguageAccent(segment.language);
+			const float scale = UI::Easing::Lerp(1.f, HighlightScale, segment.highlight);
+
+			segment.text.setFillColor(LerpColour(RestColourFor(segment.language), accent, segment.highlight));
+			segment.text.setScale({ scale, scale });
+			target.draw(segment.text);
 		}
 
-		sf::Text glyphText = glyph.text;
-		glyphText.setScale({ scale, scale });
-		glyphText.setFillColor(colour);
-		glyphText.setPosition(position);
-		target.draw(glyphText);
+		for (const sf::Text& divider : dividers)
+		{
+			target.draw(divider);
+		}
 	}
 
 	column.Render(target);

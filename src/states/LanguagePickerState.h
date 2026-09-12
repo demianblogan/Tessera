@@ -27,11 +27,17 @@ namespace sf
 // a "choose your language" line -- one phrase per language, dropping in
 // letter by letter like the main-menu title -- and a vertical list of the 5
 // languages that flies in from below at the same time. Each language has its
-// own accent colour (LanguageAccent); hovering or selecting one brightens,
-// grows and glows the matching phrase so the connection is obvious. Picking
-// one applies it, persists the choice, and hands off to MenuShell; Options >
-// Language is how a player changes their mind afterwards -- this screen
-// never reappears on its own.
+// own accent colour (LanguageAccent); hovering or selecting one brightens and
+// grows the matching phrase so the connection is obvious. Picking one applies
+// it, persists the choice, and hands off to MenuShell; Options > Language is
+// how a player changes their mind afterwards -- this screen never reappears
+// on its own.
+//
+// The intro (letters falling in) uses one sf::Text per character, which only
+// exist and draw while it plays. Once every letter has landed, the whole
+// prompt switches to one sf::Text per language phrase (steady() becomes
+// true) -- far fewer draws for a screen that otherwise just sits idle
+// waiting for a click.
 class LanguagePickerState final : public State
 {
 public:
@@ -44,27 +50,29 @@ public:
 private:
 	static constexpr float FadeDuration = 0.4f;
 
-	// One falling letter of the prompt line. Belongs to a language's phrase,
-	// or -- for the "  ·  " dividers between phrases -- to none.
-	struct PromptGlyph
+	// One falling letter of the intro. Only used until introDone().
+	struct IntroGlyph
 	{
 		sf::Text text;
-		int segmentIndex = -1;
+		std::size_t segmentIndex = 0;
 		float restX = 0.f;
 		float restY = 0.f;
 		float startDelay = 0.f;
 	};
 
-	// One phrase of the prompt line ("Choose your language", ...), the
-	// language it names, and how brightly it is currently picked out.
+	// One phrase of the prompt line ("Choose your language", ...): the
+	// language it names, its steady-state combined text (origin at its own
+	// centre, so scaling grows it in place), and how brightly it is picked
+	// out right now.
 	struct PromptSegment
 	{
 		Language language = Language::English;
-		float pivotX = 0.f;
-		float highlight = 0.f;   // eased 0..1, 1 = this language is selected
+		sf::Text text;
+		float highlight = 0.f;   // eased 0..1, 1 = this language is selected/hovered
 	};
 
 	void BuildPrompt();
+	[[nodiscard]] bool IntroDone() const;
 	void SetHovered(Language language);
 	void Choose(Language language);
 	void Finish();
@@ -77,12 +85,15 @@ private:
 	UI::MenuBackdrop backdrop;
 	UI::MenuSparks sparks;
 
-	std::vector<PromptGlyph> promptGlyphs;
-	std::array<PromptSegment, LanguageCount> segments;
-	Language hoveredLanguage = Language::English;
-	float promptElapsed = 0.f;
+	std::vector<IntroGlyph> introGlyphs;
+	float introElapsed = 0.f;
 	float fallDuration = 0.35f;
 	float fallStagger = 0.01f;
+	float introTotalDuration = 0.f;
+
+	std::array<PromptSegment, LanguageCount> segments;
+	std::vector<sf::Text> dividers;   // static "  ·  " marks between phrases
+	Language hoveredLanguage = Language::English;
 
 	UI::MenuButtonColumn column;
 
