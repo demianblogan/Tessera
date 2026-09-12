@@ -1,5 +1,7 @@
 #include "StateMachine.h"
 
+#include <algorithm>
+
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
@@ -31,6 +33,18 @@ bool StateMachine::HasPendingChanges() const noexcept
 
 void StateMachine::ApplyPendingChanges()
 {
+	if (pendingTransitions.empty())
+	{
+		return;
+	}
+
+	std::vector<State*> before;
+	before.reserve(states.size());
+	for (const std::unique_ptr<State>& state : states)
+	{
+		before.push_back(state.get());
+	}
+
 	for (PendingTransition& transition : pendingTransitions)
 	{
 		switch (transition.type)
@@ -53,6 +67,20 @@ void StateMachine::ApplyPendingChanges()
 	}
 
 	pendingTransitions.clear();
+
+	// A state that was already on the stack and is now back on top was revealed
+	// by a pop (not freshly pushed), so let it resume.
+	if (!states.empty())
+	{
+		State* top = states.back().get();
+		const bool revealed = !before.empty() && before.back() != top
+			&& std::find(before.begin(), before.end(), top) != before.end();
+
+		if (revealed)
+		{
+			top->OnResume();
+		}
+	}
 }
 
 State* StateMachine::GetCurrentState()

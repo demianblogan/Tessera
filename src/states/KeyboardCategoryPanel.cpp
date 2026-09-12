@@ -35,7 +35,8 @@ KeyboardCategoryPanel::KeyboardCategoryPanel(Context& context, sf::Color accent)
 		&ControlSettings::softDrop,
 		&ControlSettings::hardDrop,
 		&ControlSettings::rotateClockwise,
-		&ControlSettings::rotateCounterClockwise };
+		&ControlSettings::rotateCounterClockwise,
+		&ControlSettings::hold };
 
 	BuildRows();
 }
@@ -48,7 +49,8 @@ void KeyboardCategoryPanel::BuildRows()
 	const std::array<std::string_view, ActionCount> labels{
 		TextKey::Options::KeyMoveLeft, TextKey::Options::KeyMoveRight,
 		TextKey::Options::KeySoftDrop, TextKey::Options::KeyHardDrop,
-		TextKey::Options::KeyRotateCw, TextKey::Options::KeyRotateCcw };
+		TextKey::Options::KeyRotateCw, TextKey::Options::KeyRotateCcw,
+		TextKey::Options::KeyHold };
 
 	rows.clear();
 	for (std::size_t i = 0; i < ActionCount; ++i)

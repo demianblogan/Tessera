@@ -37,8 +37,8 @@ void SettingsManager::Load()
 	unsigned int resolutionWidth = 0;
 	unsigned int resolutionHeight = 0;
 
-	// The six rebindable gameplay keys, stored as raw scancode integers.
-	std::array<int, 6> keys{};
+	// The rebindable gameplay keys, stored as raw scancode integers.
+	std::array<int, 7> keys{};
 
 	file >> formatVersion
 		>> parsed.verticalSyncEnabled
@@ -49,7 +49,7 @@ void SettingsManager::Load()
 		>> windowModeValue
 		>> resolutionWidth
 		>> resolutionHeight
-		>> keys[0] >> keys[1] >> keys[2] >> keys[3] >> keys[4] >> keys[5]
+		>> keys[0] >> keys[1] >> keys[2] >> keys[3] >> keys[4] >> keys[5] >> keys[6]
 		>> parsed.gamepadVibrationEnabled
 		>> parsed.gamepadLightbarEnabled
 		>> parsed.screenShakeEnabled
@@ -59,7 +59,11 @@ void SettingsManager::Load()
 		>> parsed.hudLines
 		>> parsed.hudLevel
 		>> parsed.hudTime
-		>> parsed.hudControlsLegend;
+		>> parsed.hudControlsLegend
+		>> parsed.ghostPieceEnabled
+		>> parsed.holdEnabled
+		>> parsed.nextQueueLength
+		>> parsed.sevenBagEnabled;
 
 	const auto scancodeInRange = [](int value)
 	{
@@ -72,6 +76,7 @@ void SettingsManager::Load()
 		windowModeValue >= 0 && windowModeValue <= 2 &&
 		parsed.soundVolume <= MaxVolumeStep &&
 		parsed.musicVolume <= MaxVolumeStep &&
+		parsed.nextQueueLength >= MinNextQueueLength && parsed.nextQueueLength <= MaxNextQueueLength &&
 		std::all_of(keys.begin(), keys.end(), scancodeInRange);
 
 	if (!fileIsUsable)
@@ -90,6 +95,7 @@ void SettingsManager::Load()
 	parsed.controls.hardDrop = static_cast<sf::Keyboard::Scancode>(keys[3]);
 	parsed.controls.rotateClockwise = static_cast<sf::Keyboard::Scancode>(keys[4]);
 	parsed.controls.rotateCounterClockwise = static_cast<sf::Keyboard::Scancode>(keys[5]);
+	parsed.controls.hold = static_cast<sf::Keyboard::Scancode>(keys[6]);
 	settings = parsed;
 }
 
@@ -123,6 +129,7 @@ void SettingsManager::Save() const
 		file << static_cast<int>(settings.controls.hardDrop) << '\n';
 		file << static_cast<int>(settings.controls.rotateClockwise) << '\n';
 		file << static_cast<int>(settings.controls.rotateCounterClockwise) << '\n';
+		file << static_cast<int>(settings.controls.hold) << '\n';
 		file << settings.gamepadVibrationEnabled << '\n';
 		file << settings.gamepadLightbarEnabled << '\n';
 		file << settings.screenShakeEnabled << '\n';
@@ -133,6 +140,10 @@ void SettingsManager::Save() const
 		file << settings.hudLevel << '\n';
 		file << settings.hudTime << '\n';
 		file << settings.hudControlsLegend << '\n';
+		file << settings.ghostPieceEnabled << '\n';
+		file << settings.holdEnabled << '\n';
+		file << settings.nextQueueLength << '\n';
+		file << settings.sevenBagEnabled << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));

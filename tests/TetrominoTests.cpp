@@ -73,6 +73,41 @@ TEST_CASE("counter-clockwise is the inverse of clockwise")
 	CHECK(piece.GetRotationIndex() == 3);
 }
 
+TEST_CASE("GetBlockPositions(rotationIndex) matches rotating there, without moving the piece")
+{
+	for (int type = 0; type < 7; type++)
+	{
+		Tetromino piece(static_cast<Tetromino::Type>(type), { 5, 6 });
+
+		for (int steps = 0; steps < 4; steps++)
+		{
+			Tetromino rotated = piece;
+			for (int i = 0; i < steps; i++)
+			{
+				rotated.RotateClockwise();
+			}
+
+			CHECK(piece.GetBlockPositions(steps) == rotated.GetBlockPositions());
+		}
+
+		// The trial query left the piece untouched.
+		CHECK(piece.GetRotationIndex() == 0);
+	}
+}
+
+TEST_CASE("GetBlockPositions(rotationIndex, offset) shifts every block")
+{
+	const Tetromino piece(Tetromino::Type::L, { 2, 2 });
+
+	const auto plain = piece.GetBlockPositions(1);
+	const auto shifted = piece.GetBlockPositions(1, { -1, 3 });
+
+	for (std::size_t i = 0; i < plain.size(); i++)
+	{
+		CHECK(shifted[i] == plain[i] + sf::Vector2i{ -1, 3 });
+	}
+}
+
 TEST_CASE("the O piece is unchanged by rotation")
 {
 	Tetromino piece(Tetromino::Type::O, { 0, 0 });

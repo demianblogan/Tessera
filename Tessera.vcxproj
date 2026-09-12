@@ -118,6 +118,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
   <ItemGroup>
     <ClCompile Include="src\gameplay\TetrominoBag.cpp" />
     <ClCompile Include="src\gameplay\GameplaySession.cpp" />
+    <ClCompile Include="src\gameplay\EscalationDirector.cpp" />
+    <ClCompile Include="src\rendering\BoardCallouts.cpp" />
     <ClCompile Include="src\rendering\BoardRenderer.cpp" />
     <ClCompile Include="src\rendering\EffectsController.cpp" />
     <ClCompile Include="src\rendering\GameplayHud.cpp" />
@@ -136,8 +138,14 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\config\HapticSettings.cpp" />
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
+    <ClCompile Include="src\gameplay\PieceData.cpp" />
+    <ClCompile Include="src\gameplay\PieceDataFile.cpp" />
+    <ClCompile Include="src\gameplay\KickData.cpp" />
+    <ClCompile Include="src\gameplay\TSpinRule.cpp" />
+    <ClCompile Include="src\gameplay\KickDataFile.cpp" />
     <ClCompile Include="src\input\DirectionalRepeater.cpp" />
     <ClCompile Include="src\input\GamepadManager.cpp" />
+    <ClCompile Include="src\input\GamepadPrompts.cpp" />
     <ClCompile Include="src\input\gamepad\GamepadHaptics.cpp" />
     <!-- Vendored: Ohjurot/DualSense-Windows (MIT), raw-HID DualSense support.
          Third-party, so it builds at /W3 without warnings-as-errors. -->
@@ -217,6 +225,8 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
   <ItemGroup>
     <ClInclude Include="src\gameplay\TetrominoBag.h" />
     <ClInclude Include="src\gameplay\GameplaySession.h" />
+    <ClInclude Include="src\gameplay\EscalationDirector.h" />
+    <ClInclude Include="src\rendering\BoardCallouts.h" />
     <ClInclude Include="src\rendering\BoardRenderer.h" />
     <ClInclude Include="src\rendering\EffectsController.h" />
     <ClInclude Include="src\rendering\GameplayHud.h" />
@@ -235,9 +245,15 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\gameplay\Board.h" />
     <ClInclude Include="src\gameplay\Tetromino.h" />
     <ClInclude Include="src\gameplay\TetrominoShapes.h" />
+    <ClInclude Include="src\gameplay\PieceData.h" />
+    <ClInclude Include="src\gameplay\PieceDataFile.h" />
+    <ClInclude Include="src\gameplay\KickData.h" />
+    <ClInclude Include="src\gameplay\TSpinRule.h" />
+    <ClInclude Include="src\gameplay\KickDataFile.h" />
     <ClInclude Include="src\input\ActionMap.h" />
     <ClInclude Include="src\input\DirectionalRepeater.h" />
     <ClInclude Include="src\input\GamepadManager.h" />
+    <ClInclude Include="src\input\GamepadPrompts.h" />
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h" />
     <ClInclude Include="src\input\gamepad\HapticPulse.h" />
     <ClInclude Include="src\config\HapticSettings.h" />

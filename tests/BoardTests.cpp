@@ -21,6 +21,33 @@ namespace
 	}
 }
 
+TEST_CASE("the grid is the visible field plus a hidden buffer above it")
+{
+	CHECK(Board::VisibleHeight == 20);
+	CHECK(Board::HEIGHT == Board::BufferHeight + Board::VisibleHeight);
+	CHECK(Board::BufferHeight > 0);
+}
+
+TEST_CASE("IsEmpty is true for a fresh board and false once anything locks")
+{
+	Board board;
+
+	CHECK(board.IsEmpty());
+
+	LockO(board, 0, 0);
+	CHECK_FALSE(board.IsEmpty());
+}
+
+TEST_CASE("IsEmpty is true again once every locked cell clears")
+{
+	Board board;
+	FillBottomTwoRows(board);
+	CHECK_FALSE(board.IsEmpty());
+
+	board.ClearRows(board.FindFullRows());
+	CHECK(board.IsEmpty());
+}
+
 TEST_CASE("a fresh board has no occupied cells")
 {
 	const Board board;
@@ -113,6 +140,76 @@ TEST_CASE("ClearRows with an empty list changes nothing")
 	board.ClearRows({});
 
 	CHECK(board.FindFullRows().size() == 2);
+}
+
+TEST_CASE("LockTetromino marks every cell Golden when asked, Normal otherwise")
+{
+	Board board;
+	board.LockTetromino(Tetromino(Tetromino::Type::O, { 0, 0 }), true);
+
+	CHECK(board.GetGrid()[0][1].kind == Cell::Kind::Golden);
+	CHECK(board.GetGrid()[1][2].kind == Cell::Kind::Golden);
+
+	board.LockTetromino(Tetromino(Tetromino::Type::O, { 4, 0 }));
+	CHECK(board.GetGrid()[0][5].kind == Cell::Kind::Normal);
+}
+
+TEST_CASE("RowsContainGolden is true only for rows holding a golden lock")
+{
+	Board board;
+	FillBottomTwoRows(board);
+
+	CHECK_FALSE(board.RowsContainGolden({ Board::HEIGHT - 2, Board::HEIGHT - 1 }));
+
+	board.LockTetromino(Tetromino(Tetromino::Type::O, { -1, 0 }), true);
+
+	CHECK_FALSE(board.RowsContainGolden({ Board::HEIGHT - 2, Board::HEIGHT - 1 }));
+	CHECK(board.RowsContainGolden({ 0, 1 }));
+}
+
+TEST_CASE("PushGarbageRow raises one row from the bottom with a single gap")
+{
+	Board board;
+
+	CHECK(board.PushGarbageRow(3));
+
+	const Board::GridRow& bottomRow = board.GetGrid()[Board::HEIGHT - 1];
+	for (int x = 0; x < Board::WIDTH; x++)
+	{
+		if (x == 3)
+		{
+			CHECK_FALSE(bottomRow[x].occupied);
+		}
+		else
+		{
+			CHECK(bottomRow[x].occupied);
+			CHECK(bottomRow[x].kind == Cell::Kind::Garbage);
+		}
+	}
+}
+
+TEST_CASE("PushGarbageRow shifts every existing row up by one")
+{
+	Board board;
+	LockO(board, -1, Board::HEIGHT - 2);   // bottom-left corner, rows HEIGHT-2/-1
+
+	REQUIRE(board.PushGarbageRow(9));
+
+	// The marker (locked at rows HEIGHT-2/-1) shifted up by exactly one row.
+	CHECK(board.GetGrid()[Board::HEIGHT - 3][0].occupied);
+	CHECK(board.GetGrid()[Board::HEIGHT - 2][0].occupied);
+}
+
+TEST_CASE("PushGarbageRow refuses to push locked cells off the top")
+{
+	Board board;
+	LockO(board, -1, 0);   // occupies the very top row
+
+	CHECK_FALSE(board.PushGarbageRow(0));
+
+	// Untouched: the marker is still exactly where it was.
+	CHECK(board.GetGrid()[0][0].occupied);
+	CHECK(board.GetGrid()[1][0].occupied);
 }
 
 TEST_CASE("CanPlace is false against a wall and against a locked cell")

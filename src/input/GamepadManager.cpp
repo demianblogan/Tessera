@@ -36,6 +36,11 @@ namespace
 	// crisp digital click, so the rotate feels immediate.
 	constexpr unsigned int LeftBumperButton = 4u;
 	constexpr unsigned int RightBumperButton = 5u;
+
+	// Top face button -- Y on Xbox, Triangle on DualShock / DualSense. Free on
+	// both layouts (the bumpers took over rotation from the triggers back in
+	// v1.2.0), so it's Hold.
+	constexpr unsigned int HoldButton = 3u;
 }
 
 namespace
@@ -109,6 +114,10 @@ void GamepadManager::Update()
 	const bool leftBumperDown = IsButtonPressed(LeftBumperButton);
 	rotateCounterClockwiseEdge = leftBumperDown && !wasLeftBumperDown;
 	wasLeftBumperDown = leftBumperDown;
+
+	const bool holdDown = IsButtonPressed(HoldButton);
+	holdEdge = holdDown && !wasHoldDown;
+	wasHoldDown = holdDown;
 }
 
 GamepadManager::NavigationAction GamepadManager::GetNavigationAction(const sf::Event& event) const
@@ -216,6 +225,11 @@ bool GamepadManager::WasRotateClockwisePressed() const noexcept
 bool GamepadManager::WasRotateCounterClockwisePressed() const noexcept
 {
 	return rotateCounterClockwiseEdge;
+}
+
+bool GamepadManager::WasHoldPressed() const noexcept
+{
+	return holdEdge;
 }
 
 bool GamepadManager::IsConnected() const noexcept

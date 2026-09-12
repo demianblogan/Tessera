@@ -10,6 +10,7 @@
 #include "../input/ActionMap.h"
 #include "../input/DirectionalRepeater.h"
 #include "../input/InputHandler.h"
+#include "../rendering/BoardCallouts.h"
 #include "../rendering/BoardRenderer.h"
 #include "../rendering/EffectsController.h"
 #include "../rendering/GameplayHud.h"
@@ -30,6 +31,7 @@ private:
 		HardDrop,
 		RotateClockwise,
 		RotateCounterClockwise,
+		Hold,
 		Pause
 	};
 
@@ -41,6 +43,7 @@ private:
 	EffectsController effects;
 	GameplayHud hud;
 	SceneMotion sceneMotion;
+	BoardCallouts boardCallouts;
 
 	ActionMap<GameplayAction> gameplayActions;
 	InputHandler<GameplayAction> gameplayInput;
@@ -69,6 +72,12 @@ private:
 
 	void SetUpInputBindings();
 
+	// Push the current HUD / effects settings into the live HUD and effects
+	// objects. Run at construction and every Update() after, so a change made
+	// from the pause screen's Options takes effect the instant play resumes,
+	// with no dependence on the state stack's resume timing.
+	void ApplyGameplaySettings();
+
 	void PollHeldInput();
 	void ApplyGamepadActions();
 	void ApplyHorizontalRepeat(float deltaTime);
@@ -76,7 +85,10 @@ private:
 
 	void TryRotate(bool clockwise);
 	void PerformHardDrop();
+	void TryHold();
 	void ReactToEvents(const GameplaySession::Events& events);
+	void ShowClearCallout(const GameplaySession::Events& events);
+	void FireClearHaptics(const GameplaySession::Events& events);
 
 	// Snapshot the current frame and hand it to a new PauseState, so the pause
 	// screen can "solidify" the frozen picture behind its menu.
@@ -89,4 +101,8 @@ public:
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
+
+	// The mouse plays no part in gameplay -- pausing pushes PauseState on top,
+	// which shows its own cursor via ScreenHost/MenuScreen.
+	[[nodiscard]] bool ShowsCursor() const override { return false; }
 };

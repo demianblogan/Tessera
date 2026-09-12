@@ -64,6 +64,13 @@ namespace TextKey
 		inline constexpr std::string_view GameplayVibration = "options.gameplay_vibration";
 		inline constexpr std::string_view GameplayLightbar  = "options.gameplay_lightbar";
 		inline constexpr std::string_view GameplayShake     = "options.gameplay_shake";
+		inline constexpr std::string_view GameplayGhost      = "options.gameplay_ghost";
+		inline constexpr std::string_view GameplayHold       = "options.gameplay_hold";
+		inline constexpr std::string_view GameplayNextLength = "options.gameplay_next_length";
+		inline constexpr std::string_view GameplayRandomiser = "options.gameplay_randomiser";
+		inline constexpr std::string_view RandomiserSevenBag = "options.randomiser_seven_bag";
+		inline constexpr std::string_view RandomiserRandom   = "options.randomiser_random";
+		inline constexpr std::string_view RestartToApply     = "options.restart_to_apply";
 
 		inline constexpr std::string_view HudHold           = "options.hud_hold";
 		inline constexpr std::string_view HudNext           = "options.hud_next";
@@ -85,6 +92,7 @@ namespace TextKey
 		inline constexpr std::string_view KeyHardDrop  = "options.key_hard_drop";
 		inline constexpr std::string_view KeyRotateCw  = "options.key_rotate_cw";
 		inline constexpr std::string_view KeyRotateCcw = "options.key_rotate_ccw";
+		inline constexpr std::string_view KeyHold      = "options.key_hold";
 		inline constexpr std::string_view KeyPause     = "options.key_pause";
 
 		inline constexpr std::string_view GamepadXbox        = "options.gamepad_xbox";
@@ -161,6 +169,26 @@ namespace TextKey
 		inline constexpr std::string_view Rotate   = "hud.rotate";
 		inline constexpr std::string_view SoftDrop = "hud.soft_drop";
 		inline constexpr std::string_view HardDrop = "hud.hard_drop";
+		inline constexpr std::string_view HoldKey  = "hud.hold_key";
 		inline constexpr std::string_view Pause    = "hud.pause";
+	}
+
+	// On-board popups for scoring highlights; short fragments joined in code
+	// (e.g. "T-SPIN" + "DOUBLE", "BACK-TO-BACK" + "TETRIS").
+	namespace Callout
+	{
+		inline constexpr std::string_view Single       = "callout.single";
+		inline constexpr std::string_view Double       = "callout.double";
+		inline constexpr std::string_view Triple       = "callout.triple";
+		inline constexpr std::string_view Tetris       = "callout.tetris";
+		inline constexpr std::string_view TSpin        = "callout.t_spin";
+		inline constexpr std::string_view TSpinMini    = "callout.t_spin_mini";
+		inline constexpr std::string_view BackToBack   = "callout.back_to_back";
+		inline constexpr std::string_view PerfectClear = "callout.perfect_clear";
+		inline constexpr std::string_view Combo        = "callout.combo";   // + "xN " prefix in code
+
+		// Escalation (see EscalationDirector).
+		inline constexpr std::string_view SpeedSurge = "callout.speed_surge";
+		inline constexpr std::string_view Golden     = "callout.golden";
 	}
 }

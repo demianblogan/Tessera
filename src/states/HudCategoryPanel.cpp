@@ -100,7 +100,8 @@ void HudCategoryPanel::ApplyWorking()
 		saved.*toggle.field = working.*toggle.field;
 	}
 
-	// Picked up the next time a game starts (GameplayState reads it in its ctor).
+	// GameplayState re-reads these in OnResume(), so a change made from the
+	// pause screen shows the moment play resumes.
 	context.settings.Save();
 }
 

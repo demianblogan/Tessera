@@ -1,0 +1,62 @@
+{
+  "_comment": "Block layout of each tetromino in its 4 rotation states (0 spawn, 1 right, 2 reverse, 3 left), in a 4x4 grid. 'X' is a block, '.' is empty; each state needs exactly 4 blocks. These match the built-in Super Rotation System shapes -- edit and restart to retune. A missing or malformed piece falls back to the built-in shape.",
+
+  "pieces": {
+    "I": {
+      "rotations": [
+        ["....", "XXXX", "....", "...."],
+        ["..X.", "..X.", "..X.", "..X."],
+        ["....", "....", "XXXX", "...."],
+        [".X..", ".X..", ".X..", ".X.."]
+      ]
+    },
+    "O": {
+      "rotations": [
+        [".XX.", ".XX.", "....", "...."],
+        [".XX.", ".XX.", "....", "...."],
+        [".XX.", ".XX.", "....", "...."],
+        [".XX.", ".XX.", "....", "...."]
+      ]
+    },
+    "T": {
+      "rotations": [
+        [".X..", "XXX.", "....", "...."],
+        [".X..", ".XX.", ".X..", "...."],
+        ["....", "XXX.", ".X..", "...."],
+        [".X..", "XX..", ".X..", "...."]
+      ]
+    },
+    "S": {
+      "rotations": [
+        [".XX.", "XX..", "....", "...."],
+        [".X..", ".XX.", "..X.", "...."],
+        ["....", ".XX.", "XX..", "...."],
+        ["X...", "XX..", ".X..", "...."]
+      ]
+    },
+    "Z": {
+      "rotations": [
+        ["XX..", ".XX.", "....", "...."],
+        ["..X.", ".XX.", ".X..", "...."],
+        ["....", "XX..", ".XX.", "...."],
+        [".X..", "XX..", "X...", "...."]
+      ]
+    },
+    "J": {
+      "rotations": [
+        ["X...", "XXX.", "....", "...."],
+        [".XX.", ".X..", ".X..", "...."],
+        ["....", "XXX.", "..X.", "...."],
+        [".X..", ".X..", "XX..", "...."]
+      ]
+    },
+    "L": {
+      "rotations": [
+        ["..X.", "XXX.", "....", "...."],
+        [".X..", ".X..", ".XX.", "...."],
+        ["....", "XXX.", "X...", "...."],
+        ["XX..", ".X..", ".X..", "...."]
+      ]
+    }
+  }
+}

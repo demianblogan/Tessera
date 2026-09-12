@@ -61,12 +61,28 @@ public:
 	Rumble levelUp{ 0.30f, 0.45f, 0.10f };
 	Rumble gameOver{ 0.90f, 0.90f, 0.50f };
 
+	// A soft, frequent utility action -- gentler than a wall bump.
+	Rumble hold{ 0.10f, 0.20f, 0.05f };
+	// The three-corner payoff; stronger than a plain clear, short of a Tetris.
+	Rumble tSpin{ 0.45f, 0.55f, 0.14f };
+	// Layered on top of whatever clear pulse already fired for the same lock.
+	Rumble backToBack{ 0.55f, 0.60f, 0.18f };
+	// The rarest event in the game -- close to game-over in weight.
+	Rumble perfectClear{ 0.85f, 0.85f, 0.40f };
+
+	// Escalation (see EscalationDirector). speedSurge fires as the warning
+	// pulse when one starts; garbageRow is a dull thud, deliberately duller
+	// than a normal clear since it happens often once unlocked.
+	Rumble speedSurge{ 0.35f, 0.65f, 0.20f };
+	Rumble garbageRow{ 0.30f, 0.15f, 0.10f };
+
 	// --- DualSense lightbar (pure primaries -- the diffuser tints anything
 	//     off-axis, so e.g. a green with any blue reads as cyan) --------------
 
 	Colour menuLightbar{ 255, 255, 0 };       // yellow
 	Colour rowClearLightbar{ 0, 255, 0 };     // green
 	Colour gameOverLightbar{ 255, 0, 0 };     // red
+	Colour perfectClearLightbar{ 255, 210, 0 };   // gold
 
 	// Every [r,g,b] entry under "lightbar" in the JSON, by its key. Menus look
 	// their focused item up here (keys like "menu_options", "options_graphics")

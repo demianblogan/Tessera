@@ -4,11 +4,15 @@
 #include <string_view>
 
 // =====================================================
-// Shape legend:
+// The canonical Super Rotation System (SRS) block layout of every tetromino in
+// each of its four rotation states, as a 4x4 character grid:
 //
-// . = Empty cell
-// X = Tetromino block
-// P = Rotation pivot
+//   . = empty cell
+//   X = tetromino block
+//
+// Rotation states, in index order: 0 = Spawn, 1 = Right (clockwise from spawn),
+// 2 = Reverse, 3 = Left. These are the built-in defaults; assets/data/pieces.json
+// can override individual pieces at startup (see PieceData / PieceDataFile).
 // =====================================================
 
 namespace TetrominoShapes
@@ -22,224 +26,57 @@ namespace TetrominoShapes
 
 	inline constexpr RotationSet I
 	{
-		ShapeMatrix
-		{
-			"....",
-			"XPXX",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"..X.",
-			"..P.",
-			"..X.",
-			"..X."
-		},
-		ShapeMatrix
-		{
-			"....",
-			"....",
-			"XPXX",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".P..",
-			".X..",
-			".X.."
-		}
+		ShapeMatrix{ "....", "XXXX", "....", "...." },
+		ShapeMatrix{ "..X.", "..X.", "..X.", "..X." },
+		ShapeMatrix{ "....", "....", "XXXX", "...." },
+		ShapeMatrix{ ".X..", ".X..", ".X..", ".X.." }
 	};
 
 	inline constexpr RotationSet O
 	{
-		ShapeMatrix
-		{
-			".PX.",
-			".XX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".PX.",
-			".XX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".PX.",
-			".XX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".PX.",
-			".XX.",
-			"....",
-			"...."
-		}	};
+		ShapeMatrix{ ".XX.", ".XX.", "....", "...." },
+		ShapeMatrix{ ".XX.", ".XX.", "....", "...." },
+		ShapeMatrix{ ".XX.", ".XX.", "....", "...." },
+		ShapeMatrix{ ".XX.", ".XX.", "....", "...." }
+	};
 
 	inline constexpr RotationSet T
 	{
-		ShapeMatrix
-		{
-			".X..",
-			"XPX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".PX.",
-			".X..",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"....",
-			"XPX.",
-			".X..",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			"XP..",
-			".X..",
-			"...."
-		}
+		ShapeMatrix{ ".X..", "XXX.", "....", "...." },
+		ShapeMatrix{ ".X..", ".XX.", ".X..", "...." },
+		ShapeMatrix{ "....", "XXX.", ".X..", "...." },
+		ShapeMatrix{ ".X..", "XX..", ".X..", "...." }
 	};
 
 	inline constexpr RotationSet S
 	{
-		ShapeMatrix
-		{
-			".XX.",
-			"XP..",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".PX.",
-			"..X.",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".XX.",
-			"XP..",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".PX.",
-			"..X.",
-			"...."
-		}
+		ShapeMatrix{ ".XX.", "XX..", "....", "...." },
+		ShapeMatrix{ ".X..", ".XX.", "..X.", "...." },
+		ShapeMatrix{ "....", ".XX.", "XX..", "...." },
+		ShapeMatrix{ "X...", "XX..", ".X..", "...." }
 	};
 
 	inline constexpr RotationSet Z
 	{
-		ShapeMatrix
-		{
-			"XX..",
-			".PX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"..X.",
-			".PX.",
-			".X..",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"XX..",
-			".PX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"..X.",
-			".PX.",
-			".X..",
-			"...."
-		}
+		ShapeMatrix{ "XX..", ".XX.", "....", "...." },
+		ShapeMatrix{ "..X.", ".XX.", ".X..", "...." },
+		ShapeMatrix{ "....", "XX..", ".XX.", "...." },
+		ShapeMatrix{ ".X..", "XX..", "X...", "...." }
 	};
 
 	inline constexpr RotationSet J
 	{
-		ShapeMatrix
-		{
-			"X...",
-			"XPX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".PX.",
-			".X..",
-			".X..",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"....",
-			"XPX.",
-			"..X.",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".X..",
-			"XP..",
-			"...."
-		}
+		ShapeMatrix{ "X...", "XXX.", "....", "...." },
+		ShapeMatrix{ ".XX.", ".X..", ".X..", "...." },
+		ShapeMatrix{ "....", "XXX.", "..X.", "...." },
+		ShapeMatrix{ ".X..", ".X..", "XX..", "...." }
 	};
 
 	inline constexpr RotationSet L
 	{
-		ShapeMatrix
-		{
-			"..X.",
-			"XPX.",
-			"....",
-			"...."
-		},
-		ShapeMatrix
-		{
-			".X..",
-			".X..",
-			".PX.",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"....",
-			"XPX.",
-			"X...",
-			"...."
-		},
-		ShapeMatrix
-		{
-			"XP..",
-			".X..",
-			".X..",
-			"...."
-		}
+		ShapeMatrix{ "..X.", "XXX.", "....", "...." },
+		ShapeMatrix{ ".X..", ".X..", ".XX.", "...." },
+		ShapeMatrix{ "....", "XXX.", "X...", "...." },
+		ShapeMatrix{ "XX..", ".X..", ".X..", "...." }
 	};
 }

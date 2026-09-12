@@ -34,6 +34,11 @@ public:
     virtual void Update(float deltaTime) = 0;
     virtual void Render(sf::RenderTarget& target) = 0;
 
+    // Called when this state becomes the top of the stack again because the
+    // state above it was popped (e.g. the pause screen closing). Lets a state
+    // pick up settings changed while it was covered.
+    virtual void OnResume() {}
+
     [[nodiscard]] virtual Backdrop GetBackdrop() const
     {
         return Backdrop::Opaque;

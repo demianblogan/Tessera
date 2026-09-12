@@ -23,7 +23,7 @@ namespace UI
 	class KeyBindRow;
 }
 
-// Controls > Keyboard: a list of the six rebindable gameplay actions, each a
+// Controls > Keyboard: a list of the seven rebindable gameplay actions, each a
 // KeyBindRow. Activating a row starts a key capture (the keycap blinks); the
 // next key press is validated -- Escape cancels, a reserved / menu key is
 // rejected with an amber flash, a key already used by another row flashes both
@@ -50,7 +50,7 @@ protected:
 	void RowClicked(std::size_t index) override;
 
 private:
-	static constexpr std::size_t ActionCount = 6;
+	static constexpr std::size_t ActionCount = 7;
 	using Field = sf::Keyboard::Scancode ControlSettings::*;
 
 	void SyncRows();
