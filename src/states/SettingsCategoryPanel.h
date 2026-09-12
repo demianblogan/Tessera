@@ -98,6 +98,9 @@ private:
 	std::array<UI::MenuLabel, ButtonCount> buttons;
 	std::array<sf::Vector2f, ButtonCount> buttonPositions{};
 	std::array<sf::FloatRect, ButtonCount> buttonBoxes{};
+	// Shrinks Apply/Reset/Back together when their combined natural width
+	// (which varies a lot by language) would spill past the panel.
+	float buttonScale = 1.f;
 	UI::ConfirmDialog dialog;
 
 	Focus focus = Focus::Rows;

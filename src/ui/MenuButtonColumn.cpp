@@ -74,6 +74,12 @@ namespace UI
 		if (index < buttons.size())
 		{
 			buttons[index].label.SetText(text);
+
+			// The resting slot's left edge is topLeft.x; its draw *centre* is
+			// offset by half the ink width (see Begin()), so a new string with a
+			// different width needs that offset recomputed too, or every row
+			// drifts sideways by a different amount once translated.
+			buttons[index].restCentre.x = topLeft.x + buttons[index].label.InkSize().x * 0.5f;
 		}
 	}
 

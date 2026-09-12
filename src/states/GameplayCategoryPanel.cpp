@@ -20,7 +20,11 @@ namespace
 {
 	namespace Sfx = OptionsSfx;
 
-	constexpr sf::FloatRect PanelBounds{ { 680.f, 200.f }, { 1120.f, 720.f } };
+	// Top sits 16px lower than the header's own maths would suggest: a language
+	// whose "OPTIONS" translation has a tall diacritic (Russian's "Й") pushes
+	// the header's visual baseline down a little, and this is the panel
+	// closest to it.
+	constexpr sf::FloatRect PanelBounds{ { 680.f, 216.f }, { 1120.f, 720.f } };
 	constexpr float RowsTop = PanelBounds.position.y + 88.f;
 	constexpr float RowMargin = 88.f;
 	constexpr float RowHeight = 58.f;

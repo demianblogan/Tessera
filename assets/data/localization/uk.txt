@@ -54,8 +54,8 @@ options.randomiser_seven_bag = Мішок з 7
 options.randomiser_random = Випадковий
 options.restart_to_apply = Ці налаштування застосуються лише в новій грі
 
-options.hud_hold = Показувати Відкладену:
-options.hud_next = Показувати Наступну:
+options.hud_hold = Показувати Відкладену Фігуру:
+options.hud_next = Показувати Наступну Фігуру:
 options.hud_score = Показувати Очки:
 options.hud_lines = Показувати Лінії:
 options.hud_level = Показувати Рівень:

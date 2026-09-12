@@ -85,10 +85,24 @@ void SettingsCategoryPanel::LayOutButtons()
 		labelMax.x = std::max(labelMax.x, button.InkSize().x);
 		labelMax.y = std::max(labelMax.y, button.InkSize().y);
 	}
-	const sf::Vector2f boxSize{ labelMax.x + ButtonBoxPadding.x, labelMax.y + ButtonBoxPadding.y };
 
+	// Apply/Reset/Back can be much wider in some languages than in English;
+	// shrink the whole row together (never below 60%) rather than let it spill
+	// past the panel or crowd together.
 	constexpr float count = static_cast<float>(ButtonId::ButtonCount);
-	const float totalWidth = count * boxSize.x + (count - 1.f) * ButtonGap;
+	constexpr float EdgeMargin = 40.f;
+	const float available = panelBounds.size.x - 2.f * EdgeMargin;
+
+	const sf::Vector2f naturalBox{ labelMax.x + ButtonBoxPadding.x, labelMax.y + ButtonBoxPadding.y };
+	const float naturalTotal = count * naturalBox.x + (count - 1.f) * ButtonGap;
+
+	buttonScale = (naturalTotal > available && naturalTotal > 0.f)
+		? std::max(0.6f, available / naturalTotal)
+		: 1.f;
+
+	const sf::Vector2f boxSize{ naturalBox.x * buttonScale, naturalBox.y * buttonScale };
+	const float gap = ButtonGap * buttonScale;
+	const float totalWidth = count * boxSize.x + (count - 1.f) * gap;
 	const float rowY = panelBounds.position.y + panelBounds.size.y - 86.f;
 	float x = panelBounds.position.x + panelBounds.size.x * 0.5f - totalWidth * 0.5f;
 
@@ -96,7 +110,7 @@ void SettingsCategoryPanel::LayOutButtons()
 	{
 		buttonPositions[i] = { x + boxSize.x * 0.5f, rowY };
 		buttonBoxes[i] = { { x, rowY - boxSize.y * 0.5f }, boxSize };
-		x += boxSize.x + ButtonGap;
+		x += boxSize.x + gap;
 	}
 }
 
@@ -382,7 +396,7 @@ void SettingsCategoryPanel::Render(sf::RenderTarget& target)
 				}
 			}
 
-			buttons[i].Draw(target, buttonPositions[i], focused ? 1.04f : 1.f,
+			buttons[i].Draw(target, buttonPositions[i], (focused ? 1.04f : 1.f) * buttonScale,
 				focused ? UI::MixToWhite(colour, 0.2f) : colour, alpha);
 		}
 	}

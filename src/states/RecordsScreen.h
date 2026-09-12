@@ -6,6 +6,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/Text.hpp>
+#include <SFML/System/Vector2.hpp>
 
 #include "../rendering/NeonGlow.h"
 #include "../ui/ConfirmDialog.h"
@@ -66,6 +67,8 @@ private:
 
 	UI::MenuLabel resetLabel;
 	UI::MenuLabel backLabel;
+	sf::Vector2f resetCentre;
+	sf::Vector2f backCentre;
 	NeonGlow buttonGlow;
 	Focus focus = Focus::Back;
 

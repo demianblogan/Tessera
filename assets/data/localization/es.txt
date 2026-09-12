@@ -54,8 +54,8 @@ options.randomiser_seven_bag = Bolsa de 7
 options.randomiser_random = Aleatorio
 options.restart_to_apply = Estos ajustes solo se aplican en una nueva partida
 
-options.hud_hold = Mostrar Guardada:
-options.hud_next = Mostrar Siguiente:
+options.hud_hold = Mostrar Pieza Guardada:
+options.hud_next = Mostrar Pieza Siguiente:
 options.hud_score = Mostrar Puntos:
 options.hud_lines = Mostrar Líneas:
 options.hud_level = Mostrar Nivel:

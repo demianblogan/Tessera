@@ -54,8 +54,8 @@ options.randomiser_seven_bag = 7er-Beutel
 options.randomiser_random = Zufällig
 options.restart_to_apply = Diese Einstellungen gelten erst ab einem neuen Spiel
 
-options.hud_hold = Halten Anzeigen:
-options.hud_next = Nächster Anzeigen:
+options.hud_hold = Gehaltenen Stein Anzeigen:
+options.hud_next = Nächsten Stein Anzeigen:
 options.hud_score = Punkte Anzeigen:
 options.hud_lines = Linien Anzeigen:
 options.hud_level = Level Anzeigen:

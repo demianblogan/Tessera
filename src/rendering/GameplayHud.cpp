@@ -224,12 +224,27 @@ void GameplayHud::RefreshText()
 {
 	const LocalizationManager& text = context.localization;
 
+	// setString alone leaves the old origin in place, computed from the old
+	// string's (possibly narrower) ink bounds -- re-centre every caption on
+	// the same anchor it was built with, or a longer translation drifts off
+	// its row's centre line.
 	holdCaption.setString(text.GetText(TextKey::Hud::Hold));
+	CentreText(holdCaption, { Centre(LeftPanelBounds).x, LeftPanelBounds.position.y + CaptionOffset });
+
 	nextCaption.setString(text.GetText(TextKey::Hud::Next));
+	CentreText(nextCaption, { Centre(RightPanelBounds).x, RightPanelBounds.position.y + CaptionOffset });
+
 	levelRow.label.setString(text.GetText(TextKey::Hud::Level));
+	CentreText(levelRow.label, { LeftColumnCentreX, LevelRowTop + StatLabelOffset });
+
 	timeRow.label.setString(text.GetText(TextKey::Hud::Time));
+	CentreText(timeRow.label, { LeftColumnCentreX, TimeRowTop + StatLabelOffset });
+
 	scoreRow.label.setString(text.GetText(TextKey::Hud::Score));
+	CentreText(scoreRow.label, { RightColumnCentreX, ScoreRowTop + StatLabelOffset });
+
 	linesRow.label.setString(text.GetText(TextKey::Hud::Lines));
+	CentreText(linesRow.label, { RightColumnCentreX, LinesRowTop + StatLabelOffset });
 
 	BuildControlsLegend(context.settings.GetSettings().controls, context.settings.GetSettings().holdEnabled,
 		CurrentPromptMode());
@@ -333,6 +348,7 @@ void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool hold
 	// same size as the gaps between entries, rather than each entry just
 	// centring in an equal share of the strip (which does not give equal
 	// *visual* spacing, since the entries themselves are different widths).
+	std::vector<float> labelWidths;
 	std::vector<float> valueWidths;
 	float totalWidth = 0.f;
 
@@ -365,27 +381,44 @@ void GameplayHud::BuildControlsLegend(const ControlSettings& controls, bool hold
 			valueWidth = entry.value.getLocalBounds().size.x;
 		}
 
-		totalWidth += entry.label.getLocalBounds().size.x + valueWidth;
+		const float labelWidth = entry.label.getLocalBounds().size.x;
+		totalWidth += labelWidth + valueWidth;
+		labelWidths.push_back(labelWidth);
 		valueWidths.push_back(valueWidth);
 		controlsEntries.push_back(std::move(entry));
 	}
 
 	const float innerLeft = ControlsBounds.position.x + FillInset;
 	const float innerWidth = ControlsBounds.size.x - FillInset * 2.f;
-	const float gap = (innerWidth - totalWidth) / static_cast<float>(controlsEntries.size() + 1);
+
+	// Action names run much longer in some languages than in English; shrink
+	// the label/value text (never below 55%) rather than let entries spill
+	// past the frame or overlap the gamepad icons, and keep a sane minimum
+	// gap either way.
+	constexpr float MinGap = 12.f;
+	const std::size_t count = controlsEntries.size();
+	const float available = innerWidth - MinGap * static_cast<float>(count + 1);
+	const float textScale = (totalWidth > available && totalWidth > 0.f)
+		? std::max(0.55f, available / totalWidth)
+		: 1.f;
+
+	const float scaledTotalWidth = totalWidth * textScale;
+	const float gap = std::max(MinGap, (innerWidth - scaledTotalWidth) / static_cast<float>(count + 1));
 
 	float cursorX = innerLeft + gap;
 
 	for (std::size_t i = 0; i < controlsEntries.size(); ++i)
 	{
 		ControlEntry& entry = controlsEntries[i];
-		const float labelWidth = entry.label.getLocalBounds().size.x;
-		const float valueWidth = valueWidths[i];
+		const float labelWidth = labelWidths[i] * textScale;
+		const float valueWidth = entry.icons.empty() ? valueWidths[i] * textScale : valueWidths[i];
 
+		entry.label.setScale({ textScale, textScale });
 		AlignLeft(entry.label, { cursorX, lineY });
 
 		if (entry.icons.empty())
 		{
+			entry.value.setScale({ textScale, textScale });
 			AlignLeft(entry.value, { cursorX + labelWidth, lineY });
 		}
 		else

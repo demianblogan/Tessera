@@ -8,7 +8,11 @@
 namespace ControlsPanel
 {
 	// Height grew by one row pitch to fit the Hold action added in v1.6.0.
-	inline constexpr sf::FloatRect Bounds{ { 600.f, 210.f }, { 1240.f, 846.f } };
+	// Top sits 16px lower than that would otherwise suggest, matching Gameplay/
+	// HUD: a language whose "OPTIONS" translation has a tall diacritic
+	// (Russian's "Й") pushes the header's visual baseline down a little, and
+	// this is one of the panels closest to it. Bottom edge unchanged.
+	inline constexpr sf::FloatRect Bounds{ { 600.f, 226.f }, { 1240.f, 830.f } };
 
 	inline constexpr float RowMargin = 96.f;
 	inline constexpr float RowsTop = Bounds.position.y + 100.f;

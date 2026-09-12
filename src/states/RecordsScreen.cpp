@@ -45,8 +45,9 @@ namespace
 	constexpr unsigned int HeaderSize = 38;
 
 	constexpr unsigned int ButtonTextSize = 42;
-	constexpr sf::Vector2f ResetCentre{ 838.f, 968.f };
-	constexpr sf::Vector2f BackCentre{ 1082.f, 968.f };
+	constexpr float ButtonRowY = 968.f;
+	constexpr float ButtonRowCentreX = 960.f;
+	constexpr float ButtonGap = 60.f;   // clear space between the two buttons' ink
 
 	constexpr float IntroDuration = 0.24f;
 	constexpr float ExitDuration = 0.18f;
@@ -100,6 +101,15 @@ RecordsScreen::RecordsScreen(ScreenHost& host, sf::Color accent)
 {
 	resetLabel.SetText(context.localization.GetText(TextKey::Records::Reset));
 	backLabel.SetText(context.localization.GetText(TextKey::Records::Back));
+
+	// Lay the two buttons out from their actual (localized) ink width instead
+	// of a fixed distance apart -- "Reset"/"Back" and "Сбросить"/"Назад" don't
+	// take up the same room.
+	const float resetWidth = resetLabel.InkSize().x;
+	const float backWidth = backLabel.InkSize().x;
+	const float pairWidth = resetWidth + ButtonGap + backWidth;
+	resetCentre = { ButtonRowCentreX - pairWidth * 0.5f + resetWidth * 0.5f, ButtonRowY };
+	backCentre = { ButtonRowCentreX + pairWidth * 0.5f - backWidth * 0.5f, ButtonRowY };
 
 	rule.setSize({ 1240.f, 2.f });
 	rule.setPosition({ 360.f, RuleY });
@@ -275,11 +285,11 @@ void RecordsScreen::HandleEvent(const sf::Event& event)
 	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 	{
 		const sf::Vector2f point = context.window.mapPixelToCoords(moved->position);
-		if (resetLabel.Bounds(ResetCentre, 1.f).contains(point))
+		if (resetLabel.Bounds(resetCentre, 1.f).contains(point))
 		{
 			focus = Focus::Reset;
 		}
-		else if (backLabel.Bounds(BackCentre, 1.f).contains(point))
+		else if (backLabel.Bounds(backCentre, 1.f).contains(point))
 		{
 			focus = Focus::Back;
 		}
@@ -292,12 +302,12 @@ void RecordsScreen::HandleEvent(const sf::Event& event)
 		}
 
 		const sf::Vector2f point = context.window.mapPixelToCoords(clicked->position);
-		if (resetLabel.Bounds(ResetCentre, 1.f).contains(point))
+		if (resetLabel.Bounds(resetCentre, 1.f).contains(point))
 		{
 			focus = Focus::Reset;
 			Activate();
 		}
-		else if (backLabel.Bounds(BackCentre, 1.f).contains(point))
+		else if (backLabel.Bounds(backCentre, 1.f).contains(point))
 		{
 			focus = Focus::Back;
 			Activate();
@@ -375,8 +385,8 @@ void RecordsScreen::Render(sf::RenderTarget& target)
 		}
 	}
 
-	DrawButton(target, resetLabel, ResetCentre, ResetHue, !dialog.IsOpen() && focus == Focus::Reset, alpha);
-	DrawButton(target, backLabel, BackCentre, BackHue, !dialog.IsOpen() && focus == Focus::Back, alpha);
+	DrawButton(target, resetLabel, resetCentre, ResetHue, !dialog.IsOpen() && focus == Focus::Reset, alpha);
+	DrawButton(target, backLabel, backCentre, BackHue, !dialog.IsOpen() && focus == Focus::Back, alpha);
 
 	dialog.Render(target);
 }

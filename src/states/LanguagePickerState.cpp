@@ -202,9 +202,20 @@ void LanguagePickerState::BuildPrompt()
 	std::size_t dividerIndex = 0;
 	for (std::size_t i = 0; i < LanguageCount; ++i)
 	{
+		// The intro glyphs are drawn with the default (top-left) origin at
+		// {cursor + startXShift, PromptCentre.y}; setting origin to the ink
+		// centre (so scale grows the phrase in place) shifts what "position"
+		// means, so the *position* has to move by that same origin offset to
+		// keep the rendered top-left exactly where the intro left it -- with
+		// origin O, world(bounds.position) = position - size*0.5 = position -
+		// (O - bounds.position), so position = topLeft + O reproduces the old
+		// origin-(0,0) placement exactly at scale 1.
 		const sf::FloatRect bounds = segments[i].text.getLocalBounds();
-		UI::TextLayout::CentreOrigin(segments[i].text);
-		segments[i].text.setPosition({ cursor + bounds.size.x * 0.5f + startXShift, PromptCentre.y });
+		const sf::Vector2f origin{ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f };
+		const sf::Vector2f topLeft{ cursor + startXShift, PromptCentre.y };
+
+		segments[i].text.setOrigin(origin);
+		segments[i].text.setPosition(topLeft + origin);
 		cursor += bounds.size.x;
 
 		if (i + 1 < LanguageCount)
