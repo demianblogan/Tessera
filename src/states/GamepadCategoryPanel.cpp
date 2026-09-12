@@ -56,6 +56,7 @@ namespace
 
 	// Xbox atlas.
 	constexpr sf::IntRect XFaceButton = Sprite(49, 48, 13, 15);
+	constexpr sf::IntRect XTopFaceButton = Sprite(49, 64, 13, 15);   // Y -- one row below A
 	constexpr sf::IntRect XDpadLeft = Sprite(130, 99, 11, 7);
 	constexpr sf::IntRect XDpadRight = Sprite(146, 99, 11, 7);
 	constexpr sf::IntRect XDpadDown = Sprite(148, 82, 7, 11);
@@ -64,6 +65,7 @@ namespace
 
 	// PlayStation atlas (a different layout, its own coordinates).
 	constexpr sf::IntRect PFaceButton = Sprite(49, 64, 13, 15);
+	constexpr sf::IntRect PTopFaceButton = Sprite(49, 32, 13, 15);   // Triangle -- two rows above Cross
 	constexpr sf::IntRect PDpadLeft = Sprite(370, 198, 12, 10);
 	constexpr sf::IntRect PDpadRight = Sprite(369, 166, 12, 10);
 	constexpr sf::IntRect PDpadDown = Sprite(372, 177, 7, 14);
@@ -108,13 +110,14 @@ GamepadCategoryPanel::GamepadCategoryPanel(Context& context, sf::Color accent)
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
 	struct Def { std::string_view key; sf::IntRect xbox; sf::IntRect playStation; };
-	const std::array<Def, 6> defs{ {
+	const std::array<Def, 7> defs{ {
 		{ TextKey::Options::KeyMoveLeft,  XDpadLeft,    PDpadLeft },
 		{ TextKey::Options::KeyMoveRight, XDpadRight,   PDpadRight },
 		{ TextKey::Options::KeySoftDrop,  XDpadDown,    PDpadDown },
 		{ TextKey::Options::KeyHardDrop,  XFaceButton,  PFaceButton },
 		{ TextKey::Options::KeyRotateCw,  XRightBumper, PRightBumper },
-		{ TextKey::Options::KeyRotateCcw, XLeftBumper,  PLeftBumper } } };
+		{ TextKey::Options::KeyRotateCcw, XLeftBumper,  PLeftBumper },
+		{ TextKey::Options::KeyHold,      XTopFaceButton, PTopFaceButton } } };
 
 	rows.reserve(defs.size());
 	for (const Def& def : defs)

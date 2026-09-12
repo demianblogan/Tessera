@@ -7,7 +7,8 @@
 // starting at the same spot.
 namespace ControlsPanel
 {
-	inline constexpr sf::FloatRect Bounds{ { 600.f, 210.f }, { 1240.f, 760.f } };
+	// Height grew by one row pitch to fit the Hold action added in v1.6.0.
+	inline constexpr sf::FloatRect Bounds{ { 600.f, 210.f }, { 1240.f, 846.f } };
 
 	inline constexpr float RowMargin = 96.f;
 	inline constexpr float RowsTop = Bounds.position.y + 100.f;
