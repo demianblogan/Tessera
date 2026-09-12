@@ -269,6 +269,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="src\input\InputHandler.h" />
     <ClInclude Include="src\input\KeyName.h" />
     <ClInclude Include="src\input\MenuInput.h" />
+    <ClInclude Include="src\localization\Language.h" />
     <ClInclude Include="src\localization\LocalizationManager.h" />
     <ClInclude Include="src\localization\TextKeys.h" />
     <ClInclude Include="src\resources\Assets.h" />
@@ -343,6 +344,10 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\localization\es.txt" />
+    <None Include="assets\data\localization\de.txt" />
+    <None Include="assets\data\localization\ru.txt" />
+    <None Include="assets\data\localization\uk.txt" />
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
   </ItemGroup>

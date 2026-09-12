@@ -63,10 +63,10 @@ options.hud_time            = Show Time:
 options.hud_controls_legend = Show Controls Legend:
 
 options.language_english   = English
-options.language_spanish   = Spanish
-options.language_german    = German
-options.language_russian   = Russian
-options.language_ukrainian = Ukrainian
+options.language_spanish   = Español
+options.language_german    = Deutsch
+options.language_russian   = Русский
+options.language_ukrainian = Українська
 
 options.key_move_left   = Move Piece Left
 options.key_move_right  = Move Piece Right

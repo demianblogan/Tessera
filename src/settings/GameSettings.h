@@ -3,6 +3,7 @@
 #include <SFML/Window/Keyboard.hpp>
 
 #include "../display/DisplayMode.h"
+#include "../localization/Language.h"
 
 // Keyboard bindings for gameplay. Physical scancodes, so they survive a layout
 // change. The rebindable actions are edited by the Controls > Keyboard panel
@@ -34,7 +35,7 @@ struct GameSettings
 {
     // Bumped whenever the on-disk settings layout changes. A file written by a
     // different version is preserved as .corrupt and replaced with defaults.
-    static constexpr int FormatVersion = 9;
+    static constexpr int FormatVersion = 10;
 
     // --- Graphics:
 
@@ -71,4 +72,12 @@ struct GameSettings
     bool hudLevel = true;
     bool hudTime = true;
     bool hudControlsLegend = true;
+
+    // --- Language:
+
+    Language language = Language::English;
+
+    // False only until the first-run picker has run once; distinguishes
+    // "never chosen" from "explicitly chose English".
+    bool languageChosen = false;
 };

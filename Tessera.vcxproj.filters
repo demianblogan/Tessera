@@ -500,6 +500,9 @@
     <ClInclude Include="src\input\MenuInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\localization\Language.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\localization\LocalizationManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -557,6 +560,10 @@
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\localization\es.txt" />
+    <None Include="assets\data\localization\de.txt" />
+    <None Include="assets\data\localization\ru.txt" />
+    <None Include="assets\data\localization\uk.txt" />
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
   </ItemGroup>

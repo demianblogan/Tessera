@@ -36,6 +36,7 @@ void SettingsManager::Load()
 	int windowModeValue = 0;
 	unsigned int resolutionWidth = 0;
 	unsigned int resolutionHeight = 0;
+	int languageValue = 0;
 
 	// The rebindable gameplay keys, stored as raw scancode integers.
 	std::array<int, 7> keys{};
@@ -63,7 +64,9 @@ void SettingsManager::Load()
 		>> parsed.ghostPieceEnabled
 		>> parsed.holdEnabled
 		>> parsed.nextQueueLength
-		>> parsed.sevenBagEnabled;
+		>> parsed.sevenBagEnabled
+		>> languageValue
+		>> parsed.languageChosen;
 
 	const auto scancodeInRange = [](int value)
 	{
@@ -77,6 +80,7 @@ void SettingsManager::Load()
 		parsed.soundVolume <= MaxVolumeStep &&
 		parsed.musicVolume <= MaxVolumeStep &&
 		parsed.nextQueueLength >= MinNextQueueLength && parsed.nextQueueLength <= MaxNextQueueLength &&
+		languageValue >= 0 && languageValue < static_cast<int>(LanguageCount) &&
 		std::all_of(keys.begin(), keys.end(), scancodeInRange);
 
 	if (!fileIsUsable)
@@ -96,6 +100,7 @@ void SettingsManager::Load()
 	parsed.controls.rotateClockwise = static_cast<sf::Keyboard::Scancode>(keys[4]);
 	parsed.controls.rotateCounterClockwise = static_cast<sf::Keyboard::Scancode>(keys[5]);
 	parsed.controls.hold = static_cast<sf::Keyboard::Scancode>(keys[6]);
+	parsed.language = static_cast<Language>(languageValue);
 	settings = parsed;
 }
 
@@ -144,6 +149,8 @@ void SettingsManager::Save() const
 		file << settings.holdEnabled << '\n';
 		file << settings.nextQueueLength << '\n';
 		file << settings.sevenBagEnabled << '\n';
+		file << static_cast<int>(settings.language) << '\n';
+		file << settings.languageChosen << '\n';
 	}
 
 	static_cast<void>(SafeFileWrite::ReplaceFileAtomically(temporaryPath, filepath));

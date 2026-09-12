@@ -45,9 +45,9 @@ namespace
 	}
 }
 
-bool LocalizationManager::Load(const std::filesystem::path& directory)
+bool LocalizationManager::LoadCatalogFile(const std::filesystem::path& path)
 {
-	std::ifstream file(directory / "en.txt");
+	std::ifstream file(path);
 
 	if (!file.is_open())
 	{
@@ -84,6 +84,39 @@ bool LocalizationManager::Load(const std::filesystem::path& directory)
 	}
 
 	return true;
+}
+
+bool LocalizationManager::Load(const std::filesystem::path& directory, Language language)
+{
+	this->directory = directory;
+	catalog.clear();
+
+	if (!LoadCatalogFile(directory / "en.txt"))
+	{
+		return false;
+	}
+
+	this->language = language;
+
+	if (language != Language::English)
+	{
+		// Missing/partial file: the English catalog just loaded stays as-is,
+		// so every key still resolves -- just not translated yet.
+		LoadCatalogFile(directory / (std::string(LanguageCode(language)) + ".txt"));
+	}
+
+	return true;
+}
+
+void LocalizationManager::SetLanguage(Language newLanguage)
+{
+	if (newLanguage == language)
+	{
+		return;
+	}
+
+	Load(directory, newLanguage);
+	revision++;
 }
 
 sf::String LocalizationManager::GetText(std::string_view key) const

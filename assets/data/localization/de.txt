@@ -1,0 +1,153 @@
+# Tessera - German string catalog.
+# Format: section.key = value   (# starts a comment, \n is a line break)
+
+main_menu.title = Tessera
+main_menu.play = Spielen
+main_menu.options = Optionen
+main_menu.records = Rekorde
+main_menu.credits = Abspann
+main_menu.quit = Beenden
+
+pause.title = PAUSE
+pause.resume = Fortsetzen
+pause.restart = Neu starten
+pause.options = Optionen
+pause.main_menu = Zurück zum Hauptmenü
+pause.confirm_restart = Level neu starten?
+pause.confirm_quit = Level verlassen?
+
+game_over.title = GAME OVER
+game_over.score = PUNKTE
+game_over.lines = LINIEN
+game_over.level = LEVEL
+game_over.time = ZEIT
+game_over.new_record = NEUER REKORD
+game_over.enter_name = Gib deinen Namen ein
+game_over.save_record = Rekord Speichern
+game_over.saved = Gespeichert
+game_over.unsaved_record = Ohne Speichern deines Rekords verlassen?
+game_over.play_again = Nochmal Spielen
+game_over.main_menu = Hauptmenü
+
+options.title = OPTIONEN
+options.gameplay = Gameplay
+options.hud = HUD
+options.graphics = Grafik
+options.audio = Audio
+options.controls = Steuerung
+options.language = Sprache
+options.back = Zurück
+options.coming_soon = Demnächst verfügbar.
+
+options.controls_keyboard = Tastatur
+options.controls_gamepad = Controller
+options.controls_back = Zurück
+
+options.gameplay_vibration = Controller-Vibration:
+options.gameplay_lightbar = Controller-Lightbar:
+options.gameplay_shake = Bildschirm-Erschütterung:
+options.gameplay_ghost = Geisterstein:
+options.gameplay_hold = Stein Halten:
+options.gameplay_next_length = Anzahl Nächster Steine:
+options.gameplay_randomiser = Zufallsgenerator:
+options.randomiser_seven_bag = 7er-Beutel
+options.randomiser_random = Zufällig
+options.restart_to_apply = Diese Einstellungen gelten erst ab einem neuen Spiel
+
+options.hud_hold = Halten Anzeigen:
+options.hud_next = Nächster Anzeigen:
+options.hud_score = Punkte Anzeigen:
+options.hud_lines = Linien Anzeigen:
+options.hud_level = Level Anzeigen:
+options.hud_time = Zeit Anzeigen:
+options.hud_controls_legend = Steuerungslegende Anzeigen:
+
+options.language_english = English
+options.language_spanish = Español
+options.language_german = Deutsch
+options.language_russian = Русский
+options.language_ukrainian = Українська
+
+options.key_move_left = Stein Nach Links Bewegen
+options.key_move_right = Stein Nach Rechts Bewegen
+options.key_soft_drop = Stein Absenken
+options.key_hard_drop = Stein Fallen Lassen
+options.key_rotate_cw = Stein Rechts Drehen
+options.key_rotate_ccw = Stein Links Drehen
+options.key_hold = Stein Halten
+options.key_pause = Pause
+
+options.gamepad_xbox = XBOX
+options.gamepad_playstation = PlayStation
+
+options.resolution = Bildschirmauflösung:
+options.window_mode = Fenstermodus:
+options.vsync = Vertikale Synchronisation:
+options.show_fps = FPS Anzeigen:
+options.crt_filter = CRT-Filter:
+options.mode_fullscreen = Vollbild
+options.mode_borderless = Randlos
+options.mode_window = Fenster
+options.sound = Soundlautstärke:
+options.music = Musiklautstärke:
+options.apply = Übernehmen
+options.reset = Zurücksetzen
+options.back_button = Zurück
+options.unsaved = Du hast ungespeicherte Änderungen.\nVor dem Verlassen speichern?
+options.borderless_note = Im randlosen Modus kannst du die Bildschirmauflösung nicht ändern.
+
+common.yes = Ja
+common.no = Nein
+
+credits.title = ABSPANN
+credits.intro = Dieses Spiel wurde von mir, Demian Blogan, gemacht.
+credits.blurb = Das ist das zweite Projekt in meinem Portfolio. Es ist klein und kompakt, aber\nich bin stolz darauf, wie die Grafik und die Menü-Animationen geworden sind -\ngenau das war der ganze Sinn dieses Projekts, und ich hoffe, es hat dir gefallen.
+credits.email = Meine E-Mail: demianblogan@gmail.com
+credits.linkedin = LinkedIn: linkedin.com/in/demianblogan
+credits.instagram = Instagram: instagram.com/demianblogan
+credits.code = Code dieses Spiels: github.com/demianblogan/Tessera
+credits.portfolio = Mein Portfolio: github.com/demianblogan
+credits.programming = Mein Programmier-Kanal: youtube.com/@BloganProgrammer
+credits.gaming = Mein Gaming-Kanal: youtube.com/@BloganGamer
+credits.back = Zurück
+
+records.title = REKORDE
+records.header_name = NAME
+records.header_score = PUNKTE
+records.header_lines = LINIEN
+records.header_level = LEVEL
+records.reset = Zurücksetzen
+records.back = Zurück
+records.confirm_reset = Alle Rekorde löschen?
+
+loading.audio = Sound wird geladen...
+loading.music = Musik wird geladen...
+loading.interface = Oberfläche wird geladen...
+
+hud.hold = HALTEN
+hud.next = NÄCHSTER
+hud.score = PUNKTE
+hud.lines = LINIEN
+hud.level = LEVEL
+hud.time = ZEIT
+
+hud.controls = STEUERUNG
+hud.move = Bewegen
+hud.rotate = Drehen
+hud.soft_drop = Sanft Absenken
+hud.hard_drop = Hart Fallen
+hud.hold_key = Halten
+hud.pause = Pause
+
+callout.single = EINZEL
+callout.double = DOPPEL
+callout.triple = TRIPEL
+callout.tetris = TETRIS
+callout.t_spin = T-SPIN
+callout.t_spin_mini = T-SPIN MINI
+callout.back_to_back = IN FOLGE
+callout.perfect_clear = PERFEKTE RÄUMUNG
+callout.combo = COMBO
+callout.speed_surge = SCHNELLER!
+callout.golden = GOLDEN x2
+

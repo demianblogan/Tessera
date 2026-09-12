@@ -9,20 +9,35 @@
 
 #include <SFML/System/String.hpp>
 
+#include "Language.h"
+
 // Loads a flat `section.key = value` catalog and hands localized text to the
-// UI. Only English exists today; the catalog format and the key scheme are
-// the part that would be expensive to retrofit, so they go in now. Adding
-// languages (a language enum, per-language fonts, a live-switch revision
-// counter) is a later, self-contained job.
+// UI. English is always loaded first as the fallback layer; the requested
+// language (if not English) is then merged on top, key by key, so a missing
+// or not-yet-translated line quietly shows English instead of the raw key.
 //
-// A missing key is not fatal: GetText returns the key wrapped in guillemets so
-// the gap is obvious on screen without crashing.
+// A key missing from every catalog is not fatal either: GetText returns the
+// key wrapped in angle brackets so the gap is obvious on screen without
+// crashing.
 class LocalizationManager
 {
 public:
-	// Loads `<directory>/en.txt`. Returns false if the file can't be read;
-	// whatever parsed before the failure is kept.
-	bool Load(const std::filesystem::path& directory);
+	// Loads `<directory>/en.txt`, then `<directory>/<code>.txt` over it if
+	// `language` isn't English. Returns false if even the English catalog
+	// can't be read; whatever parsed before a failure is kept.
+	bool Load(const std::filesystem::path& directory, Language language = Language::English);
+
+	// Switches to `language`, reloading from the directory last passed to
+	// Load(), and bumps Revision(). No-op (no reload, no revision bump) if
+	// `language` is already active.
+	void SetLanguage(Language language);
+
+	[[nodiscard]] Language GetLanguage() const { return language; }
+
+	// Bumped every time the active language actually changes. Screens that
+	// cache localized text compare this against the value they last saw to
+	// know they need to refresh.
+	[[nodiscard]] unsigned int Revision() const { return revision; }
 
 	[[nodiscard]] sf::String GetText(std::string_view key) const;
 
@@ -34,6 +49,12 @@ public:
 		std::initializer_list<std::pair<std::string_view, sf::String>> replacements) const;
 
 private:
+	bool LoadCatalogFile(const std::filesystem::path& path);
+
 	// key -> value, decoded from the catalog's UTF-8.
 	std::unordered_map<std::string, sf::String> catalog;
+
+	std::filesystem::path directory;
+	Language language = Language::English;
+	unsigned int revision = 0;
 };

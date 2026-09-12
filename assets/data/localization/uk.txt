@@ -1,0 +1,153 @@
+# Tessera - Ukrainian string catalog.
+# Format: section.key = value   (# starts a comment, \n is a line break)
+
+main_menu.title = Tessera
+main_menu.play = Грати
+main_menu.options = Налаштування
+main_menu.records = Рекорди
+main_menu.credits = Автори
+main_menu.quit = Вихід
+
+pause.title = ПАУЗА
+pause.resume = Продовжити
+pause.restart = Заново
+pause.options = Налаштування
+pause.main_menu = До Головного Меню
+pause.confirm_restart = Почати заново?
+pause.confirm_quit = Вийти з гри?
+
+game_over.title = ГРУ ЗАВЕРШЕНО
+game_over.score = ОЧКИ
+game_over.lines = ЛІНІЇ
+game_over.level = РІВЕНЬ
+game_over.time = ЧАС
+game_over.new_record = НОВИЙ РЕКОРД
+game_over.enter_name = Введіть своє ім'я
+game_over.save_record = Зберегти Рекорд
+game_over.saved = Збережено
+game_over.unsaved_record = Вийти, не зберігши рекорд?
+game_over.play_again = Грати Знову
+game_over.main_menu = Головне Меню
+
+options.title = НАЛАШТУВАННЯ
+options.gameplay = Геймплей
+options.hud = Інтерфейс
+options.graphics = Графіка
+options.audio = Звук
+options.controls = Керування
+options.language = Мова
+options.back = Назад
+options.coming_soon = Скоро.
+
+options.controls_keyboard = Клавіатура
+options.controls_gamepad = Геймпад
+options.controls_back = Назад
+
+options.gameplay_vibration = Вібрація Геймпада:
+options.gameplay_lightbar = Підсвітка Геймпада:
+options.gameplay_shake = Тряска Екрана:
+options.gameplay_ghost = Примарна Фігура:
+options.gameplay_hold = Відкласти Фігуру:
+options.gameplay_next_length = К-сть Наступних Фігур:
+options.gameplay_randomiser = Генератор Фігур:
+options.randomiser_seven_bag = Мішок з 7
+options.randomiser_random = Випадковий
+options.restart_to_apply = Ці налаштування застосуються лише в новій грі
+
+options.hud_hold = Показувати Відкладену:
+options.hud_next = Показувати Наступну:
+options.hud_score = Показувати Очки:
+options.hud_lines = Показувати Лінії:
+options.hud_level = Показувати Рівень:
+options.hud_time = Показувати Час:
+options.hud_controls_legend = Показувати Підказку Керування:
+
+options.language_english = English
+options.language_spanish = Español
+options.language_german = Deutsch
+options.language_russian = Русский
+options.language_ukrainian = Українська
+
+options.key_move_left = Рухати Фігуру Вліво
+options.key_move_right = Рухати Фігуру Вправо
+options.key_soft_drop = Опускати Фігуру
+options.key_hard_drop = Скинути Фігуру
+options.key_rotate_cw = Повернути Фігуру Вправо
+options.key_rotate_ccw = Повернути Фігуру Вліво
+options.key_hold = Відкласти Фігуру
+options.key_pause = Пауза
+
+options.gamepad_xbox = XBOX
+options.gamepad_playstation = PlayStation
+
+options.resolution = Роздільна Здатність:
+options.window_mode = Режим Вікна:
+options.vsync = Вертикальна Синхронізація:
+options.show_fps = Показувати FPS:
+options.crt_filter = CRT-Фільтр:
+options.mode_fullscreen = Повноекранний
+options.mode_borderless = Без Рамки
+options.mode_window = Віконний
+options.sound = Гучність Звуку:
+options.music = Гучність Музики:
+options.apply = Застосувати
+options.reset = Скинути
+options.back_button = Назад
+options.unsaved = У вас є незбережені зміни.\nЗберегти їх перед виходом?
+options.borderless_note = У режимі без рамки не можна змінити роздільну здатність екрана.
+
+common.yes = Так
+common.no = Ні
+
+credits.title = АВТОРИ
+credits.intro = Цю гру зробив я, Демʼян Блоган.
+credits.blurb = Це другий проєкт у моєму портфоліо. Він невеликий і компактний, але я\nпишаюся тим, якими вийшли візуальні ефекти й анімації меню - саме\nв цьому й була вся суть цього проєкту, і сподіваюся, вам сподобалося.
+credits.email = Моя пошта: demianblogan@gmail.com
+credits.linkedin = LinkedIn: linkedin.com/in/demianblogan
+credits.instagram = Instagram: instagram.com/demianblogan
+credits.code = Код цієї гри: github.com/demianblogan/Tessera
+credits.portfolio = Моє портфоліо: github.com/demianblogan
+credits.programming = Мій Канал про Програмування: youtube.com/@BloganProgrammer
+credits.gaming = Мій Ігровий Канал: youtube.com/@BloganGamer
+credits.back = Назад
+
+records.title = РЕКОРДИ
+records.header_name = ІМ'Я
+records.header_score = ОЧКИ
+records.header_lines = ЛІНІЇ
+records.header_level = РІВЕНЬ
+records.reset = Скинути
+records.back = Назад
+records.confirm_reset = Видалити всі рекорди?
+
+loading.audio = Завантаження Звуку...
+loading.music = Завантаження Музики...
+loading.interface = Завантаження Інтерфейсу...
+
+hud.hold = ВІДКЛАДЕНО
+hud.next = ДАЛІ
+hud.score = ОЧКИ
+hud.lines = ЛІНІЇ
+hud.level = РІВЕНЬ
+hud.time = ЧАС
+
+hud.controls = КЕРУВАННЯ
+hud.move = Рух
+hud.rotate = Поворот
+hud.soft_drop = М'який Скид
+hud.hard_drop = Різкий Скид
+hud.hold_key = Відкласти
+hud.pause = Пауза
+
+callout.single = ОДИНАРНА
+callout.double = ПОДВІЙНА
+callout.triple = ПОТРІЙНА
+callout.tetris = ТЕТРИС
+callout.t_spin = Т-СПІН
+callout.t_spin_mini = МІНІ Т-СПІН
+callout.back_to_back = ПОСПІЛЬ
+callout.perfect_clear = ІДЕАЛЬНЕ ОЧИЩЕННЯ
+callout.combo = КОМБО
+callout.speed_surge = ПРИСКОРЕННЯ!
+callout.golden = ЗОЛОТО x2
+

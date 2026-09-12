@@ -1,0 +1,153 @@
+# Tessera - Spanish string catalog.
+# Format: section.key = value   (# starts a comment, \n is a line break)
+
+main_menu.title = Tessera
+main_menu.play = Jugar
+main_menu.options = Opciones
+main_menu.records = Récords
+main_menu.credits = Créditos
+main_menu.quit = Salir
+
+pause.title = PAUSA
+pause.resume = Reanudar
+pause.restart = Reiniciar
+pause.options = Opciones
+pause.main_menu = Volver al Menú
+pause.confirm_restart = ¿Reiniciar la partida?
+pause.confirm_quit = ¿Salir de la partida?
+
+game_over.title = FIN DE LA PARTIDA
+game_over.score = PUNTOS
+game_over.lines = LÍNEAS
+game_over.level = NIVEL
+game_over.time = TIEMPO
+game_over.new_record = NUEVO RÉCORD
+game_over.enter_name = Escribe tu nombre
+game_over.save_record = Guardar Récord
+game_over.saved = Guardado
+game_over.unsaved_record = ¿Salir sin guardar tu récord?
+game_over.play_again = Jugar de Nuevo
+game_over.main_menu = Menú Principal
+
+options.title = OPCIONES
+options.gameplay = Jugabilidad
+options.hud = HUD
+options.graphics = Gráficos
+options.audio = Audio
+options.controls = Controles
+options.language = Idioma
+options.back = Volver
+options.coming_soon = Próximamente.
+
+options.controls_keyboard = Teclado
+options.controls_gamepad = Mando
+options.controls_back = Volver
+
+options.gameplay_vibration = Vibración del Mando:
+options.gameplay_lightbar = Barra de Luz del Mando:
+options.gameplay_shake = Vibración de Pantalla:
+options.gameplay_ghost = Pieza Fantasma:
+options.gameplay_hold = Guardar Pieza:
+options.gameplay_next_length = Piezas Siguientes:
+options.gameplay_randomiser = Generador Aleatorio:
+options.randomiser_seven_bag = Bolsa de 7
+options.randomiser_random = Aleatorio
+options.restart_to_apply = Estos ajustes solo se aplican en una nueva partida
+
+options.hud_hold = Mostrar Guardada:
+options.hud_next = Mostrar Siguiente:
+options.hud_score = Mostrar Puntos:
+options.hud_lines = Mostrar Líneas:
+options.hud_level = Mostrar Nivel:
+options.hud_time = Mostrar Tiempo:
+options.hud_controls_legend = Mostrar Leyenda de Controles:
+
+options.language_english = English
+options.language_spanish = Español
+options.language_german = Deutsch
+options.language_russian = Русский
+options.language_ukrainian = Українська
+
+options.key_move_left = Mover Pieza a la Izquierda
+options.key_move_right = Mover Pieza a la Derecha
+options.key_soft_drop = Bajar Pieza
+options.key_hard_drop = Soltar Pieza
+options.key_rotate_cw = Girar Pieza a la Derecha
+options.key_rotate_ccw = Girar Pieza a la Izquierda
+options.key_hold = Guardar Pieza
+options.key_pause = Pausa
+
+options.gamepad_xbox = XBOX
+options.gamepad_playstation = PlayStation
+
+options.resolution = Resolución de Pantalla:
+options.window_mode = Modo de Ventana:
+options.vsync = Sincronización Vertical:
+options.show_fps = Mostrar FPS:
+options.crt_filter = Filtro CRT:
+options.mode_fullscreen = Pantalla Completa
+options.mode_borderless = Sin Bordes
+options.mode_window = Ventana
+options.sound = Volumen de Sonido:
+options.music = Volumen de Música:
+options.apply = Aplicar
+options.reset = Restablecer
+options.back_button = Volver
+options.unsaved = Tienes cambios sin guardar.\n¿Guardarlos antes de salir?
+options.borderless_note = No puedes cambiar la resolución en modo Sin Bordes.
+
+common.yes = Sí
+common.no = No
+
+credits.title = CRÉDITOS
+credits.intro = Este juego está hecho por mí, Demian Blogan.
+credits.blurb = Este es el segundo proyecto de mi portafolio. Es pequeño y compacto, pero\nestoy orgulloso de cómo quedaron los efectos visuales y las animaciones del\nmenú - crear todo eso fue el objetivo de este proyecto, y espero que lo hayas disfrutado.
+credits.email = Mi correo: demianblogan@gmail.com
+credits.linkedin = LinkedIn: linkedin.com/in/demianblogan
+credits.instagram = Instagram: instagram.com/demianblogan
+credits.code = Código de este juego: github.com/demianblogan/Tessera
+credits.portfolio = Mi portafolio: github.com/demianblogan
+credits.programming = Mi Canal de Programación: youtube.com/@BloganProgrammer
+credits.gaming = Mi Canal de Videojuegos: youtube.com/@BloganGamer
+credits.back = Volver
+
+records.title = RÉCORDS
+records.header_name = NOMBRE
+records.header_score = PUNTOS
+records.header_lines = LÍNEAS
+records.header_level = NIVEL
+records.reset = Restablecer
+records.back = Volver
+records.confirm_reset = ¿Borrar todos los récords?
+
+loading.audio = Cargando Sonido...
+loading.music = Cargando Música...
+loading.interface = Cargando Interfaz...
+
+hud.hold = GUARDAR
+hud.next = SIGUIENTE
+hud.score = PUNTOS
+hud.lines = LÍNEAS
+hud.level = NIVEL
+hud.time = TIEMPO
+
+hud.controls = CONTROLES
+hud.move = Mover
+hud.rotate = Girar
+hud.soft_drop = Bajada Suave
+hud.hard_drop = Bajada Rápida
+hud.hold_key = Guardar
+hud.pause = Pausa
+
+callout.single = SENCILLO
+callout.double = DOBLE
+callout.triple = TRIPLE
+callout.tetris = TETRIS
+callout.t_spin = GIRO EN T
+callout.t_spin_mini = MINI GIRO EN T
+callout.back_to_back = SEGUIDOS
+callout.perfect_clear = LIMPIEZA PERFECTA
+callout.combo = COMBO
+callout.speed_surge = ¡MÁS VELOCIDAD!
+callout.golden = DORADO x2
+

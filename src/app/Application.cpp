@@ -290,7 +290,7 @@ Application::Application()
 	// stream header; decoding streams on sf::Music's own thread during play.
 	music.Load(Assets::MusicID::MainMenu, Assets::Paths::Music::MainMenu);
 
-	if (!localization.Load(Assets::Paths::Data::LocalizationDir))
+	if (!localization.Load(Assets::Paths::Data::LocalizationDir, settings.GetSettings().language))
 	{
 		std::cerr << "WARNING: localization catalog not found at \""
 			<< Assets::Paths::Data::LocalizationDir << "\" -- the UI will show raw text keys.\n";
