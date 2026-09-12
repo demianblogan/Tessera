@@ -15,6 +15,7 @@
 #include <SFML/Graphics/View.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../gameplay/Board.h"
 #include "../resources/Assets.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
@@ -65,6 +66,19 @@ namespace
 	// Escalation (see EscalationDirector).
 	const sf::Color SpeedSurgeColour{ 255, 90, 70 };
 	const sf::Color GoldenColour{ 255, 205, 40 };
+
+	// Screen-space centre of a board grid cell -- the same placement
+	// BoardRenderer draws locked cells at, used to spawn row-clear shards and
+	// to centre the T-spin burst on the piece that just locked.
+	[[nodiscard]] sf::Vector2f CellCentre(int gridX, int gridY)
+	{
+		return
+		{
+			BoardRenderer::BoardPosition.x + (static_cast<float>(gridX) + 0.5f) * BoardRenderer::BlockSize,
+			BoardRenderer::BoardPosition.y
+				+ (static_cast<float>(gridY - Board::BufferHeight) + 0.5f) * BoardRenderer::BlockSize
+		};
+	}
 }
 
 GameplayState::GameplayState(Context& context, bool playIntro)
@@ -412,14 +426,53 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		effects.TriggerLandingFlash(events.landedBlocks);
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
 		sceneMotion.Nudge({ 0.f, LandNudge });
+
+		// A T-spin's own tell, independent of whether it cleared any lines --
+		// decided at lock time, same batch as landed.
+		if (events.tSpin)
+		{
+			sf::Vector2f centre{ 0.f, 0.f };
+			for (const sf::Vector2i& block : events.landedBlocks)
+			{
+				centre += CellCentre(block.x, block.y);
+			}
+			centre /= static_cast<float>(events.landedBlocks.size());
+			effects.TriggerTSpinBurst(centre);
+		}
 	}
 
 	if (events.rowsDetected)
 	{
 		context.audioPlayer.Play(Assets::SoundID::RowCleared);
-		effects.TriggerRowClear(events.detectedRows);
 
-		const bool isTetris = events.detectedRows.size() >= 4;
+		// Rank (0 Single .. 3 Tetris) scales the flash/sweep and the shatter
+		// spawned from every occupied cell in the clearing rows -- read before
+		// the delay resolves and the rows actually disappear.
+		const int rank = std::clamp(static_cast<int>(events.detectedRows.size()) - 1, 0, 3);
+
+		std::vector<EffectsController::ClearedCell> clearedCells;
+		const Board::Grid& grid = session.GetBoard().GetGrid();
+		for (int row : events.detectedRows)
+		{
+			for (int x = 0; x < Board::WIDTH; ++x)
+			{
+				const Cell& cell = grid[static_cast<std::size_t>(row)][static_cast<std::size_t>(x)];
+				if (!cell.occupied)
+				{
+					continue;
+				}
+
+				const int textureIndex = cell.kind == Cell::Kind::Garbage
+					? BoardRenderer::WallTextureIndex
+					: static_cast<int>(cell.tetrominoType);
+				clearedCells.push_back({ CellCentre(x, row), textureIndex });
+			}
+		}
+
+		effects.TriggerRowClear(events.detectedRows, rank, clearedCells);
+
+		const bool isTetris = rank >= 3;
+		effects.TriggerShake(0.08f + 0.09f * static_cast<float>(rank), 3.f + 9.f * static_cast<float>(rank));
 		Haptics::Pulse(context.gamepadHaptics, isTetris ? context.hapticSettings.tetris : context.hapticSettings.rowCleared);
 		sceneMotion.Nudge({ 0.f, -(isTetris ? TetrisNudge : RowClearNudge) });
 	}
@@ -427,6 +480,13 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	if (events.rowsCleared)
 	{
 		hud.OnRowsCleared();
+
+		if (events.perfectClear)
+		{
+			effects.TriggerPerfectClearBurst(
+				{ BoardRenderer::BoardPosition, { Board::WIDTH * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } });
+			effects.TriggerShake(0.3f, 14.f);
+		}
 	}
 
 	// rowsCleared (with the combo/back-to-back/Perfect Clear verdict) only

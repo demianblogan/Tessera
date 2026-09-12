@@ -1,8 +1,18 @@
 #include "EffectsController.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "../utils/Random.h"
+
+namespace
+{
+	constexpr float Pi = 3.14159265f;
+	constexpr float ShardGravity = 260.f;
+
+	const sf::Color TSpinColour{ 200, 120, 255 };
+	const sf::Color PerfectClearColour{ 255, 215, 90 };
+}
 
 void EffectsController::TriggerShake(float duration, float intensity)
 {
@@ -22,12 +32,91 @@ void EffectsController::TriggerLandingFlash(const std::array<sf::Vector2i, Tetro
 	landingFlashTimer = LandingFlashDuration;
 }
 
-void EffectsController::TriggerRowClear(const std::vector<int>& rows)
+void EffectsController::TriggerRowClear(const std::vector<int>& rows, int rank, const std::vector<ClearedCell>& cells)
 {
 	for (int row : rows)
 	{
-		rowClearEffects.push_back({ .row = row, .timer = 0.f });
+		rowClearEffects.push_back({ .row = row, .timer = 0.f, .rank = rank });
 	}
+
+	// Higher ranks throw more shards, faster and longer-lived, so a Tetris
+	// reads as a real shattering rather than the same handful of specks a
+	// Single gets.
+	const int shardsPerCell = 2 + rank;
+	const float baseSpeed = 70.f + static_cast<float>(rank) * 35.f;
+
+	for (const ClearedCell& cell : cells)
+	{
+		for (int i = 0; i < shardsPerCell; ++i)
+		{
+			const float angle = Random::Float(0.f, 2.f * Pi);
+			const float speed = baseSpeed * Random::Float(0.5f, 1.3f);
+
+			Shard shard;
+			shard.position = cell.position;
+			shard.velocity = { std::cos(angle) * speed, std::sin(angle) * speed - 40.f };
+			shard.rotation = Random::Float(0.f, 360.f);
+			shard.angularVelocity = Random::Float(-260.f, 260.f);
+			shard.maxLife = 0.4f + static_cast<float>(rank) * 0.12f + Random::Float(0.f, 0.15f);
+			shard.life = shard.maxLife;
+			shard.size = Random::Float(0.35f, 0.55f);
+			shard.textureIndex = cell.textureIndex;
+			shards.push_back(shard);
+		}
+	}
+}
+
+void EffectsController::TriggerTSpinBurst(sf::Vector2f centre)
+{
+	constexpr int Count = 26;
+
+	for (int i = 0; i < Count; ++i)
+	{
+		const float angle = (static_cast<float>(i) / static_cast<float>(Count)) * 2.f * Pi + Random::Float(-0.2f, 0.2f);
+		const float radius = Random::Float(6.f, 18.f);
+		const float speed = Random::Float(90.f, 190.f);
+
+		// Mostly tangential (a spiral around the piece), with a light outward push.
+		const sf::Vector2f radial{ std::cos(angle), std::sin(angle) };
+		const sf::Vector2f tangent{ -radial.y, radial.x };
+
+		Shard shard;
+		shard.position = centre + radial * radius;
+		shard.velocity = tangent * speed + radial * (speed * 0.35f);
+		shard.maxLife = Random::Float(0.4f, 0.65f);
+		shard.life = shard.maxLife;
+		shard.size = Random::Float(0.14f, 0.24f);
+		shard.textureIndex = -1;
+		shard.tint = TSpinColour;
+		shards.push_back(shard);
+	}
+}
+
+void EffectsController::TriggerPerfectClearBurst(sf::FloatRect boardArea)
+{
+	constexpr int Count = 90;
+
+	for (int i = 0; i < Count; ++i)
+	{
+		const sf::Vector2f position{
+			boardArea.position.x + Random::Float(0.f, boardArea.size.x),
+			boardArea.position.y + Random::Float(0.f, boardArea.size.y) };
+
+		const float angle = Random::Float(0.f, 2.f * Pi);
+		const float speed = Random::Float(60.f, 220.f);
+
+		Shard shard;
+		shard.position = position;
+		shard.velocity = { std::cos(angle) * speed, std::sin(angle) * speed - 60.f };
+		shard.maxLife = Random::Float(0.6f, 1.1f);
+		shard.life = shard.maxLife;
+		shard.size = Random::Float(0.18f, 0.34f);
+		shard.textureIndex = -1;
+		shard.tint = PerfectClearColour;
+		shards.push_back(shard);
+	}
+
+	perfectClearFlashTimer = PerfectClearFlashDuration;
 }
 
 void EffectsController::Update(float deltaTime)
@@ -54,6 +143,25 @@ void EffectsController::Update(float deltaTime)
 		rowClearEffects,
 		[](const RowClearEffect& effect) { return effect.timer >= RowClearDuration; }
 	);
+
+	// =====================================================
+	// Shards (row-clear shatter, T-spin swirl, Perfect Clear burst)
+	// =====================================================
+
+	for (Shard& shard : shards)
+	{
+		shard.velocity.y += ShardGravity * deltaTime;
+		shard.position += shard.velocity * deltaTime;
+		shard.rotation += shard.angularVelocity * deltaTime;
+		shard.life -= deltaTime;
+	}
+
+	std::erase_if(shards, [](const Shard& shard) { return shard.life <= 0.f; });
+
+	if (perfectClearFlashTimer > 0.f)
+	{
+		perfectClearFlashTimer = std::max(0.f, perfectClearFlashTimer - deltaTime);
+	}
 
 	// =====================================================
 	// Screen shake
@@ -86,4 +194,9 @@ void EffectsController::Update(float deltaTime)
 float EffectsController::GetLandingFlashProgress() const
 {
 	return std::clamp(landingFlashTimer / LandingFlashDuration, 0.f, 1.f);
+}
+
+float EffectsController::GetPerfectClearFlashProgress() const
+{
+	return std::clamp(perfectClearFlashTimer / PerfectClearFlashDuration, 0.f, 1.f);
 }

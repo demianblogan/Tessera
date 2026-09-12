@@ -32,6 +32,11 @@ public:
 	static constexpr float BlockSize = 42.f;
 	static constexpr sf::Vector2f BoardPosition{ 720.f, 84.f };
 
+	// The block-spritesheet cell a garbage row (see EscalationDirector) draws
+	// from instead of a tetromino colour -- shared with GameplayState so it can
+	// build EffectsController::ClearedCell entries for the row-clear shatter.
+	static constexpr int WallTextureIndex = 10;
+
 	explicit BoardRenderer(Context& context);
 
 	// Advances the next-queue slide and any hold-swap flight: call once per
@@ -71,7 +76,6 @@ public:
 
 private:
 	static constexpr int SpriteSize = 16;
-	static constexpr int WallTextureIndex = 10;
 
 	// Next-queue preview sizing: the piece that spawns next is the "hero" slot,
 	// the rest are smaller and progressively darkened.

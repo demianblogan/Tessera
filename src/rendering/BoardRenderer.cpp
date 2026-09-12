@@ -6,9 +6,12 @@
 #include <utility>
 #include <vector>
 
+#include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/System/Angle.hpp>
 
 #include "../config/HapticSettings.h"
 #include "../core/Context.h"
@@ -36,6 +39,28 @@ namespace
 	{
 		return BoardRenderer::BoardPosition.y
 			+ static_cast<float>(gridY - Board::BufferHeight) * BoardRenderer::BlockSize;
+	}
+
+	[[nodiscard]] sf::Color LerpColour(sf::Color a, sf::Color b, float t)
+	{
+		const auto lerp = [t](std::uint8_t x, std::uint8_t y)
+		{
+			return static_cast<std::uint8_t>(static_cast<float>(x) + (static_cast<float>(y) - x) * t);
+		};
+		return sf::Color(lerp(a.r, b.r), lerp(a.g, b.g), lerp(a.b, b.b));
+	}
+
+	// Row-clear flash/sweep colour by rank (0 Single .. 1 Tetris): cool cyan
+	// climbing to a hot white-gold, so a Tetris reads as visibly hotter than a
+	// Single, not just wider.
+	[[nodiscard]] sf::Color RowClearFlashColour(float rankT)
+	{
+		return LerpColour(sf::Color(120, 220, 255), sf::Color(255, 235, 160), rankT);
+	}
+
+	[[nodiscard]] sf::Color RowClearSweepColour(float rankT)
+	{
+		return LerpColour(sf::Color(180, 255, 255), sf::Color(255, 250, 210), rankT);
 	}
 }
 
@@ -288,13 +313,20 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	blockSprite.setColor(sf::Color::White);
 
 	// =====================================================
-	// Row-clear flash / sweep
+	// Row-clear flash / sweep -- colour, width and peak brightness escalate
+	// with rank (0 Single .. 3 Tetris), so a Tetris reads as a hotter, wider
+	// event than a Single, not just four of the same thing at once.
 	// =====================================================
 
 	for (const EffectsController::RowClearEffect& effect : effects.GetRowClearEffects())
 	{
 		const float t = effect.timer / EffectsController::RowClearDuration;
-		const auto alpha = static_cast<std::uint8_t>((1.f - t) * 255.f);
+		const float rankT = std::clamp(static_cast<float>(effect.rank) / 3.f, 0.f, 1.f);
+
+		const sf::Color flashColour = RowClearFlashColour(rankT);
+		const sf::Color sweepColour = RowClearSweepColour(rankT);
+		const float peakAlpha = 200.f + 55.f * rankT;
+		const auto alpha = static_cast<std::uint8_t>((1.f - t) * peakAlpha);
 
 		sf::RectangleShape flash;
 		flash.setPosition(
@@ -304,10 +336,10 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 			}
 		);
 		flash.setSize({ Board::WIDTH * BlockSize, BlockSize });
-		flash.setFillColor(sf::Color(120, 220, 255, alpha));
+		flash.setFillColor(sf::Color(flashColour.r, flashColour.g, flashColour.b, alpha));
 		target.draw(flash);
 
-		const float sweepWidth = 120.f;
+		const float sweepWidth = 120.f + 140.f * rankT;
 		const float sweepX = -sweepWidth + t * (Board::WIDTH * BlockSize + sweepWidth * 2.f);
 
 		sf::RectangleShape sweep;
@@ -318,8 +350,66 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 			}
 		);
 		sweep.setSize({ sweepWidth, BlockSize });
-		sweep.setFillColor(sf::Color(180, 255, 255, alpha));
+		sweep.setFillColor(sf::Color(sweepColour.r, sweepColour.g, sweepColour.b, alpha));
 		target.draw(sweep);
+	}
+
+	// =====================================================
+	// Shards -- the row-clear shatter, the T-spin swirl, the Perfect Clear
+	// burst. Fragments of the block spritesheet (textureIndex >= 0) tumble and
+	// fade; plain colour dots (textureIndex < 0) do the same without a sprite.
+	// =====================================================
+
+	for (const EffectsController::Shard& shard : effects.GetShards())
+	{
+		const float lifeT = std::clamp(shard.life / shard.maxLife, 0.f, 1.f);
+		const auto alpha = static_cast<std::uint8_t>(lifeT * 255.f);
+
+		if (shard.textureIndex >= 0)
+		{
+			blockSprite.setTextureRect(
+				{
+					{ shard.textureIndex * SpriteSize, 0 },
+					{ SpriteSize, SpriteSize }
+				}
+			);
+			blockSprite.setScale({ BlockSize / 16.f * shard.size, BlockSize / 16.f * shard.size });
+			blockSprite.setOrigin({ SpriteSize * 0.5f, SpriteSize * 0.5f });
+			blockSprite.setRotation(sf::degrees(shard.rotation));
+			blockSprite.setPosition(shard.position);
+			blockSprite.setColor(sf::Color(255, 255, 255, alpha));
+			target.draw(blockSprite);
+		}
+		else
+		{
+			sf::RectangleShape dot({ shard.size * BlockSize, shard.size * BlockSize });
+			dot.setOrigin({ dot.getSize().x * 0.5f, dot.getSize().y * 0.5f });
+			dot.setRotation(sf::degrees(shard.rotation));
+			dot.setPosition(shard.position);
+			dot.setFillColor(sf::Color(shard.tint.r, shard.tint.g, shard.tint.b, alpha));
+			target.draw(dot, sf::RenderStates(sf::BlendAdd));
+		}
+	}
+
+	blockSprite.setRotation(sf::degrees(0.f));
+	blockSprite.setOrigin({ 0.f, 0.f });
+	blockSprite.setScale({ BlockSize / 16.f, BlockSize / 16.f });
+	blockSprite.setColor(sf::Color::White);
+
+	// =====================================================
+	// Perfect Clear -- a slow-fading golden wash over the whole board, timed
+	// with the shard burst TriggerPerfectClearBurst spawned into GetShards().
+	// =====================================================
+
+	if (effects.HasPerfectClearFlash())
+	{
+		const float progress = effects.GetPerfectClearFlashProgress();
+		const auto alpha = static_cast<std::uint8_t>(progress * 130.f);
+
+		sf::RectangleShape wash({ Board::WIDTH * BlockSize, Board::VisibleHeight * BlockSize });
+		wash.setPosition(BoardPosition);
+		wash.setFillColor(sf::Color(255, 215, 90, alpha));
+		target.draw(wash, sf::RenderStates(sf::BlendAdd));
 	}
 
 	// =====================================================
