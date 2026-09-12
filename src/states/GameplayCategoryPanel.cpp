@@ -30,7 +30,7 @@ namespace
 GameplayCategoryPanel::GameplayCategoryPanel(Context& context, sf::Color accent)
 	: SettingsCategoryPanel(context, accent, PanelBounds, context.textures.Get(Assets::TextureID::UiFrameCyan))
 	, restartNote(context.fonts.Get(Assets::FontID::Main),
-		context.localization.GetText(TextKey::Options::RestartToApply), 22)
+		context.localization.GetText(TextKey::Options::RestartToApply), 30)
 {
 	restartNote.setFillColor(sf::Color(255, 245, 140));   // light yellow -- a warning, not a label
 

@@ -18,8 +18,8 @@ namespace
 	constexpr sf::IntRect XDpadLeft = Sprite(130, 99, 11, 7);
 	constexpr sf::IntRect XDpadRight = Sprite(146, 99, 11, 7);
 	constexpr sf::IntRect XDpadDown = Sprite(148, 82, 7, 11);
-	constexpr sf::IntRect XLeftBumper = Sprite(336, 49, 15, 13);
-	constexpr sf::IntRect XRightBumper = Sprite(336, 65, 15, 13);
+	constexpr sf::IntRect XLeftBumper = Sprite(336, 85, 15, 7);
+	constexpr sf::IntRect XRightBumper = Sprite(336, 101, 15, 7);
 
 	// PlayStation atlas (a different layout, its own coordinates).
 	constexpr sf::IntRect PFaceButton = Sprite(49, 64, 13, 15);       // Cross -- hard drop
@@ -29,7 +29,7 @@ namespace
 	constexpr sf::IntRect PDpadRight = Sprite(369, 166, 12, 10);
 	constexpr sf::IntRect PDpadDown = Sprite(372, 177, 7, 14);
 	constexpr sf::IntRect PLeftBumper = Sprite(96, 228, 15, 7);
-	constexpr sf::IntRect PRightBumper = Sprite(96, 224, 15, 7);
+	constexpr sf::IntRect PRightBumper = Sprite(96, 244, 15, 7);
 
 	using Action = GamepadPrompts::Action;
 	constexpr std::size_t ActionCount = 8;
