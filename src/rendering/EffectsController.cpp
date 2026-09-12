@@ -124,6 +124,23 @@ void EffectsController::SetCombo(int count)
 	comboTargetLevel = static_cast<float>(std::max(0, count));
 }
 
+void EffectsController::SetEscalationTier(int tierLevel, sf::FloatRect boardArea)
+{
+	escalationTierLevel = tierLevel;
+	ambientArea = boardArea;
+}
+
+void EffectsController::TriggerSpeedSurgeGlow(float duration)
+{
+	surgeGlowDuration = std::max(duration, 0.01f);
+	surgeGlowTimer = surgeGlowDuration;
+}
+
+void EffectsController::TriggerGarbageImpact()
+{
+	garbageFlashTimer = GarbageFlashDuration;
+}
+
 void EffectsController::Update(float deltaTime)
 {
 	// =====================================================
@@ -155,7 +172,10 @@ void EffectsController::Update(float deltaTime)
 
 	for (Shard& shard : shards)
 	{
-		shard.velocity.y += ShardGravity * deltaTime;
+		if (!shard.floaty)
+		{
+			shard.velocity.y += ShardGravity * deltaTime;
+		}
 		shard.position += shard.velocity * deltaTime;
 		shard.rotation += shard.angularVelocity * deltaTime;
 		shard.life -= deltaTime;
@@ -184,6 +204,54 @@ void EffectsController::Update(float deltaTime)
 		{
 			comboGlowLevel = std::max(comboTargetLevel, comboGlowLevel - step);
 		}
+	}
+
+	// =====================================================
+	// Escalation tier ambience -- Tier::Garbage (2) and up: the well's border
+	// glow eases toward red; Tier::Chaos (3): the border shifts to gold and
+	// slow-drifting golden motes spawn across the board.
+	// =====================================================
+
+	{
+		const float targetLevel = escalationTierLevel >= 2 ? (escalationTierLevel >= 3 ? 1.f : 0.6f) : 0.f;
+		const sf::Color targetColour = escalationTierLevel >= 3 ? sf::Color(255, 195, 70) : sf::Color(235, 90, 70);
+
+		const float step = 1.2f * deltaTime;
+		tierGlowLevel = tierGlowLevel < targetLevel
+			? std::min(targetLevel, tierGlowLevel + step)
+			: std::max(targetLevel, tierGlowLevel - step);
+		tierGlowColour = targetColour;
+
+		if (escalationTierLevel >= 3 && ambientArea.size.x > 0.f)
+		{
+			chaosSpawnCarry += deltaTime * ChaosMotesPerSecond;
+			while (chaosSpawnCarry >= 1.f)
+			{
+				chaosSpawnCarry -= 1.f;
+
+				Shard mote;
+				mote.position = { Random::Float(ambientArea.position.x, ambientArea.position.x + ambientArea.size.x),
+					ambientArea.position.y - 12.f };
+				mote.velocity = { Random::Float(-8.f, 8.f), Random::Float(16.f, 30.f) };
+				mote.maxLife = Random::Float(3.f, 5.f);
+				mote.life = mote.maxLife;
+				mote.size = Random::Float(0.08f, 0.16f);
+				mote.textureIndex = -1;
+				mote.tint = sf::Color(255, 210, 90);
+				mote.floaty = true;
+				shards.push_back(mote);
+			}
+		}
+	}
+
+	if (surgeGlowTimer > 0.f)
+	{
+		surgeGlowTimer = std::max(0.f, surgeGlowTimer - deltaTime);
+	}
+
+	if (garbageFlashTimer > 0.f)
+	{
+		garbageFlashTimer = std::max(0.f, garbageFlashTimer - deltaTime);
 	}
 
 	// =====================================================
@@ -222,4 +290,14 @@ float EffectsController::GetLandingFlashProgress() const
 float EffectsController::GetPerfectClearFlashProgress() const
 {
 	return std::clamp(perfectClearFlashTimer / PerfectClearFlashDuration, 0.f, 1.f);
+}
+
+float EffectsController::GetSpeedSurgeGlowProgress() const
+{
+	return std::clamp(surgeGlowTimer / surgeGlowDuration, 0.f, 1.f);
+}
+
+float EffectsController::GetGarbageFlashProgress() const
+{
+	return std::clamp(garbageFlashTimer / GarbageFlashDuration, 0.f, 1.f);
 }

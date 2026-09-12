@@ -421,6 +421,13 @@ void GameplayState::PerformHardDrop()
 
 void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 {
+	// Escalation tier ambience (see EscalationDirector::Tier) -- polled every
+	// frame rather than off a tier-changed event, so the border glow just eases
+	// toward wherever the current tier points it.
+	const sf::FloatRect boardArea{ BoardRenderer::BoardPosition,
+		{ Board::WIDTH * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } };
+	effects.SetEscalationTier(static_cast<int>(session.GetEscalationTier()), boardArea);
+
 	if (events.landed)
 	{
 		effects.TriggerLandingFlash(events.landedBlocks);
@@ -538,11 +545,14 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 			1, SpeedSurgeColour);
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.speedSurge);
 		effects.TriggerShake(0.25f, 10.f);
+		effects.TriggerSpeedSurgeGlow(EscalationDirector::SurgeDuration);
 	}
 
 	if (events.garbagePushed)
 	{
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.garbageRow);
+		effects.TriggerGarbageImpact();
+		effects.TriggerShake(0.15f, 7.f);
 	}
 }
 
