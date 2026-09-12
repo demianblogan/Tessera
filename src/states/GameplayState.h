@@ -70,6 +70,14 @@ private:
 
 	sf::Sprite backgroundSprite;
 
+	// Set by PerformHardDrop() right before session.HardDrop() (which locks
+	// the piece instantly -- lock timing has to stay exact); read back the
+	// next time `landed` arrives so the cosmetic slide/dust know this lock was
+	// a hard drop, and how far it fell.
+	bool pendingHardDropAnimation = false;
+	int hardDropStartRow = 0;
+	Tetromino::Type hardDropType = Tetromino::Type::I;
+
 	// The language ApplyGameplaySettings() last refreshed the HUD's cached
 	// captions for.
 	unsigned int seenLocalizationRevision;

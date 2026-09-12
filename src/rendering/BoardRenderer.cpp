@@ -11,6 +11,7 @@
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
 
 #include "../config/HapticSettings.h"
@@ -107,6 +108,26 @@ void BoardRenderer::Update(float deltaTime, const GameplaySession& session)
 			incomingFlight.reset();
 		}
 	}
+
+	if (hardDropFlight)
+	{
+		hardDropFlight->timer += deltaTime;
+		if (hardDropFlight->timer >= HardDropFlightDuration)
+		{
+			hardDropFlight.reset();
+		}
+	}
+}
+
+void BoardRenderer::TriggerHardDropFlight(Tetromino::Type type,
+	const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& cells, int droppedRows)
+{
+	if (droppedRows <= 0)
+	{
+		return;   // already resting -- nothing to slide from
+	}
+
+	hardDropFlight = HardDropFlight{ type, cells, droppedRows, 0.f };
 }
 
 void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
@@ -539,6 +560,74 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 	}
 
 	// =====================================================
+	// Ghost trail -- a faint additive beam per column, from the active piece's
+	// underside down to the ghost's landing preview, so the drop path reads at
+	// a glance instead of two disconnected shapes.
+	// =====================================================
+
+	if (ghostEnabled && session.IsFalling())
+	{
+		const Tetromino& activePiece = session.GetCurrentTetromino();
+		const Tetromino ghostTetromino = session.GetGhostTetromino();
+
+		std::array<int, Board::WIDTH> pieceBottom{};
+		std::array<int, Board::WIDTH> ghostTop{};
+		pieceBottom.fill(-1);
+		ghostTop.fill(Board::HEIGHT);
+
+		for (const sf::Vector2i& block : activePiece.GetBlockPositions())
+		{
+			if (block.x >= 0 && block.x < Board::WIDTH)
+			{
+				pieceBottom[static_cast<std::size_t>(block.x)] =
+					std::max(pieceBottom[static_cast<std::size_t>(block.x)], block.y);
+			}
+		}
+		for (const sf::Vector2i& block : ghostTetromino.GetBlockPositions())
+		{
+			if (block.x >= 0 && block.x < Board::WIDTH)
+			{
+				ghostTop[static_cast<std::size_t>(block.x)] =
+					std::min(ghostTop[static_cast<std::size_t>(block.x)], block.y);
+			}
+		}
+
+		constexpr float TrailWidth = 6.f;
+		const sf::Color trailTop(190, 225, 255, 80);
+		const sf::Color trailBottom(190, 225, 255, 6);
+
+		for (int x = 0; x < Board::WIDTH; ++x)
+		{
+			const int bottom = pieceBottom[static_cast<std::size_t>(x)];
+			const int top = ghostTop[static_cast<std::size_t>(x)];
+			if (bottom < 0 || top >= Board::HEIGHT || top <= bottom)
+			{
+				continue;
+			}
+
+			const float topY = RowTop(bottom) + BlockSize;
+			const float bottomY = RowTop(top);
+			if (bottomY <= topY + 2.f)
+			{
+				continue;
+			}
+
+			const float left = BoardPosition.x + static_cast<float>(x) * BlockSize + (BlockSize - TrailWidth) * 0.5f;
+			const float right = left + TrailWidth;
+
+			sf::VertexArray beam(sf::PrimitiveType::Triangles, 6);
+			beam[0] = { { left, topY }, trailTop };
+			beam[1] = { { right, topY }, trailTop };
+			beam[2] = { { right, bottomY }, trailBottom };
+			beam[3] = { { left, topY }, trailTop };
+			beam[4] = { { right, bottomY }, trailBottom };
+			beam[5] = { { left, bottomY }, trailBottom };
+
+			target.draw(beam, sf::RenderStates(sf::BlendAdd));
+		}
+	}
+
+	// =====================================================
 	// Ghost  (hidden once the piece is locked and rows are clearing)
 	// =====================================================
 
@@ -689,6 +778,42 @@ void BoardRenderer::Render(sf::RenderTarget& target, const GameplaySession& sess
 				}
 			);
 
+			target.draw(blockSprite);
+		}
+	}
+
+	// =====================================================
+	// Hard-drop flight -- the cosmetic slide from where the piece was to where
+	// it already (instantly) locked, so the drop doesn't read as a teleport.
+	// =====================================================
+
+	if (hardDropFlight)
+	{
+		const float t = std::clamp(hardDropFlight->timer / HardDropFlightDuration, 0.f, 1.f);
+		const float remaining = 1.f - UI::Easing::EaseOutCubic(t);
+		const float offsetY = -remaining * static_cast<float>(hardDropFlight->droppedRows) * BlockSize;
+
+		blockSprite.setTextureRect(
+			{
+				{ static_cast<int>(hardDropFlight->type) * SpriteSize, 0 },
+				{ SpriteSize, SpriteSize }
+			}
+		);
+		blockSprite.setColor(sf::Color::White);
+
+		for (const sf::Vector2i& cell : hardDropFlight->cells)
+		{
+			if (cell.y < Board::BufferHeight)
+			{
+				continue;
+			}
+
+			blockSprite.setPosition(
+				{
+					BoardPosition.x + cell.x * BlockSize,
+					RowTop(cell.y) + offsetY
+				}
+			);
 			target.draw(blockSprite);
 		}
 	}

@@ -68,6 +68,11 @@ public:
 	void TriggerShake(float duration, float intensity);
 	void TriggerLandingFlash(const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& blocks);
 
+	// A hard drop just landed: a small puff of dust at each of the piece's
+	// (screen-space) cell centres, distinct from the ordinary landing flash
+	// every lock gets.
+	void TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints);
+
 	// `rank` (0 Single .. 3 Tetris) scales the flash/sweep and the shatter
 	// spawned from `cells` (every occupied cell in the clearing rows).
 	void TriggerRowClear(const std::vector<int>& rows, int rank, const std::vector<ClearedCell>& cells);

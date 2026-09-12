@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
 
@@ -70,6 +71,15 @@ public:
 
 	[[nodiscard]] bool IsHoldFlightActive() const { return outgoingFlight || incomingFlight; }
 
+	// A hard drop already locked the piece instantly (GameplaySession never
+	// delays it -- lock timing has to stay exact); this is purely the cosmetic
+	// slide from where it was to where it landed, so the drop doesn't read as
+	// a teleport. `cells` are the piece's final (locked) grid positions,
+	// `droppedRows` how far it fell -- both already known from the landed
+	// event, so this never needs to see the piece's pre-drop position itself.
+	void TriggerHardDropFlight(Tetromino::Type type,
+		const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& cells, int droppedRows);
+
 	// Whether the landing-preview ghost piece is drawn. A player preference,
 	// read from settings.
 	void SetGhostEnabled(bool enabled) { ghostEnabled = enabled; }
@@ -90,6 +100,19 @@ private:
 
 	// How long a hold-swap flight takes to cross from board to HOLD box (or back).
 	static constexpr float HoldFlightDuration = 0.22f;
+
+	// How long the cosmetic hard-drop slide takes, regardless of how far the
+	// piece actually fell -- it should read as "very fast", not "proportional".
+	static constexpr float HardDropFlightDuration = 0.09f;
+
+	// A hard drop's cosmetic slide from its pre-drop row to where it locked.
+	struct HardDropFlight
+	{
+		Tetromino::Type type;
+		std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> cells;   // final, locked positions
+		int droppedRows = 0;
+		float timer = 0.f;
+	};
 
 	// One piece animating between two points/sizes -- either board <-> HOLD box.
 	struct PieceFlight
@@ -124,6 +147,7 @@ private:
 
 	std::optional<PieceFlight> outgoingFlight;   // board -> HOLD box
 	std::optional<PieceFlight> incomingFlight;   // HOLD box -> board
+	std::optional<HardDropFlight> hardDropFlight;
 
 	bool ghostEnabled = true;
 

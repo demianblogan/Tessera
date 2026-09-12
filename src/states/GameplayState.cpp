@@ -411,6 +411,18 @@ void GameplayState::PerformHardDrop()
 		return;
 	}
 
+	// HardDrop() locks the piece instantly -- capture its pre-drop row (the
+	// topmost cell of its current shape) here, before that happens, so the
+	// purely cosmetic slide/dust triggered off the resulting `landed` event
+	// know how far it actually fell.
+	hardDropStartRow = Board::HEIGHT;
+	for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
+	{
+		hardDropStartRow = std::min(hardDropStartRow, block.y);
+	}
+	hardDropType = session.GetCurrentTetromino().GetType();
+	pendingHardDropAnimation = true;
+
 	session.HardDrop();
 
 	context.audioPlayer.Play(Assets::SoundID::DropPiece);
@@ -433,6 +445,24 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		effects.TriggerLandingFlash(events.landedBlocks);
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
 		sceneMotion.Nudge({ 0.f, LandNudge });
+
+		if (pendingHardDropAnimation)
+		{
+			pendingHardDropAnimation = false;
+
+			int landedTopRow = Board::HEIGHT;
+			std::vector<sf::Vector2f> impactPoints;
+			impactPoints.reserve(events.landedBlocks.size());
+			for (const sf::Vector2i& block : events.landedBlocks)
+			{
+				landedTopRow = std::min(landedTopRow, block.y);
+				impactPoints.push_back(CellCentre(block.x, block.y));
+			}
+
+			const int droppedRows = landedTopRow - hardDropStartRow;
+			boardRenderer.TriggerHardDropFlight(hardDropType, events.landedBlocks, droppedRows);
+			effects.TriggerHardDropDust(impactPoints);
+		}
 
 		// A lock that starts no clear breaks any combo chain in progress --
 		// fade the glow out. One that does clear leaves the combo level alone

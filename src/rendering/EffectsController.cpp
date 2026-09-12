@@ -66,6 +66,28 @@ void EffectsController::TriggerRowClear(const std::vector<int>& rows, int rank, 
 	}
 }
 
+void EffectsController::TriggerHardDropDust(const std::vector<sf::Vector2f>& impactPoints)
+{
+	constexpr int PerPoint = 3;
+	const sf::Color dustColour(220, 225, 235);
+
+	for (const sf::Vector2f& point : impactPoints)
+	{
+		for (int i = 0; i < PerPoint; ++i)
+		{
+			Shard shard;
+			shard.position = point;
+			shard.velocity = { Random::Float(-45.f, 45.f), Random::Float(-90.f, -25.f) };
+			shard.maxLife = Random::Float(0.2f, 0.35f);
+			shard.life = shard.maxLife;
+			shard.size = Random::Float(0.1f, 0.18f);
+			shard.textureIndex = -1;
+			shard.tint = dustColour;
+			shards.push_back(shard);
+		}
+	}
+}
+
 void EffectsController::TriggerTSpinBurst(sf::Vector2f centre)
 {
 	constexpr int Count = 26;
