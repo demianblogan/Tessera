@@ -103,6 +103,26 @@ TEST_CASE("garbage rows are queued every LinesPerGarbageRow, only once the Garba
 	CHECK_FALSE(director.ConsumePendingGarbageRow());   // only the one row
 }
 
+TEST_CASE("the first garbage row is granted on a timer even with no lines cleared yet")
+{
+	EscalationDirector director;
+	director.Update(EscalationDirector::GarbageTierStart + 0.01f);
+	(void)director.ConsumeEvents();
+
+	// No clears at all -- just short of the deadline, nothing yet.
+	director.Update(EscalationDirector::FirstGarbageDelay - 0.1f);
+	CHECK_FALSE(director.ConsumePendingGarbageRow());
+
+	// Crossing it grants exactly one, with nothing still queued behind it.
+	director.Update(0.2f);
+	CHECK(director.ConsumePendingGarbageRow());
+	CHECK_FALSE(director.ConsumePendingGarbageRow());
+
+	// It only ever fires once -- letting more time pass doesn't grant another.
+	director.Update(EscalationDirector::FirstGarbageDelay * 2.f);
+	CHECK_FALSE(director.ConsumePendingGarbageRow());
+}
+
 TEST_CASE("a burst clear can queue more than one garbage row, drained one at a time")
 {
 	EscalationDirector director;
@@ -138,6 +158,32 @@ TEST_CASE("golden pieces are only offered every PiecesPerGoldenPiece spawns in t
 	CHECK(director.ShouldSpawnGoldenPiece());
 
 	// The counter restarts after firing.
+	for (int i = 0; i < EscalationDirector::PiecesPerGoldenPiece - 1; i++)
+	{
+		CHECK_FALSE(director.ShouldSpawnGoldenPiece());
+	}
+	CHECK(director.ShouldSpawnGoldenPiece());
+}
+
+TEST_CASE("the first golden piece is granted on a timer even with barely any spawns")
+{
+	EscalationDirector director;
+	director.Update(EscalationDirector::ChaosTierStart + 0.01f);
+	(void)director.ConsumeEvents();
+
+	// A couple of spawns, nowhere near PiecesPerGoldenPiece -- still no.
+	CHECK_FALSE(director.ShouldSpawnGoldenPiece());
+	CHECK_FALSE(director.ShouldSpawnGoldenPiece());
+
+	// Just short of the deadline, nothing yet.
+	director.Update(EscalationDirector::FirstGoldenDelay - 0.1f);
+	CHECK_FALSE(director.ShouldSpawnGoldenPiece());
+
+	// Crossing it grants the very next spawn, however few pieces that took.
+	director.Update(0.2f);
+	CHECK(director.ShouldSpawnGoldenPiece());
+
+	// It only ever fires once this way -- the counter takes over from here.
 	for (int i = 0; i < EscalationDirector::PiecesPerGoldenPiece - 1; i++)
 	{
 		CHECK_FALSE(director.ShouldSpawnGoldenPiece());

@@ -31,6 +31,9 @@ void EscalationDirector::UpdateTier()
 		tier = newTier;
 		pendingEvents.tierChanged = true;
 		pendingEvents.tier = tier;
+
+		if (tier == Tier::Garbage) { garbageTierEnteredAt = elapsedSeconds; }
+		if (tier == Tier::Chaos) { chaosTierEnteredAt = elapsedSeconds; }
 	}
 }
 
@@ -84,6 +87,16 @@ void EscalationDirector::NotifyLinesCleared(int rowCount)
 
 bool EscalationDirector::ConsumePendingGarbageRow()
 {
+	// The first garbage row is time-gated rather than earned by actual clears --
+	// clearing four lines within FirstGarbageDelay of entering the tier isn't
+	// guaranteed, but the tier's own arrival should still be felt on schedule.
+	if (tier >= Tier::Garbage && !firstGarbageGranted
+		&& elapsedSeconds - garbageTierEnteredAt >= FirstGarbageDelay)
+	{
+		firstGarbageGranted = true;
+		return true;
+	}
+
 	if (pendingGarbageRows <= 0)
 	{
 		return false;
@@ -99,6 +112,15 @@ bool EscalationDirector::ShouldSpawnGoldenPiece()
 	{
 		piecesSinceGolden = 0;
 		return false;
+	}
+
+	// As with the first garbage row: don't leave the first golden piece to
+	// however many pieces the player happens to spawn in a given stretch.
+	if (!firstGoldenGranted && elapsedSeconds - chaosTierEnteredAt >= FirstGoldenDelay)
+	{
+		firstGoldenGranted = true;
+		piecesSinceGolden = 0;
+		return true;
 	}
 
 	++piecesSinceGolden;
