@@ -28,7 +28,7 @@ protected:
 
 	void AdjustRow(std::size_t index, int direction) override;
 	void ActivateRow(std::size_t index) override;
-	void RowClicked(std::size_t index) override;
+	void RowClicked(std::size_t index, int direction) override;
 
 private:
 	void SyncRows();

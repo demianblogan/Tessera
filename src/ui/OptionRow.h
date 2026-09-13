@@ -64,6 +64,13 @@ namespace UI
 		int PickArrow(sf::Vector2f point, bool leftLive, bool rightLive);
 		void DrawArrows(sf::RenderTarget& target, float panelAlpha, bool leftLive, bool rightLive) const;
 
+	public:
+		// The arrow side (-1 / +1) a click last landed on via PickArrow, or 0.
+		// Lets a panel's RowClicked() know which direction a mouse click meant.
+		[[nodiscard]] int HoveredArrow() const { return hoveredArrow; }
+
+	protected:
+
 		const sf::Font& font;
 		mutable sf::Text labelText;
 

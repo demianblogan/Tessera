@@ -67,9 +67,9 @@ PauseMenuScreen::PauseMenuScreen(PauseState& owner, std::size_t focusRow)
 		column.SelectNext();
 	}
 
-	column.SetSelectionChangedCallback([this](std::size_t)
+	column.SetSelectionChangedCallback([this](std::size_t, int direction)
 		{
-			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 		});
 
 	ApplySlide();

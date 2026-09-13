@@ -133,9 +133,9 @@ LanguagePickerState::LanguagePickerState(Context& context)
 	}
 
 	column.SetLayout(ColumnTopLeft, RowGap);
-	column.SetSelectionChangedCallback([this](std::size_t index)
+	column.SetSelectionChangedCallback([this](std::size_t index, int direction)
 		{
-			this->context.audioPlayer.Play(Assets::SoundID::MenuItemSelected);
+			this->context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 			if (index < AllLanguages.size())
 			{
 				SetHovered(AllLanguages[index]);

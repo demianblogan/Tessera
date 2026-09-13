@@ -204,6 +204,7 @@ void GamepadCategoryPanel::MoveSelection(int direction)
 		if (next >= static_cast<int>(rows.size()))
 		{
 			focus = Focus::Back;
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected, 1.14f);
 			return;
 		}
 		selectedRow = static_cast<std::size_t>(next);
@@ -213,6 +214,12 @@ void GamepadCategoryPanel::MoveSelection(int direction)
 		focus = Focus::Rows;
 		selectedRow = rows.empty() ? 0 : rows.size() - 1;
 	}
+	else
+	{
+		return;
+	}
+
+	context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 }
 
 void GamepadCategoryPanel::Update(float deltaTime)

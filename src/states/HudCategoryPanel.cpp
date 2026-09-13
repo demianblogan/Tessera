@@ -124,7 +124,7 @@ void HudCategoryPanel::AdjustRow(std::size_t index, int direction)
 	if (index < rows.size())
 	{
 		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 }
 
@@ -133,11 +133,14 @@ void HudCategoryPanel::ActivateRow(std::size_t index)
 	if (index < rows.size())
 	{
 		rows[index]->Activate();
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 }
 
-void HudCategoryPanel::RowClicked(std::size_t /*index*/)
+void HudCategoryPanel::RowClicked(std::size_t index, int /*direction*/)
 {
-	Sfx::Toggle(context.audioPlayer);
+	if (index < rows.size())
+	{
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
+	}
 }

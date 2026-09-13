@@ -89,7 +89,7 @@ namespace UI
 		rowGap = newRowGap;
 	}
 
-	void MenuButtonColumn::SetSelectionChangedCallback(std::function<void(std::size_t)> callback)
+	void MenuButtonColumn::SetSelectionChangedCallback(std::function<void(std::size_t, int)> callback)
 	{
 		onSelectionChanged = std::move(callback);
 	}
@@ -213,7 +213,7 @@ namespace UI
 			selectedIndex = next;
 			if (onSelectionChanged)
 			{
-				onSelectionChanged(selectedIndex);
+				onSelectionChanged(selectedIndex, direction);
 			}
 		}
 	}
@@ -249,10 +249,11 @@ namespace UI
 			{
 				if (i != selectedIndex)
 				{
+					const int direction = i > selectedIndex ? 1 : -1;
 					selectedIndex = i;
 					if (onSelectionChanged)
 					{
-						onSelectionChanged(selectedIndex);
+						onSelectionChanged(selectedIndex, direction);
 					}
 				}
 				return;

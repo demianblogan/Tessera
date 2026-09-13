@@ -63,7 +63,7 @@ protected:
 	// Optional per-row behaviour; defaults call the row directly.
 	virtual void AdjustRow(std::size_t index, int direction);
 	virtual void ActivateRow(std::size_t index);
-	virtual void RowClicked(std::size_t index);
+	virtual void RowClicked(std::size_t index, int direction);
 	virtual void RenderExtra(sf::RenderTarget& /*target*/, float /*alpha*/) {}
 
 	// Helpers for subclasses.

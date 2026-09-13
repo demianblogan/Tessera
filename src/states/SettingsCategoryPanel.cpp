@@ -168,9 +168,9 @@ void SettingsCategoryPanel::ActivateRow(std::size_t index)
 	}
 }
 
-void SettingsCategoryPanel::RowClicked(std::size_t /*index*/)
+void SettingsCategoryPanel::RowClicked(std::size_t /*index*/, int direction)
 {
-	Sfx::Step(context.audioPlayer, 1);
+	Sfx::Step(context.audioPlayer, direction);
 }
 
 void SettingsCategoryPanel::Open()
@@ -481,7 +481,7 @@ bool SettingsCategoryPanel::HandleEvent(const sf::Event& event)
 				{
 					focus = Focus::Rows;
 					selectedRow = i;
-					RowClicked(i);
+					RowClicked(i, rows[i]->HoveredArrow());
 				}
 			}
 			for (std::size_t i = 0; i < ButtonId::ButtonCount; ++i)

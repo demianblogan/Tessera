@@ -44,8 +44,10 @@ namespace UI
 		void SetButtonText(std::size_t index, const sf::String& text);
 
 		// Fired with the new index whenever the selection moves (keyboard, pad or
-		// hover) -- the screen uses it to swap the preview panel.
-		void SetSelectionChangedCallback(std::function<void(std::size_t)> callback);
+		// hover) -- the screen uses it to swap the preview panel. `direction` is
+		// -1 / +1 (up-to-down convention: down/right is +1, up/left is -1), so a
+		// listener can pitch its nav sound the same way the main-menu ring does.
+		void SetSelectionChangedCallback(std::function<void(std::size_t, int)> callback);
 
 		// Fired once per button as it launches into the fly-in.
 		void SetSwooshCallback(std::function<void(std::size_t)> callback);
@@ -122,7 +124,7 @@ namespace UI
 		bool selectionHighlight = true;
 
 		std::size_t selectedIndex = 0;
-		std::function<void(std::size_t)> onSelectionChanged;
+		std::function<void(std::size_t, int)> onSelectionChanged;
 		std::function<void(std::size_t)> onSwoosh;
 		std::vector<char> swooshFired;
 

@@ -94,9 +94,9 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 	column.AddButton(text.GetText(TextKey::Options::Back), [this] { Leave(); }, true);   // white
 
 	column.SetLayout(ColumnTopLeft, RowGap);
-	column.SetSelectionChangedCallback([this](std::size_t)
+	column.SetSelectionChangedCallback([this](std::size_t, int direction)
 		{
-			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 		});
 	column.SetSwooshCallback([this](std::size_t index)
 		{
@@ -104,9 +104,9 @@ OptionsScreen::OptionsScreen(ScreenHost& host, sf::Color accent)
 			context.audioPlayer.Play(Assets::SoundID::MenuItemAppeared, 1.02f + 0.05f * static_cast<float>(index));
 		});
 
-	const auto subSelectionSound = [this](std::size_t)
+	const auto subSelectionSound = [this](std::size_t, int direction)
 		{
-			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected);
+			context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
 		};
 
 	controlsColumn.AddButton(text.GetText(TextKey::Options::ControlsKeyboard), [this] { OpenControlsItem(CtrlKeyboard); }, true, ControlsColour);

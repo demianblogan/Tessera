@@ -195,7 +195,7 @@ void GraphicsCategoryPanel::AdjustRow(std::size_t index, int direction)
 	if (index >= FirstToggleRow)
 	{
 		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 	else
 	{
@@ -218,14 +218,14 @@ void GraphicsCategoryPanel::ActivateRow(std::size_t index)
 	rows[index]->Activate();
 	if (index >= FirstToggleRow)
 	{
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 }
 
-void GraphicsCategoryPanel::RowClicked(std::size_t index)
+void GraphicsCategoryPanel::RowClicked(std::size_t index, int direction)
 {
-	if (index >= FirstToggleRow) { Sfx::Toggle(context.audioPlayer); }
-	else { Sfx::Step(context.audioPlayer, 1); }
+	if (index >= FirstToggleRow) { Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn()); }
+	else { Sfx::Step(context.audioPlayer, direction); }
 }
 
 void GraphicsCategoryPanel::RefreshText()

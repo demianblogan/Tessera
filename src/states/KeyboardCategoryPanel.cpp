@@ -122,7 +122,7 @@ void KeyboardCategoryPanel::ActivateRow(std::size_t index)
 	BeginCapture(index, true);
 }
 
-void KeyboardCategoryPanel::RowClicked(std::size_t index)
+void KeyboardCategoryPanel::RowClicked(std::size_t index, int /*direction*/)
 {
 	BeginCapture(index, false);
 }

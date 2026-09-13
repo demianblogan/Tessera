@@ -178,7 +178,7 @@ void GameplayCategoryPanel::AdjustRow(std::size_t index, int direction)
 	if (index < FirstCarouselRow)
 	{
 		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 	else
 	{
@@ -201,14 +201,14 @@ void GameplayCategoryPanel::ActivateRow(std::size_t index)
 	rows[index]->Activate();
 	if (index < FirstCarouselRow)
 	{
-		Sfx::Toggle(context.audioPlayer);
+		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
 	}
 }
 
-void GameplayCategoryPanel::RowClicked(std::size_t index)
+void GameplayCategoryPanel::RowClicked(std::size_t index, int direction)
 {
-	if (index < FirstCarouselRow) { Sfx::Toggle(context.audioPlayer); }
-	else { Sfx::Step(context.audioPlayer, 1); }
+	if (index < FirstCarouselRow) { Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn()); }
+	else { Sfx::Step(context.audioPlayer, direction); }
 }
 
 void GameplayCategoryPanel::RefreshText()
