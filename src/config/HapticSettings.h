@@ -44,9 +44,9 @@ public:
 	// Menus. The navigation tick fires far more often than anything else, so it
 	// is the softest.
 	Rumble menuNavigation{ 0.05f, 0.12f, 0.05f };
-	// The title letters: a short pulse whose strength grows across "TESSERA"
-	// from `titleLetterBase` (first letter) to base + grow (last letter). The
-	// grow entry's duration is unused.
+	// The title letters: a short pulse whose strength and duration grow
+	// across "TESSERA" from `titleLetterBase` (first letter) to base + grow
+	// (last letter).
 	Rumble titleLetterBase{ 0.12f, 0.24f, 0.05f };
 	Rumble titleLetterGrow{ 0.40f, 0.50f, 0.f };
 	// Each ring entry as it flies in.

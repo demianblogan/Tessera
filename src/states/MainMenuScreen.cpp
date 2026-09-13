@@ -83,7 +83,7 @@ MainMenuScreen::MainMenuScreen(ScreenHost& host, bool animate, std::size_t front
 			context.gamepadHaptics.PulseVibration(
 				base.lowMotor + grow.lowMotor * t,
 				base.highMotor + grow.highMotor * t,
-				base.duration);
+				base.duration + grow.duration * t);
 
 			// ...and the lightbar snaps to that letter's colour as it lands.
 			const sf::Color hue = UI::TetrominoColours[letter % UI::TetrominoColours.size()];

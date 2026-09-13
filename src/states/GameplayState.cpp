@@ -428,8 +428,8 @@ void GameplayState::TryHold()
 
 	if (session.Hold())
 	{
-		// Placeholder sound borrowed from rotate -- a dedicated hold sound
-		// lands with v1.7.0's audio pass. The rumble is its own, though.
+		// Borrowed from rotate -- no dedicated hold sound exists yet. The
+		// rumble is its own, though (see HapticSettings::hold).
 		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
 		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.hold);
 		sceneMotion.Nudge({ 0.f, -HoldNudge });

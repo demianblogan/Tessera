@@ -108,7 +108,7 @@ private:
 	mutable UI::NineSliceFrame leftFrame;
 	sf::Text holdCaption;
 	sf::FloatRect holdBoxBounds;
-	sf::RectangleShape holdPlaceholder;   // empty outline until the hold mechanic lands
+	sf::RectangleShape holdPlaceholder;   // empty outline drawn behind the held piece's preview sprite (BoardRenderer::RenderHoldPreview); stays empty with nothing held
 	sf::RectangleShape leftDivider;
 	StatRow levelRow;
 	StatRow timeRow;
