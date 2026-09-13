@@ -30,9 +30,12 @@ namespace
 		{ Assets::SoundID::RowCleared, "row_cleared" },
 	} };
 
-	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 2> MusicNames{ {
+	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 5> MusicNames{ {
 		{ Assets::MusicID::MainMenu, "main_menu_music" },
 		{ Assets::MusicID::GameOver, "game_over_music" },
+		{ Assets::MusicID::Gameplay1, "gameplay_music_1" },
+		{ Assets::MusicID::Gameplay2, "gameplay_music_2" },
+		{ Assets::MusicID::Gameplay3, "gameplay_music_3" },
 	} };
 
 	template <typename IdType, std::size_t Size>

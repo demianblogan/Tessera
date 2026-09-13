@@ -15,6 +15,7 @@
 #include <SFML/Graphics/View.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../audio/GameplayMusicPlayer.h"
 #include "../gameplay/Board.h"
 #include "../resources/Assets.h"
 #include "../core/Context.h"
@@ -108,10 +109,15 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	SetUpInputBindings();
 	ApplyGameplaySettings();
 
-	// Gameplay has no music for now -- the old track did not fit and a proper
-	// dynamic-intensity score is a v1.8.0 task (Audio & HUD). Silence the shell
-	// track on the way in.
+	// Silence the shell track on the way in and start the shuffled gameplay
+	// playlist (see GameplayMusicPlayer).
 	context.music.Get(Assets::MusicID::MainMenu).stop();
+	context.gameplayMusic.Start();
+}
+
+GameplayState::~GameplayState()
+{
+	context.gameplayMusic.Stop();
 }
 
 void GameplayState::ApplyGameplaySettings()
@@ -777,6 +783,10 @@ void GameplayState::FireClearHaptics(const GameplaySession::Events& events)
 
 void GameplayState::OpenPause()
 {
+	// Muffle the gameplay music while the pause menu covers the game -- as if
+	// stepping into another room. PauseState::RequestResume() eases it back.
+	context.gameplayMusic.SetDucked(true);
+
 	auto frame = std::make_unique<sf::RenderTexture>();
 
 	if (frame->resize(sf::Vector2u(Display::DisplayManager::VirtualSize)))

@@ -1,6 +1,7 @@
 #include "Context.h"
 
 #include "../audio/AudioPlayer.h"
+#include "../audio/GameplayMusicPlayer.h"
 #include "../settings/SettingsManager.h"
 
 Context::Context(
@@ -13,6 +14,7 @@ Context::Context(
     ShaderManager& shaders,
     AudioPlayer& audioPlayer,
     AudioBalance& audioBalance,
+    GameplayMusicPlayer& gameplayMusic,
     HapticSettings& hapticSettings,
     Display::DisplayManager& display,
     SettingsManager& settings,
@@ -31,6 +33,7 @@ Context::Context(
     , shaders(shaders)
     , audioPlayer(audioPlayer)
     , audioBalance(audioBalance)
+    , gameplayMusic(gameplayMusic)
     , hapticSettings(hapticSettings)
     , settings(settings)
     , highScores(highScores)

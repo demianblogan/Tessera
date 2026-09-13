@@ -7,6 +7,7 @@
 
 #include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
+#include "../audio/GameplayMusicPlayer.h"
 #include "../config/HapticSettings.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
@@ -65,6 +66,7 @@ private:
 	AudioBalance balance;
 	HapticSettings hapticSettings;
 	AudioPlayer audioPlayer;
+	GameplayMusicPlayer gameplayMusic;
 	GamepadManager gamepad;
 	Haptics::GamepadHaptics gamepadHaptics;
 	LocalizationManager localization;

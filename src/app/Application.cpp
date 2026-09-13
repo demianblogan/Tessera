@@ -97,6 +97,11 @@ void Application::Update(float deltaTime)
 	gamepad.Update();
 	gamepadHaptics.Update(deltaTime);
 
+	// Ticked unconditionally (not just while GameplayState is the active
+	// state) so the playlist keeps advancing and the pause duck keeps easing
+	// while the pause menu covers the game.
+	gameplayMusic.Update(deltaTime, settings.GetSettings().musicVolume);
+
 	if (cursor)
 	{
 		cursor->Update(deltaTime);
@@ -164,6 +169,7 @@ Application::Application()
 	, balance("assets/data/audio_balance.json")
 	, hapticSettings("assets/data/haptics.json")
 	, audioPlayer(soundBuffers, balance)
+	, gameplayMusic(music, balance)
 	, context(
 		stateMachine,
 		window,
@@ -174,6 +180,7 @@ Application::Application()
 		shaders,
 		audioPlayer,
 		balance,
+		gameplayMusic,
 		hapticSettings,
 		displayManager,
 		settings,
