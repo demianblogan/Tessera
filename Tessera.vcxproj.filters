@@ -120,12 +120,6 @@
     <ClCompile Include="src\display\DisplayManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\Slider.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\Element.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ui\CarouselMenu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -383,9 +377,6 @@
     <ClInclude Include="src\display\DisplayMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\Element.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ui\CarouselMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -432,9 +423,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Celebration.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\Slider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gameplay\Tetromino.h">

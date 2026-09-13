@@ -37,7 +37,6 @@ options.audio = Audio
 options.controls = Controles
 options.language = Idioma
 options.back = Volver
-options.coming_soon = Próximamente.
 
 options.controls_keyboard = Teclado
 options.controls_gamepad = Mando
@@ -76,7 +75,6 @@ options.key_hard_drop = Soltar Pieza
 options.key_rotate_cw = Girar Pieza a la Derecha
 options.key_rotate_ccw = Girar Pieza a la Izquierda
 options.key_hold = Guardar Pieza
-options.key_pause = Pausa
 
 options.gamepad_xbox = XBOX
 options.gamepad_playstation = PlayStation
@@ -130,7 +128,6 @@ hud.lines = LÍNEAS
 hud.level = NIVEL
 hud.time = TIEMPO
 
-hud.controls = CONTROLES
 hud.move = Mover
 hud.rotate = Girar
 hud.soft_drop = Bajada Suave

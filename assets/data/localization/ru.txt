@@ -37,7 +37,6 @@ options.audio = Звук
 options.controls = Управление
 options.language = Язык
 options.back = Назад
-options.coming_soon = Скоро.
 
 options.controls_keyboard = Клавиатура
 options.controls_gamepad = Геймпад
@@ -76,7 +75,6 @@ options.key_hard_drop = Сбросить Фигуру
 options.key_rotate_cw = Повернуть Фигуру Вправо
 options.key_rotate_ccw = Повернуть Фигуру Влево
 options.key_hold = Отложить Фигуру
-options.key_pause = Пауза
 
 options.gamepad_xbox = XBOX
 options.gamepad_playstation = PlayStation
@@ -130,7 +128,6 @@ hud.lines = ЛИНИИ
 hud.level = УРОВЕНЬ
 hud.time = ВРЕМЯ
 
-hud.controls = УПРАВЛЕНИЕ
 hud.move = Движение
 hud.rotate = Поворот
 hud.soft_drop = Мягкий Сброс

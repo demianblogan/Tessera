@@ -55,7 +55,6 @@ namespace TextKey
 		inline constexpr std::string_view Controls = "options.controls";
 		inline constexpr std::string_view Language = "options.language";
 		inline constexpr std::string_view Back     = "options.back";
-		inline constexpr std::string_view ComingSoon = "options.coming_soon";
 
 		inline constexpr std::string_view ControlsKeyboard = "options.controls_keyboard";
 		inline constexpr std::string_view ControlsGamepad  = "options.controls_gamepad";
@@ -94,7 +93,6 @@ namespace TextKey
 		inline constexpr std::string_view KeyRotateCw  = "options.key_rotate_cw";
 		inline constexpr std::string_view KeyRotateCcw = "options.key_rotate_ccw";
 		inline constexpr std::string_view KeyHold      = "options.key_hold";
-		inline constexpr std::string_view KeyPause     = "options.key_pause";
 
 		inline constexpr std::string_view GamepadXbox        = "options.gamepad_xbox";
 		inline constexpr std::string_view GamepadPlayStation = "options.gamepad_playstation";
@@ -165,7 +163,6 @@ namespace TextKey
 		inline constexpr std::string_view Level = "hud.level";
 		inline constexpr std::string_view Time  = "hud.time";
 
-		inline constexpr std::string_view Controls = "hud.controls";
 		inline constexpr std::string_view Move     = "hud.move";
 		inline constexpr std::string_view Rotate   = "hud.rotate";
 		inline constexpr std::string_view SoftDrop = "hud.soft_drop";

@@ -37,7 +37,6 @@ options.audio = Audio
 options.controls = Steuerung
 options.language = Sprache
 options.back = Zurück
-options.coming_soon = Demnächst verfügbar.
 
 options.controls_keyboard = Tastatur
 options.controls_gamepad = Controller
@@ -76,7 +75,6 @@ options.key_hard_drop = Stein Fallen Lassen
 options.key_rotate_cw = Stein Rechts Drehen
 options.key_rotate_ccw = Stein Links Drehen
 options.key_hold = Stein Halten
-options.key_pause = Pause
 
 options.gamepad_xbox = XBOX
 options.gamepad_playstation = PlayStation
@@ -130,7 +128,6 @@ hud.lines = LINIEN
 hud.level = LEVEL
 hud.time = ZEIT
 
-hud.controls = STEUERUNG
 hud.move = Bewegen
 hud.rotate = Drehen
 hud.soft_drop = Sanft Absenken
