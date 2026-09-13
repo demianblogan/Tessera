@@ -37,9 +37,6 @@ protected:
 	void RefreshText() override;
 
 private:
-	// Rows 0-4 are toggles (Feedback, then Rules); rows 5-6 are carousels.
-	static constexpr std::size_t FirstCarouselRow = 5;
-
 	void SyncRows();
 	[[nodiscard]] std::size_t NextLengthIndexFor(unsigned int length) const;
 

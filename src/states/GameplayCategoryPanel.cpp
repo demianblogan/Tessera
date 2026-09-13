@@ -7,19 +7,15 @@
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../settings/GameSettings.h"
 #include "../settings/SettingsManager.h"
-#include "OptionsSfx.h"
 
 namespace
 {
-	namespace Sfx = OptionsSfx;
-
 	// Top sits 16px lower than the header's own maths would suggest: a language
 	// whose "OPTIONS" translation has a tall diacritic (Russian's "Й") pushes
 	// the header's visual baseline down a little, and this is the panel
@@ -170,45 +166,17 @@ void GameplayCategoryPanel::ResetWorking()
 
 void GameplayCategoryPanel::AdjustRow(std::size_t index, int direction)
 {
-	if (index >= rows.size())
-	{
-		return;
-	}
-
-	if (index < FirstCarouselRow)
-	{
-		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
-	else
-	{
-		auto* carousel = static_cast<UI::CarouselRow*>(rows[index].get());
-		const std::size_t before = carousel->Current();
-		carousel->Adjust(direction);
-		if (carousel->Current() != before)
-		{
-			Sfx::Step(context.audioPlayer, direction);
-		}
-	}
+	if (index < rows.size()) { AdjustRowByType(*rows[index], direction); }
 }
 
 void GameplayCategoryPanel::ActivateRow(std::size_t index)
 {
-	if (index >= rows.size())
-	{
-		return;
-	}
-	rows[index]->Activate();
-	if (index < FirstCarouselRow)
-	{
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
+	if (index < rows.size()) { ActivateRowByType(*rows[index]); }
 }
 
 void GameplayCategoryPanel::RowClicked(std::size_t index, int direction)
 {
-	if (index < FirstCarouselRow) { Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn()); }
-	else { Sfx::Step(context.audioPlayer, direction); }
+	if (index < rows.size()) { RowClickedByType(*rows[index], direction); }
 }
 
 void GameplayCategoryPanel::RefreshText()

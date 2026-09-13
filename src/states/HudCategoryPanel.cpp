@@ -3,18 +3,14 @@
 #include <array>
 #include <string_view>
 
-#include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
-#include "OptionsSfx.h"
 
 namespace
 {
-	namespace Sfx = OptionsSfx;
-
 	// Top sits 16px lower than the header's own maths would suggest: a language
 	// whose "OPTIONS" translation has a tall diacritic (Russian's "Й") pushes
 	// the header's visual baseline down a little, and this is the panel
@@ -121,26 +117,15 @@ void HudCategoryPanel::ResetWorking()
 
 void HudCategoryPanel::AdjustRow(std::size_t index, int direction)
 {
-	if (index < rows.size())
-	{
-		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
+	if (index < rows.size()) { AdjustRowByType(*rows[index], direction); }
 }
 
 void HudCategoryPanel::ActivateRow(std::size_t index)
 {
-	if (index < rows.size())
-	{
-		rows[index]->Activate();
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
+	if (index < rows.size()) { ActivateRowByType(*rows[index]); }
 }
 
-void HudCategoryPanel::RowClicked(std::size_t index, int /*direction*/)
+void HudCategoryPanel::RowClicked(std::size_t index, int direction)
 {
-	if (index < rows.size())
-	{
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
+	if (index < rows.size()) { RowClickedByType(*rows[index], direction); }
 }

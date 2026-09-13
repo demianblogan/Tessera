@@ -6,19 +6,15 @@
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../display/DisplayManager.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
-#include "OptionsSfx.h"
 
 namespace
 {
-	namespace Sfx = OptionsSfx;
-
 	constexpr sf::FloatRect PanelBounds{ { 600.f, 222.f }, { 1260.f, 706.f } };
 	constexpr float RowsTop = PanelBounds.position.y + 56.f;
 	constexpr float RowMargin = 84.f;
@@ -187,45 +183,17 @@ void GraphicsCategoryPanel::ResetWorking()
 
 void GraphicsCategoryPanel::AdjustRow(std::size_t index, int direction)
 {
-	if (index >= rows.size())
-	{
-		return;
-	}
-
-	if (index >= FirstToggleRow)
-	{
-		rows[index]->Adjust(direction);
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
-	else
-	{
-		auto* carousel = static_cast<UI::CarouselRow*>(rows[index].get());
-		const std::size_t before = carousel->Current();
-		carousel->Adjust(direction);
-		if (carousel->Current() != before)
-		{
-			Sfx::Step(context.audioPlayer, direction);
-		}
-	}
+	if (index < rows.size()) { AdjustRowByType(*rows[index], direction); }
 }
 
 void GraphicsCategoryPanel::ActivateRow(std::size_t index)
 {
-	if (index >= rows.size())
-	{
-		return;
-	}
-	rows[index]->Activate();
-	if (index >= FirstToggleRow)
-	{
-		Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn());
-	}
+	if (index < rows.size()) { ActivateRowByType(*rows[index]); }
 }
 
 void GraphicsCategoryPanel::RowClicked(std::size_t index, int direction)
 {
-	if (index >= FirstToggleRow) { Sfx::Toggle(context.audioPlayer, static_cast<UI::ToggleRow*>(rows[index].get())->IsOn()); }
-	else { Sfx::Step(context.audioPlayer, direction); }
+	if (index < rows.size()) { RowClickedByType(*rows[index], direction); }
 }
 
 void GraphicsCategoryPanel::RefreshText()

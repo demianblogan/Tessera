@@ -173,6 +173,51 @@ void SettingsCategoryPanel::RowClicked(std::size_t /*index*/, int direction)
 	Sfx::Step(context.audioPlayer, direction);
 }
 
+void SettingsCategoryPanel::AdjustRowByType(UI::OptionRow& row, int direction)
+{
+	if (auto* toggle = dynamic_cast<UI::ToggleRow*>(&row))
+	{
+		toggle->Adjust(direction);
+		Sfx::Toggle(context.audioPlayer, toggle->IsOn());
+		return;
+	}
+
+	if (auto* carousel = dynamic_cast<UI::CarouselRow*>(&row))
+	{
+		const std::size_t before = carousel->Current();
+		carousel->Adjust(direction);
+		if (carousel->Current() != before)
+		{
+			Sfx::Step(context.audioPlayer, direction);
+		}
+		return;
+	}
+
+	row.Adjust(direction);
+	Sfx::Step(context.audioPlayer, direction);
+}
+
+void SettingsCategoryPanel::ActivateRowByType(UI::OptionRow& row)
+{
+	row.Activate();
+	if (auto* toggle = dynamic_cast<UI::ToggleRow*>(&row))
+	{
+		Sfx::Toggle(context.audioPlayer, toggle->IsOn());
+	}
+}
+
+void SettingsCategoryPanel::RowClickedByType(UI::OptionRow& row, int direction)
+{
+	if (auto* toggle = dynamic_cast<UI::ToggleRow*>(&row))
+	{
+		Sfx::Toggle(context.audioPlayer, toggle->IsOn());
+	}
+	else
+	{
+		Sfx::Step(context.audioPlayer, direction);
+	}
+}
+
 void SettingsCategoryPanel::Open()
 {
 	working = applied = context.settings.GetSettings();

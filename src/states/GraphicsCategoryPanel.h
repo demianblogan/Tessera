@@ -38,8 +38,6 @@ protected:
 	void RefreshText() override;
 
 private:
-	static constexpr std::size_t FirstToggleRow = 2;   // rows 0-1 carousels, 2-4 toggles
-
 	void SyncRows();
 	[[nodiscard]] std::size_t ResolutionIndexFor(sf::Vector2u resolution) const;
 

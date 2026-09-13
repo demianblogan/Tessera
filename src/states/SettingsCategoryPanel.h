@@ -72,6 +72,17 @@ protected:
 	[[nodiscard]] bool IsAtDefaults() const;
 	[[nodiscard]] sf::FloatRect Panel() const { return panelBounds; }
 
+	// Type-aware row sound, shared by the panels that mix toggles with
+	// carousels (Gameplay, Graphics, Hud): a ToggleRow always plays the
+	// resulting on/off pitch; any other row type plays the nav pitch, but
+	// only once it actually moves (so nudging a carousel already at an end
+	// stays silent). A subclass's AdjustRow / ActivateRow / RowClicked
+	// override can delegate straight to these instead of re-deriving the
+	// same toggle-vs-carousel branch itself.
+	void AdjustRowByType(UI::OptionRow& row, int direction);
+	void ActivateRowByType(UI::OptionRow& row);
+	void RowClickedByType(UI::OptionRow& row, int direction);
+
 	Context& context;
 	sf::Color accent;
 
