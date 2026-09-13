@@ -115,8 +115,10 @@ screen brought up to the menu-shell standard. No gameplay-rules changes.
   / `ui/Spacer` deleted (the HUD rewrite orphaned the last of them) along with
   the `button_background.png` / `panel_background.png` textures; `ui/CarouselMenu`
   centres each entry on its visible ink so the nav arrows sit symmetrically.
-  *(`ui/Element` and `ui/Slider` stay — the Audio panel's volume sliders use
-  them.)*
+  *(`ui/Element` and `ui/Slider` were kept at the time on the assumption the
+  Audio panel's volume sliders used them; they actually use `UI::SliderRow`
+  (`ui/OptionRow`, shipped in v1.2.0) and `ui/Element` / `ui/Slider` had no
+  callers left — found and removed in the v1.7.0 sweep.)*
 
 ### v1.4.0 — Menu cleanup & flow
 
@@ -511,32 +513,50 @@ The final version. After it the game is done — there is no v2.0.
   picker before the main menu, and full translations (English, Spanish,
   German, Russian, Ukrainian) for every catalog key including the on-board
   callouts. The UI scaffold shipped in v1.2.0.
-- **Audio pass** — a lot of gameplay sounds are missing or use
-  placeholder/mismatched files; needs a proper pass. Not started.
-- **Gameplay visual effects** — explosions, distinct feedback for clearing
-  different numbers of lines, etc. Not started.
-- **A shortcut to the game** — desktop/Start Menu, or bundled in the release
-  zip. Approach (plain `.lnk` vs. a real installer) not yet decided. Not
-  started.
+- **Gameplay visual effects** — ✅ done. Line-clear effects scale with rank
+  (Single through Tetris), a real bloom glow on the well border while a combo
+  holds, escalation tiers (see `EscalationDirector`) get their own ambience
+  and HUD reaction, a soft trail between the falling piece and its ghost, an
+  animated hard-drop slide instead of an instant teleport, and grey impact
+  dust on both hard-drop landings and wall hits.
+- **Audio pass** — partly done. `audio/MusicPlayer` shuffles three gameplay
+  tracks into an endless, non-repeating playlist and ducks them (same easing
+  as the pause menu) while the game-over sting plays; every menu nav / toggle
+  sound is now consistently pitched by direction (vertical lists, checkboxes,
+  mouse-clicked slider arrows, the gamepad reference panel). Still open: a
+  number of gameplay sounds are missing or reuse a placeholder (e.g. Hold
+  still borrows the rotate sound — see `GameplayState::TryHold`).
+- **A shortcut to the game** — resolved as just the exe's own icon
+  (`assets/other/icon.ico` via `Tessera.rc`), not a desktop/Start Menu
+  shortcut or installer.
 - **Project-wide refactor and polish** — tighten the feel, clean the code, pull
   back any improvements from ULA's shared helpers (`NineSliceFrame`,
   `TextLayout`, `NeonGlow`, `GamepadHaptics`), a final dead-code sweep.
-  ✅ The one specifically known dead-on-arrival piece is removed: the
-  blurred-backdrop render path (`State::Backdrop::BlurredPrevious` was
-  returned by no state once Pause moved to `mosaic.frag`) — `blur.frag` /
-  `ShaderID::Blur`, `Application::gameplayTexture` / `finalTexture`, and
+  ✅ The blurred-backdrop render path was removed earlier
+  (`State::Backdrop::BlurredPrevious` was returned by no state once Pause
+  moved to `mosaic.frag`) — `blur.frag` / `ShaderID::Blur`,
+  `Application::gameplayTexture` / `finalTexture`, and
   `StateMachine::RenderStatesExceptTop` / `RenderTopState` are all gone.
-  A broader project-wide pass is still open.
+  ✅ The broader pass landed too: the old `ui/Element` + `ui/Slider` widgets
+  (superseded by `UI::SliderRow` since v1.2.0) deleted; three orphaned
+  localization keys (`options.coming_soon`, `options.key_pause`,
+  `hud.controls`) removed from `TextKeys.h` and every catalog; the near-
+  identical toggle/carousel row-sound branch in `GameplayCategoryPanel` /
+  `GraphicsCategoryPanel` / `HudCategoryPanel` collapsed into shared
+  `SettingsCategoryPanel::*RowByType` helpers; `pieces.json` / `srs_kicks.json`
+  / `audio_balance.json` / `haptics.json` moved from hardcoded strings in
+  `Application.cpp` into `Assets::Paths::Data` alongside every other asset
+  path; a couple of comments that had gone stale (the HUD's hold-piece
+  outline, the Hold sound) reworded to match what the code actually does.
 - **Release** — README as a finished piece, screenshots / GIFs, itch.io page,
   `Tessera-v1.7.0-win64.zip`, GitHub Release as the last one.
 
 ### Visual overhaul (spans v1.6.0–v1.7.0)
 
 The whole game look is still to be raised. `panel_background` /
-`button_background` are now unused by the game (the HUD and menus nine-slice
-the `menu_background_*_frame` set instead); they and any other legacy art
-want either replacing or removing in the v1.7.0 sweep. The author sources art
-as each version needs it.
+`button_background` are gone (removed in v1.5.0 with `ui/Button` / `ui/Panel`,
+their last users); any further legacy art wants replacing or removing as the
+author sources new art for each version.
 
 ---
 
