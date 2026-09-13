@@ -153,6 +153,12 @@ namespace Assets
 			// per-language catalogs. Plain UTF-8 text file (no key=value), read
 			// and decoded the same way LocalizationManager reads its catalogs.
 			inline constexpr const char* LanguagePickerPrompt = "assets/data/localization/language_picker_prompt.txt";
+
+			// Authored content, loaded once at startup -- see Application::Application.
+			inline constexpr const char* Pieces = "assets/data/pieces.json";
+			inline constexpr const char* SrsKicks = "assets/data/srs_kicks.json";
+			inline constexpr const char* AudioBalance = "assets/data/audio_balance.json";
+			inline constexpr const char* Haptics = "assets/data/haptics.json";
 		}
 
 		namespace Shaders

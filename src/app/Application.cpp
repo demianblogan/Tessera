@@ -166,8 +166,8 @@ Application::Application()
 	: renderView(sf::FloatRect({ 0.f, 0.f }, VIRTUAL_RESOLUTION))
 	, settings(AppDataPath::Resolve(SaveFile::Settings))
 	, highScores(AppDataPath::Resolve(SaveFile::Scores))
-	, balance("assets/data/audio_balance.json")
-	, hapticSettings("assets/data/haptics.json")
+	, balance(Assets::Paths::Data::AudioBalance)
+	, hapticSettings(Assets::Paths::Data::Haptics)
 	, audioPlayer(soundBuffers, balance)
 	, musicPlayer(music, balance)
 	, context(
@@ -197,8 +197,8 @@ Application::Application()
 
 	// Authored tetromino shapes and wall kicks, overriding the built-in SRS
 	// layout / kick tables if present.
-	PieceDataFile::Load("assets/data/pieces.json");
-	KickDataFile::Load("assets/data/srs_kicks.json");
+	PieceDataFile::Load(Assets::Paths::Data::Pieces);
+	KickDataFile::Load(Assets::Paths::Data::SrsKicks);
 
 	if (settings.GetSettings().display.resolution.x == 0u)
 	{
