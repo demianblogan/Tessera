@@ -15,7 +15,7 @@
 #include <SFML/Graphics/View.hpp>
 
 #include "../audio/AudioPlayer.h"
-#include "../audio/GameplayMusicPlayer.h"
+#include "../audio/MusicPlayer.h"
 #include "../gameplay/Board.h"
 #include "../resources/Assets.h"
 #include "../core/Context.h"
@@ -109,15 +109,9 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 	SetUpInputBindings();
 	ApplyGameplaySettings();
 
-	// Silence the shell track on the way in and start the shuffled gameplay
-	// playlist (see GameplayMusicPlayer).
-	context.music.Get(Assets::MusicID::MainMenu).stop();
-	context.gameplayMusic.Start();
-}
-
-GameplayState::~GameplayState()
-{
-	context.gameplayMusic.Stop();
+	// Switches MusicPlayer to the shuffled gameplay playlist, stopping
+	// whatever was playing before (the menu shell track, normally).
+	context.musicPlayer.PlayGameplay();
 }
 
 void GameplayState::ApplyGameplaySettings()
@@ -785,7 +779,7 @@ void GameplayState::OpenPause()
 {
 	// Muffle the gameplay music while the pause menu covers the game -- as if
 	// stepping into another room. PauseState::RequestResume() eases it back.
-	context.gameplayMusic.SetDucked(true);
+	context.musicPlayer.SetDucked(true);
 
 	auto frame = std::make_unique<sf::RenderTexture>();
 

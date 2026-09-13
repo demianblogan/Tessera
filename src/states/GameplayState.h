@@ -109,7 +109,6 @@ private:
 public:
 	// `playIntro` false starts the session immediately (no frozen hold).
 	explicit GameplayState(Context& context, bool playIntro = true);
-	~GameplayState() override;
 
 	void HandleEvent(const sf::Event& event) override;
 	void Update(float deltaTime) override;

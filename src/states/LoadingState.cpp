@@ -10,9 +10,9 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../localization/LocalizationManager.h"
@@ -71,12 +71,7 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 
 	// The shell music runs from here through the splash and into the menu.
 	// (Loaded synchronously by Application so it is ready this early.)
-	sf::Music& music = context.music.Get(Assets::MusicID::MainMenu);
-	music.setLooping(true);
-	if (music.getStatus() != sf::Music::Status::Playing)
-	{
-		music.play();
-	}
+	context.musicPlayer.PlayMainMenu();
 
 	worker = std::jthread(
 		[this](std::stop_token stopToken)

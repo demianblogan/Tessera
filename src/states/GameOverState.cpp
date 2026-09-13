@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <string>
 
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -15,6 +14,7 @@
 #include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
@@ -255,11 +255,7 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 
 	BuildContent();
 
-	sf::Music& music = context.music.Get(Assets::MusicID::GameOver);
-	if (music.getStatus() != sf::Music::Status::Playing)
-	{
-		music.play();
-	}
+	context.musicPlayer.PlayGameOver();
 }
 
 void GameOverState::BuildContent()

@@ -89,7 +89,7 @@ namespace Assets
 			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
 			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 
-			// Shuffled and looped by GameplayMusicPlayer while a game is in progress.
+			// Shuffled and looped by MusicPlayer while a game is in progress.
 			inline constexpr const char* Gameplay1 = "assets/audio/music/gameplay_music_1.mp3";
 			inline constexpr const char* Gameplay2 = "assets/audio/music/gameplay_music_2.mp3";
 			inline constexpr const char* Gameplay3 = "assets/audio/music/gameplay_music_3.mp3";

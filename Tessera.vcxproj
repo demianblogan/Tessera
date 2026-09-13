@@ -135,7 +135,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClCompile Include="src\utils\SafeFileWrite.cpp" />
     <ClCompile Include="src\audio\AudioBalance.cpp" />
     <ClCompile Include="src\audio\AudioPlayer.cpp" />
-    <ClCompile Include="src\audio\GameplayMusicPlayer.cpp" />
+    <ClCompile Include="src\audio\MusicPlayer.cpp" />
     <ClCompile Include="src\config\HapticSettings.cpp" />
     <ClCompile Include="src\gameplay\Board.cpp" />
     <ClCompile Include="src\gameplay\Tetromino.cpp" />
@@ -279,7 +279,7 @@ xcopy /D /Y /Q "$(ProjectDir)libs\SFML\bin\sfml-audio-3.dll" "$(OutDir)"</Comman
     <ClInclude Include="libs\nlohmann\json.hpp" />
     <ClInclude Include="src\audio\AudioBalance.h" />
     <ClInclude Include="src\audio\AudioPlayer.h" />
-    <ClInclude Include="src\audio\GameplayMusicPlayer.h" />
+    <ClInclude Include="src\audio\MusicPlayer.h" />
     <ClInclude Include="src\states\GameplayState.h" />
     <ClInclude Include="src\display\DisplayManager.h" />
     <ClInclude Include="src\display\DisplayMode.h" />

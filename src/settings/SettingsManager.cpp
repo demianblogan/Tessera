@@ -5,7 +5,6 @@
 #include <fstream>
 #include <system_error>
 
-#include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../input/gamepad/GamepadHaptics.h"
@@ -166,17 +165,9 @@ void SettingsManager::Apply(Context& context) const
 
 	// --- Audio settings ---
 
-	// Player slider (0-100) combined with each track's own balance coefficient.
-	const float musicSlider = settings.musicVolume * 10.f;
-	constexpr std::array musicIds{ Assets::MusicID::MainMenu, Assets::MusicID::GameOver };
-	for (const Assets::MusicID id : musicIds)
-	{
-		if (context.music.Contains(id))
-		{
-			context.music.Get(id).setVolume(
-				std::clamp(musicSlider * context.audioBalance.ForMusic(id) / 100.f, 0.f, 400.f));
-		}
-	}
+	// Music volume is applied every frame by MusicPlayer::Update() instead
+	// (Application::Update ticks it unconditionally), so it always reflects
+	// the current slider without needing an explicit Apply() here.
 
 	// The sound slider is stored on the AudioPlayer; per-sound balance is
 	// applied there per instance.

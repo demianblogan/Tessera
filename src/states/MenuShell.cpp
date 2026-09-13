@@ -5,12 +5,12 @@
 #include <memory>
 #include <string>
 
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderTexture.hpp>
 #include <SFML/Graphics/View.hpp>
 
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../core/GameVersion.h"
 #include "../display/DisplayManager.h"
@@ -39,14 +39,7 @@ MenuShell::MenuShell(Context& context)
 			versionBounds.position.y + versionBounds.size.y
 		});
 
-	context.music.Get(Assets::MusicID::GameOver).stop();
-
-	sf::Music& menuMusic = context.music.Get(Assets::MusicID::MainMenu);
-	menuMusic.setLooping(true);
-	if (menuMusic.getStatus() != sf::Music::Status::Playing)
-	{
-		menuMusic.play();
-	}
+	context.musicPlayer.PlayMainMenu();
 
 	SetInitialScreen(std::make_unique<MainMenuScreen>(*this));
 }

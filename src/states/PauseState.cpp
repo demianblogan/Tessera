@@ -15,7 +15,7 @@
 #include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
-#include "../audio/GameplayMusicPlayer.h"
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../display/DisplayManager.h"
 #include "../input/MenuInput.h"
@@ -68,7 +68,7 @@ void PauseState::RequestResume()
 
 	resuming = true;
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.9f);
-	context.gameplayMusic.SetDucked(false);
+	context.musicPlayer.SetDucked(false);
 	Header().SinkTo(HeaderFrom, HeaderFromHeight);
 	if (MenuScreen* screen = CurrentScreen())
 	{
