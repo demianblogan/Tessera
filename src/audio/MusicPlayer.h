@@ -9,8 +9,10 @@
 
 class AudioBalance;
 
-// The single owner of every music track: the menu shell loop, the game-over
-// sting, and the shuffled gameplay playlist. Each PlayXxx() switches the
+// The single owner of every music track: the menu shell loop and the
+// shuffled gameplay playlist (the game-over sting is a one-shot sound effect,
+// not music -- see Assets::SoundID::GameOver, played through AudioPlayer over
+// the still-playing, ducked gameplay music). Each PlayXxx() switches the
 // active mode outright -- stopping whatever was playing before, whatever
 // that was -- so a state's constructor only ever has to say what it wants
 // playing, never worry about what came before it or who tears the previous
@@ -22,8 +24,9 @@ class AudioBalance;
 //
 // Application::Update() ticks this every frame regardless of which state is
 // on top, the same way it ticks the gamepad, so the gameplay playlist keeps
-// advancing and the pause duck keeps easing even while GameplayState itself
-// is covered by PauseState and no longer receiving its own Update() calls.
+// advancing and the pause/game-over duck keeps easing even while
+// GameplayState itself is covered by PauseState or GameOverState and no
+// longer receiving its own Update() calls.
 class MusicPlayer
 {
 public:
@@ -31,16 +34,15 @@ public:
 
 	// The menu shell's looping shell track (loading screen through the menus).
 	void PlayMainMenu();
-	// The game-over sting -- plays once, no loop.
-	void PlayGameOver();
 	// A freshly shuffled loop of the three gameplay tracks, played back to
 	// back and reshuffled (never the same track twice across the seam) once
 	// a lap finishes.
 	void PlayGameplay();
 
-	// A muffled, quieter dip on the gameplay playlist while the pause menu
-	// covers the game -- as if stepping into another room -- eased in and out
-	// rather than snapped. No effect on the menu / game-over tracks.
+	// A muffled, quieter dip on the gameplay playlist -- while the pause menu
+	// covers the game, or the game-over screen is showing -- as if stepping
+	// into another room, eased in and out rather than snapped. No effect on
+	// the menu track.
 	void SetDucked(bool ducked);
 
 	// `volumeStep` is the player's music slider (0-10). Called every frame so
@@ -50,7 +52,7 @@ public:
 	void Update(float deltaTime, unsigned int volumeStep);
 
 private:
-	enum class Mode { None, MainMenu, GameOver, Gameplay };
+	enum class Mode { None, MainMenu, Gameplay };
 
 	static constexpr std::array<Assets::MusicID, 3> GameplayTracks{
 		Assets::MusicID::Gameplay1, Assets::MusicID::Gameplay2, Assets::MusicID::Gameplay3 };

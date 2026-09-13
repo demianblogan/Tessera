@@ -13,7 +13,6 @@ namespace Assets
 	enum class MusicID
 	{
 		MainMenu,
-		GameOver,
 		Gameplay1,
 		Gameplay2,
 		Gameplay3
@@ -32,7 +31,9 @@ namespace Assets
 		NextLevel,
 		PieceHitWall,
 		RotatePiece,
-		RowCleared
+		RowCleared,
+
+		GameOver
 	};
 
 	enum class TextureID
@@ -87,7 +88,6 @@ namespace Assets
 		namespace Music
 		{
 			inline constexpr const char* MainMenu = "assets/audio/music/main_menu_music.ogg";
-			inline constexpr const char* GameOver = "assets/audio/music/game_over_music.ogg";
 
 			// Shuffled and looped by MusicPlayer while a game is in progress.
 			inline constexpr const char* Gameplay1 = "assets/audio/music/gameplay_music_1.mp3";
@@ -109,6 +109,9 @@ namespace Assets
 			inline constexpr const char* PieceHitWall = "assets/audio/sounds/piece_hit_wall.ogg";
 			inline constexpr const char* RotatePiece = "assets/audio/sounds/rotate_piece.ogg";
 			inline constexpr const char* RowCleared = "assets/audio/sounds/row_cleared.ogg";
+
+			// Plays once, on top of the still-playing (ducked) gameplay music.
+			inline constexpr const char* GameOver = "assets/audio/sounds/game_over.mp3";
 		}
 
 		namespace Textures

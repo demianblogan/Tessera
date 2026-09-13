@@ -17,7 +17,7 @@ namespace
 	constexpr float MaxVolume = 400.f;   // SFML amplifies past 100
 
 	// The JSON key each resource is listed under.
-	constexpr std::array<std::pair<Assets::SoundID, std::string_view>, 10> SoundNames{ {
+	constexpr std::array<std::pair<Assets::SoundID, std::string_view>, 11> SoundNames{ {
 		{ Assets::SoundID::TitleButtonDrop, "title_button_drop" },
 		{ Assets::SoundID::MenuItemAppeared, "menu_item_appeared" },
 		{ Assets::SoundID::MenuItemSelected, "menu_item_selected" },
@@ -28,11 +28,11 @@ namespace
 		{ Assets::SoundID::PieceHitWall, "piece_hit_wall" },
 		{ Assets::SoundID::NextLevel, "next_level" },
 		{ Assets::SoundID::RowCleared, "row_cleared" },
+		{ Assets::SoundID::GameOver, "game_over" },
 	} };
 
-	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 5> MusicNames{ {
+	constexpr std::array<std::pair<Assets::MusicID, std::string_view>, 4> MusicNames{ {
 		{ Assets::MusicID::MainMenu, "main_menu_music" },
-		{ Assets::MusicID::GameOver, "game_over_music" },
 		{ Assets::MusicID::Gameplay1, "gameplay_music_1" },
 		{ Assets::MusicID::Gameplay2, "gameplay_music_2" },
 		{ Assets::MusicID::Gameplay3, "gameplay_music_3" },

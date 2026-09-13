@@ -27,9 +27,6 @@ void MusicPlayer::StopCurrent()
 	case Mode::MainMenu:
 		music.Get(Assets::MusicID::MainMenu).stop();
 		break;
-	case Mode::GameOver:
-		music.Get(Assets::MusicID::GameOver).stop();
-		break;
 	case Mode::Gameplay:
 		if (gameplayIndex < gameplayOrder.size())
 		{
@@ -83,18 +80,6 @@ void MusicPlayer::PlayMainMenu()
 	ApplyVolume();
 }
 
-void MusicPlayer::PlayGameOver()
-{
-	StopCurrent();
-	mode = Mode::GameOver;
-
-	sf::Music& track = music.Get(Assets::MusicID::GameOver);
-	track.setLooping(false);
-	track.play();
-
-	ApplyVolume();
-}
-
 void MusicPlayer::PlayGameplay()
 {
 	StopCurrent();
@@ -138,9 +123,6 @@ void MusicPlayer::ApplyVolume()
 	{
 	case Mode::MainMenu:
 		id = Assets::MusicID::MainMenu;
-		break;
-	case Mode::GameOver:
-		id = Assets::MusicID::GameOver;
 		break;
 	case Mode::Gameplay:
 		if (gameplayIndex >= gameplayOrder.size())

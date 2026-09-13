@@ -255,7 +255,10 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 
 	BuildContent();
 
-	context.musicPlayer.PlayGameOver();
+	// The gameplay music keeps playing underneath, just muffled -- same duck
+	// as the pause menu -- with the game-over sting a one-shot sound on top.
+	context.musicPlayer.SetDucked(true);
+	context.audioPlayer.Play(Assets::SoundID::GameOver);
 }
 
 void GameOverState::BuildContent()

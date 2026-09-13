@@ -1,7 +1,6 @@
 {
     "music": {
         "main_menu_music": 300.0,
-        "game_over_music": 100.0,
         "gameplay_music_1": 100.0,
         "gameplay_music_2": 100.0,
         "gameplay_music_3": 100.0
@@ -16,6 +15,7 @@
         "rotate_piece": 100.0,
         "piece_hit_wall": 100.0,
         "next_level": 100.0,
-        "row_cleared": 100.0
+        "row_cleared": 100.0,
+        "game_over": 100.0
     }
 }

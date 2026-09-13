@@ -42,12 +42,12 @@ namespace Loading
 				soundBuffers.Load(Assets::SoundID::PieceHitWall, Paths::Sounds::PieceHitWall);
 				soundBuffers.Load(Assets::SoundID::NextLevel, Paths::Sounds::NextLevel);
 				soundBuffers.Load(Assets::SoundID::RowCleared, Paths::Sounds::RowCleared);
+				soundBuffers.Load(Assets::SoundID::GameOver, Paths::Sounds::GameOver);
 			})
 			&& stage(Stage::Music, [&]
 			{
 				// MainMenu (the shell track) is loaded synchronously by
 				// Application so the loading screen can start it immediately.
-				music.Load(Assets::MusicID::GameOver, Paths::Music::GameOver);
 				music.Load(Assets::MusicID::Gameplay1, Paths::Music::Gameplay1);
 				music.Load(Assets::MusicID::Gameplay2, Paths::Music::Gameplay2);
 				music.Load(Assets::MusicID::Gameplay3, Paths::Music::Gameplay3);
