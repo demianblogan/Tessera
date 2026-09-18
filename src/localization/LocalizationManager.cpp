@@ -10,14 +10,10 @@ namespace
 		const auto isSpace = [](char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n'; };
 
 		while (!text.empty() && isSpace(text.front()))
-		{
 			text.remove_prefix(1);
-		}
 
 		while (!text.empty() && isSpace(text.back()))
-		{
 			text.remove_suffix(1);
-		}
 
 		return text;
 	}
@@ -45,14 +41,12 @@ namespace
 	}
 }
 
-bool LocalizationManager::Load(const std::filesystem::path& directory)
+bool LocalizationManager::LoadCatalogFile(const std::filesystem::path& path)
 {
-	std::ifstream file(directory / "en.txt");
+	std::ifstream file(path);
 
 	if (!file.is_open())
-	{
 		return false;
-	}
 
 	std::string line;
 
@@ -61,29 +55,62 @@ bool LocalizationManager::Load(const std::filesystem::path& directory)
 		const std::string_view trimmed = Trim(line);
 
 		if (trimmed.empty() || trimmed.front() == '#')
-		{
 			continue;
-		}
 
 		const std::size_t separator = trimmed.find('=');
 
 		if (separator == std::string_view::npos)
-		{
 			continue;
-		}
 
 		const std::string_view key = Trim(trimmed.substr(0, separator));
 
 		if (key.empty())
-		{
 			continue;
-		}
 
 		const std::string value = Unescape(Trim(trimmed.substr(separator + 1)));
 		catalog[std::string(key)] = sf::String::fromUtf8(value.begin(), value.end());
 	}
 
 	return true;
+}
+
+bool LocalizationManager::Load(const std::filesystem::path& directory, Language language)
+{
+	catalogDirectory = directory;
+	catalog.clear();
+
+	if (!LoadCatalogFile(directory / "en.txt"))
+		return false;
+
+	currentLanguage = language;
+
+	if (language != Language::English)
+	{
+		// Missing/partial file: the English catalog just loaded stays as-is,
+		// so every key still resolves -- just not translated yet.
+		LoadCatalogFile(directory / (std::string(LanguageCode(language)) + ".txt"));
+	}
+
+	return true;
+}
+
+void LocalizationManager::SetLanguage(Language newLanguage)
+{
+	if (newLanguage == currentLanguage)
+		return;
+
+	Load(catalogDirectory, newLanguage);
+	revision++;
+}
+
+Language LocalizationManager::GetLanguage() const
+{
+	return currentLanguage;
+}
+
+unsigned int LocalizationManager::GetRevision() const
+{
+	return revision;
 }
 
 sf::String LocalizationManager::GetText(std::string_view key) const

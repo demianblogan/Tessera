@@ -1,0 +1,149 @@
+# Tessera - Russian string catalog.
+# Format: section.key = value   (# starts a comment, \n is a line break)
+
+main_menu.title = Tessera
+main_menu.play = Играть
+main_menu.options = Настройки
+main_menu.records = Рекорды
+main_menu.credits = Авторы
+main_menu.quit = Выход
+
+pause.title = ПАУЗА
+pause.resume = Продолжить
+pause.restart = Заново
+pause.options = Настройки
+pause.main_menu = В Главное Меню
+pause.confirm_restart = Начать заново?
+pause.confirm_quit = Выйти из игры?
+
+game_over.title = ИГРА ОКОНЧЕНА
+game_over.score = ОЧКИ
+game_over.lines = ЛИНИИ
+game_over.level = УРОВЕНЬ
+game_over.time = ВРЕМЯ
+game_over.new_record = НОВЫЙ РЕКОРД
+game_over.enter_name = Введите своё имя
+game_over.save_record = Сохранить
+game_over.saved = Сохранено
+game_over.unsaved_record = Выйти, не сохранив рекорд?
+game_over.play_again = Играть Снова
+game_over.main_menu = Главное Меню
+
+options.title = НАСТРОЙКИ
+options.gameplay = Геймплей
+options.hud = Интерфейс
+options.graphics = Графика
+options.audio = Звук
+options.controls = Управление
+options.language = Язык
+options.back = Назад
+
+options.controls_keyboard = Клавиатура
+options.controls_gamepad = Геймпад
+options.controls_back = Назад
+
+options.gameplay_vibration = Вибрация Геймпада:
+options.gameplay_lightbar = Подсветка Геймпада:
+options.gameplay_shake = Тряска Экрана:
+options.gameplay_ghost = Призрачная Фигура:
+options.gameplay_hold = Отложить Фигуру:
+options.gameplay_next_length = Кол-во Следующих Фигур:
+options.gameplay_randomiser = Генератор Фигур:
+options.randomiser_seven_bag = Мешок из 7
+options.randomiser_random = Случайный
+options.restart_to_apply = Эти настройки применятся только в новой игре
+
+options.hud_hold = Показывать Отложенную Фигуру:
+options.hud_next = Показывать Следующую Фигуру:
+options.hud_score = Показывать Очки:
+options.hud_lines = Показывать Линии:
+options.hud_level = Показывать Уровень:
+options.hud_time = Показывать Время:
+options.hud_controls_legend = Показывать Подсказку Управления:
+
+options.language_english = English
+options.language_spanish = Español
+options.language_german = Deutsch
+options.language_russian = Русский
+options.language_ukrainian = Українська
+options.language_selected = Выбран
+
+options.key_move_left = Двигать Фигуру Влево
+options.key_move_right = Двигать Фигуру Вправо
+options.key_soft_drop = Опускать Фигуру
+options.key_hard_drop = Сбросить Фигуру
+options.key_rotate_cw = Повернуть Фигуру Вправо
+options.key_rotate_ccw = Повернуть Фигуру Влево
+options.key_hold = Отложить Фигуру
+
+options.gamepad_xbox = XBOX
+options.gamepad_playstation = PlayStation
+
+options.resolution = Разрешение Экрана:
+options.window_mode = Режим Окна:
+options.vsync = Вертикальная Синхронизация:
+options.show_fps = Показывать FPS:
+options.crt_filter = CRT-Фильтр:
+options.mode_fullscreen = Полноэкранный
+options.mode_borderless = Без Рамки
+options.mode_window = Оконный
+options.sound = Громкость Звука:
+options.music = Громкость Музыки:
+options.apply = Применить
+options.reset = Сбросить
+options.back_button = Назад
+options.unsaved = У вас есть несохранённые изменения.\nСохранить их перед выходом?
+options.borderless_note = В режиме без рамки нельзя изменить разрешение экрана.
+
+common.yes = Да
+common.no = Нет
+
+credits.title = АВТОРЫ
+credits.intro = Эта игра сделана мной, Демианом Блоганом.
+credits.blurb = Это второй проект в моём портфолио. Он небольшой и компактный, но я\nгоржусь тем, какими получились визуальные эффекты и анимации меню -\nименно в этом и была вся суть этого проекта, и я надеюсь, вам понравилось.
+credits.email = Моя почта: demianblogan@gmail.com
+credits.linkedin = LinkedIn: linkedin.com/in/demianblogan
+credits.instagram = Instagram: instagram.com/demianblogan
+credits.code = Код этой игры: github.com/demianblogan/Tessera
+credits.portfolio = Моё портфолио: github.com/demianblogan
+credits.programming = Мой Канал о Программировании: youtube.com/@BloganProgrammer
+credits.gaming = Мой Игровой Канал: youtube.com/@BloganGamer
+credits.back = Назад
+
+records.title = РЕКОРДЫ
+records.header_name = ИМЯ
+records.header_score = ОЧКИ
+records.header_lines = ЛИНИИ
+records.header_level = УРОВЕНЬ
+records.reset = Сбросить
+records.back = Назад
+records.confirm_reset = Удалить все рекорды?
+
+loading.label = Загрузка...
+
+hud.hold = ОТЛОЖЕНО
+hud.next = ДАЛЕЕ
+hud.score = ОЧКИ
+hud.lines = ЛИНИИ
+hud.level = УРОВЕНЬ
+hud.time = ВРЕМЯ
+
+hud.move = Движение
+hud.rotate = Поворот
+hud.soft_drop = Мягкий Сброс
+hud.hard_drop = Жёсткий Сброс
+hud.hold_key = Отложить
+hud.pause = Пауза
+
+callout.single = ОДИНОЧНАЯ
+callout.double = ДВОЙНАЯ
+callout.triple = ТРОЙНАЯ
+callout.tetris = ТЕТРИС
+callout.t_spin = Т-СПИН
+callout.t_spin_mini = МИНИ Т-СПИН
+callout.back_to_back = ПОДРЯД
+callout.perfect_clear = ИДЕАЛЬНАЯ ОЧИСТКА
+callout.combo = КОМБО
+callout.speed_surge = УСКОРЕНИЕ!
+callout.golden = ЗОЛОТО x2
+

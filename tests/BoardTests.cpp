@@ -16,7 +16,7 @@ namespace
 	{
 		for (int x = -1; x <= 7; x += 2)
 		{
-			LockO(board, x, Board::HEIGHT - 2);
+			LockO(board, x, Board::Height - 2);
 		}
 	}
 }
@@ -24,7 +24,7 @@ namespace
 TEST_CASE("the grid is the visible field plus a hidden buffer above it")
 {
 	CHECK(Board::VisibleHeight == 20);
-	CHECK(Board::HEIGHT == Board::BufferHeight + Board::VisibleHeight);
+	CHECK(Board::Height == Board::BufferHeight + Board::VisibleHeight);
 	CHECK(Board::BufferHeight > 0);
 }
 
@@ -52,11 +52,11 @@ TEST_CASE("a fresh board has no occupied cells")
 {
 	const Board board;
 
-	for (int y = 0; y < Board::HEIGHT; y++)
+	for (int y = 0; y < Board::Height; y++)
 	{
-		for (int x = 0; x < Board::WIDTH; x++)
+		for (int x = 0; x < Board::Width; x++)
 		{
-			CHECK_FALSE(board.GetGrid()[y][x].occupied);
+			CHECK_FALSE(board.GetGrid()[y][x].isOccupied);
 		}
 	}
 }
@@ -67,24 +67,24 @@ TEST_CASE("LockTetromino marks exactly the piece's cells, with its type")
 	board.LockTetromino(Tetromino(Tetromino::Type::O, { 0, 0 }));
 
 	// O at (0,0) -> columns 1,2 rows 0,1.
-	CHECK(board.GetGrid()[0][1].occupied);
-	CHECK(board.GetGrid()[0][2].occupied);
-	CHECK(board.GetGrid()[1][1].occupied);
-	CHECK(board.GetGrid()[1][2].occupied);
+	CHECK(board.GetGrid()[0][1].isOccupied);
+	CHECK(board.GetGrid()[0][2].isOccupied);
+	CHECK(board.GetGrid()[1][1].isOccupied);
+	CHECK(board.GetGrid()[1][2].isOccupied);
 	CHECK(board.GetGrid()[0][1].tetrominoType == Tetromino::Type::O);
 
-	CHECK_FALSE(board.GetGrid()[0][0].occupied);
-	CHECK_FALSE(board.GetGrid()[2][1].occupied);
+	CHECK_FALSE(board.GetGrid()[0][0].isOccupied);
+	CHECK_FALSE(board.GetGrid()[2][1].isOccupied);
 }
 
 TEST_CASE("LockTetromino ignores cells outside the grid")
 {
 	Board board;
 
-	// O at (-2, HEIGHT-1): left column is -1 (out), bottom row is HEIGHT (out).
-	CHECK_NOTHROW(board.LockTetromino(Tetromino(Tetromino::Type::O, { -2, Board::HEIGHT - 1 })));
+	// O at (-2, Height-1): left column is -1 (out), bottom row is Height (out).
+	CHECK_NOTHROW(board.LockTetromino(Tetromino(Tetromino::Type::O, { -2, Board::Height - 1 })));
 
-	CHECK(board.GetGrid()[Board::HEIGHT - 1][0].occupied);
+	CHECK(board.GetGrid()[Board::Height - 1][0].isOccupied);
 }
 
 TEST_CASE("FindFullRows reports every completely filled row and nothing else")
@@ -95,8 +95,8 @@ TEST_CASE("FindFullRows reports every completely filled row and nothing else")
 	const std::vector<int> fullRows = board.FindFullRows();
 
 	REQUIRE(fullRows.size() == 2);
-	CHECK(fullRows[0] == Board::HEIGHT - 2);
-	CHECK(fullRows[1] == Board::HEIGHT - 1);
+	CHECK(fullRows[0] == Board::Height - 2);
+	CHECK(fullRows[1] == Board::Height - 1);
 }
 
 TEST_CASE("FindFullRows ignores a row with a gap")
@@ -106,7 +106,7 @@ TEST_CASE("FindFullRows ignores a row with a gap")
 	// Fill the bottom row except columns 8-9 (drop the last O piece).
 	for (int x = -1; x <= 5; x += 2)
 	{
-		LockO(board, x, Board::HEIGHT - 2);
+		LockO(board, x, Board::Height - 2);
 	}
 
 	CHECK(board.FindFullRows().empty());
@@ -120,16 +120,16 @@ TEST_CASE("ClearRows removes the given rows and drops everything above by that m
 	// A marker piece at the very top: O at (-1, 0) -> columns 0,1 rows 0,1.
 	LockO(board, -1, 0);
 
-	board.ClearRows({ Board::HEIGHT - 2, Board::HEIGHT - 1 });
+	board.ClearRows({ Board::Height - 2, Board::Height - 1 });
 
 	// The two filled rows are gone.
 	CHECK(board.FindFullRows().empty());
 
 	// The marker fell two rows: was at rows 0-1, now at rows 2-3.
-	CHECK_FALSE(board.GetGrid()[0][0].occupied);
-	CHECK_FALSE(board.GetGrid()[1][0].occupied);
-	CHECK(board.GetGrid()[2][0].occupied);
-	CHECK(board.GetGrid()[3][0].occupied);
+	CHECK_FALSE(board.GetGrid()[0][0].isOccupied);
+	CHECK_FALSE(board.GetGrid()[1][0].isOccupied);
+	CHECK(board.GetGrid()[2][0].isOccupied);
+	CHECK(board.GetGrid()[3][0].isOccupied);
 }
 
 TEST_CASE("ClearRows with an empty list changes nothing")
@@ -159,11 +159,11 @@ TEST_CASE("RowsContainGolden is true only for rows holding a golden lock")
 	Board board;
 	FillBottomTwoRows(board);
 
-	CHECK_FALSE(board.RowsContainGolden({ Board::HEIGHT - 2, Board::HEIGHT - 1 }));
+	CHECK_FALSE(board.RowsContainGolden({ Board::Height - 2, Board::Height - 1 }));
 
 	board.LockTetromino(Tetromino(Tetromino::Type::O, { -1, 0 }), true);
 
-	CHECK_FALSE(board.RowsContainGolden({ Board::HEIGHT - 2, Board::HEIGHT - 1 }));
+	CHECK_FALSE(board.RowsContainGolden({ Board::Height - 2, Board::Height - 1 }));
 	CHECK(board.RowsContainGolden({ 0, 1 }));
 }
 
@@ -173,16 +173,16 @@ TEST_CASE("PushGarbageRow raises one row from the bottom with a single gap")
 
 	CHECK(board.PushGarbageRow(3));
 
-	const Board::GridRow& bottomRow = board.GetGrid()[Board::HEIGHT - 1];
-	for (int x = 0; x < Board::WIDTH; x++)
+	const Board::GridRow& bottomRow = board.GetGrid()[Board::Height - 1];
+	for (int x = 0; x < Board::Width; x++)
 	{
 		if (x == 3)
 		{
-			CHECK_FALSE(bottomRow[x].occupied);
+			CHECK_FALSE(bottomRow[x].isOccupied);
 		}
 		else
 		{
-			CHECK(bottomRow[x].occupied);
+			CHECK(bottomRow[x].isOccupied);
 			CHECK(bottomRow[x].kind == Cell::Kind::Garbage);
 		}
 	}
@@ -191,13 +191,13 @@ TEST_CASE("PushGarbageRow raises one row from the bottom with a single gap")
 TEST_CASE("PushGarbageRow shifts every existing row up by one")
 {
 	Board board;
-	LockO(board, -1, Board::HEIGHT - 2);   // bottom-left corner, rows HEIGHT-2/-1
+	LockO(board, -1, Board::Height - 2);   // bottom-left corner, rows Height-2/-1
 
 	REQUIRE(board.PushGarbageRow(9));
 
-	// The marker (locked at rows HEIGHT-2/-1) shifted up by exactly one row.
-	CHECK(board.GetGrid()[Board::HEIGHT - 3][0].occupied);
-	CHECK(board.GetGrid()[Board::HEIGHT - 2][0].occupied);
+	// The marker (locked at rows Height-2/-1) shifted up by exactly one row.
+	CHECK(board.GetGrid()[Board::Height - 3][0].isOccupied);
+	CHECK(board.GetGrid()[Board::Height - 2][0].isOccupied);
 }
 
 TEST_CASE("PushGarbageRow refuses to push locked cells off the top")
@@ -208,8 +208,8 @@ TEST_CASE("PushGarbageRow refuses to push locked cells off the top")
 	CHECK_FALSE(board.PushGarbageRow(0));
 
 	// Untouched: the marker is still exactly where it was.
-	CHECK(board.GetGrid()[0][0].occupied);
-	CHECK(board.GetGrid()[1][0].occupied);
+	CHECK(board.GetGrid()[0][0].isOccupied);
+	CHECK(board.GetGrid()[1][0].isOccupied);
 }
 
 TEST_CASE("CanPlace is false against a wall and against a locked cell")
@@ -220,7 +220,7 @@ TEST_CASE("CanPlace is false against a wall and against a locked cell")
 	CHECK_FALSE(board.CanPlace(Tetromino(Tetromino::Type::O, { -3, 0 })));
 
 	// Below the floor.
-	CHECK_FALSE(board.CanPlace(Tetromino(Tetromino::Type::O, { 0, Board::HEIGHT })));
+	CHECK_FALSE(board.CanPlace(Tetromino(Tetromino::Type::O, { 0, Board::Height })));
 
 	// Overlapping a locked piece.
 	board.LockTetromino(Tetromino(Tetromino::Type::O, { 3, 5 }));

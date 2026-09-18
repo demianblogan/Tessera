@@ -9,8 +9,7 @@ namespace AppDataPath
 		char* localAppData = nullptr;
 		std::size_t valueLength = 0;
 
-		if (_dupenv_s(&localAppData, &valueLength, "LOCALAPPDATA") == 0 &&
-			localAppData != nullptr)
+		if (_dupenv_s(&localAppData, &valueLength, "LOCALAPPDATA") == 0 && localAppData != nullptr)
 		{
 			const std::filesystem::path directory =
 				std::filesystem::path(localAppData) /

@@ -23,7 +23,7 @@ namespace UI
 	// The main-menu title, animated once on entry: each letter drops in from
 	// above in turn, squashes on impact and springs back, then eases into a
 	// gentle idle wave in both position and glow. Each letter carries one of
-	// the tetromino colours, a dark outline and a vertical gradient fill, with
+	// the tetromino colors, a dark outline and a vertical gradient fill, with
 	// a pulsing neon bloom behind it. Landing throws a white flash, a shockwave
 	// ring, a brief chromatic split and a small kick to the whole word.
 	class DropInTitle
@@ -42,15 +42,15 @@ namespace UI
 		void Render(sf::RenderTarget& target, NeonGlow* glow = nullptr) const;
 
 		[[nodiscard]] bool IsFinished() const;
-		[[nodiscard]] bool ExitComplete() const;
+		[[nodiscard]] bool IsExitComplete() const;
 
 	private:
 		struct Glyph
 		{
-			sf::Text text;         // font + size + character; re-coloured per draw
+			sf::Text text;         // font + size + character; re-colored per draw
 			char32_t codepoint = 0;
-			sf::Color colour;      // resting fill colour
-			float offsetX = 0.f;   // resting position, relative to the word centre
+			sf::Color color;      // resting fill color
+			float offsetX = 0.f;   // resting position, relative to the word center
 			float offsetY = 0.f;
 			float startDelay = 0.f;
 			float elapsed = 0.f;
@@ -58,8 +58,8 @@ namespace UI
 
 		struct Pose
 		{
-			bool visible = false;
-			float y = 0.f;
+			bool isVisible = false;
+			float offsetY = 0.f;        // animated vertical offset (fall / idle wave)
 			float scaleX = 1.f;
 			float scaleY = 1.f;
 			float rotationDegrees = 0.f;
@@ -67,20 +67,20 @@ namespace UI
 			float flash = 0.f;          // 0..1 white-hot on impact
 			float aberration = 0.f;     // 0..1 chromatic split on impact
 			float shock = -1.f;         // 0..1 shockwave progress, <0 = inactive
-			bool falling = false;
-			float local = 0.f;          // seconds since this glyph started
+			bool isFalling = false;
+			float localTime = 0.f;      // seconds since this glyph started
 		};
 
 		[[nodiscard]] Pose EvaluateGlyph(std::size_t index) const;
-		[[nodiscard]] sf::Vector2f RestingPosition(std::size_t index, const Pose& pose) const;
+		[[nodiscard]] sf::Vector2f GetRestingPosition(std::size_t index, const Pose& pose) const;
 
 		// 0 until PlayExit(), then ramps as the word lifts away / fades.
-		[[nodiscard]] float ExitLift() const;
-		[[nodiscard]] float ExitAlpha() const;
+		[[nodiscard]] float GetExitLift() const;
+		[[nodiscard]] float GetExitAlpha() const;
 
 		// One NeonGlow pass per letter (white silhouette + the letter's own
-		// tint -- NeonGlow's dilate discards source colour, so a shared pass
-		// can't be multi-coloured). The glow box is a single fixed size for
+		// tint -- NeonGlow's dilate discards source color, so a shared pass
+		// can't be multi-colored). The glow box is a single fixed size for
 		// every letter, so NeonGlow resizes its buffers once and never again.
 		void DrawLetterGlow(sf::RenderTarget& target, NeonGlow& glow, std::size_t index, const Pose& pose,
 			sf::Vector2f position) const;

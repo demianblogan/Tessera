@@ -14,7 +14,7 @@ public:
 	void Nudge(sf::Vector2f impulse);
 	void Update(float deltaTime);
 
-	[[nodiscard]] sf::Vector2f Offset() const;
+	[[nodiscard]] sf::Vector2f GetOffset() const;
 
 private:
 	sf::Vector2f position{};

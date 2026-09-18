@@ -1,6 +1,7 @@
 #include "Context.h"
 
 #include "../audio/AudioPlayer.h"
+#include "../audio/MusicPlayer.h"
 #include "../settings/SettingsManager.h"
 
 Context::Context(
@@ -13,6 +14,7 @@ Context::Context(
     ShaderManager& shaders,
     AudioPlayer& audioPlayer,
     AudioBalance& audioBalance,
+    MusicPlayer& musicPlayer,
     HapticSettings& hapticSettings,
     Display::DisplayManager& display,
     SettingsManager& settings,
@@ -31,12 +33,11 @@ Context::Context(
     , shaders(shaders)
     , audioPlayer(audioPlayer)
     , audioBalance(audioBalance)
+    , musicPlayer(musicPlayer)
     , hapticSettings(hapticSettings)
     , settings(settings)
     , highScores(highScores)
     , gamepad(gamepad)
     , gamepadHaptics(gamepadHaptics)
     , localization(localization)
-{
-	// No code
-}
+{}

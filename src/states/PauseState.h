@@ -49,14 +49,12 @@ public:
 	// header to rise out of it.
 	void OpenOptions(sf::Vector2f from, float fromHeight);
 
-	[[nodiscard]] Backdrop GetBackdrop() const override { return Backdrop::Opaque; }
-
 protected:
 	void UpdateBackground(float deltaTime) override;
 	void RenderBackground(sf::RenderTarget& target) override;
 	[[nodiscard]] std::unique_ptr<MenuScreen> BuildHomeScreen(std::size_t returnEntryIndex) override;
 
-	[[nodiscard]] bool HomeDrivesHeader() const override { return true; }
+	[[nodiscard]] bool HasPersistentHeader() const override;
 	void OnHomeRebuilt() override;
 
 private:
@@ -70,10 +68,10 @@ private:
 
 	// 0 = the frame is crisp, 1 = fully solidified.
 	float reveal = 0.f;
-	bool resuming = false;
-	bool introRaised = false;   // has "PAUSE" + the column been brought in yet
+	bool isResuming = false;
+	bool hasRaisedIntro = false;   // has "PAUSE" + the column been brought in yet
 
-	// "Back to Main Menu" confirmed: fade to black, then clear + push MenuShell.
-	bool quitting = false;
+	// "Back to Main Menu" confirmed: fade to black, then clear + push MenuShellState.
+	bool isQuitting = false;
 	float quitFade = 0.f;
 };

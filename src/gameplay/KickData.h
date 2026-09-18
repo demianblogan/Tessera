@@ -23,16 +23,21 @@ namespace KickData
 
 	using Tests = std::array<sf::Vector2i, TestCount>;
 
+	// One transition slot per turn direction out of each rotation state --
+	// see GetSlotFor for how a from->to step maps to one of these.
+	inline constexpr int SlotsPerRotationState = 2;
+	inline constexpr int SlotCount = TetrominoShapes::RotationCount * SlotsPerRotationState;
+
 	// The offsets to try, in order, rotating `type` from `fromRotation` to
 	// `toRotation` (both 0..3, and one step apart). O returns all zeroes.
-	[[nodiscard]] const Tests& Offsets(Tetromino::Type type, int fromRotation, int toRotation);
+	[[nodiscard]] const Tests& GetOffsets(Tetromino::Type type, int fromRotation, int toRotation);
 
 	// Which of the two override tables a transition slot belongs to.
 	enum class Table { JLSTZ, I };
 
-	// Transition slot for a from->to step, 0..7 (from * 2, + 1 when turning
-	// counter-clockwise). std::nullopt if the states are not one step apart.
-	[[nodiscard]] std::optional<int> SlotFor(int fromRotation, int toRotation);
+	// Transition slot for a from->to step, 0..SlotCount-1 (from * SlotsPerRotationState,
+	// +1 when turning counter-clockwise). std::nullopt if the states are not one step apart.
+	[[nodiscard]] std::optional<int> GetSlotFor(int fromRotation, int toRotation);
 
 	// Replace one transition slot in one table (used by the JSON loader).
 	void SetSlot(Table table, int slot, const Tests& tests);

@@ -11,7 +11,9 @@
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../resources/Assets.h"
-#include "MenuShell.h"
+#include "../settings/SettingsManager.h"
+#include "LanguagePickerState.h"
+#include "MenuShellState.h"
 
 CompanySplashState::CompanySplashState(Context& context)
 	: State(context.stateMachine)
@@ -47,6 +49,11 @@ void CompanySplashState::Update(float deltaTime)
 	}
 }
 
+bool CompanySplashState::IsCursorVisible() const
+{
+	return false;
+}
+
 void CompanySplashState::Render(sf::RenderTarget& target)
 {
 	const sf::Vector2f targetSize = target.getView().getSize();
@@ -76,7 +83,15 @@ void CompanySplashState::Finish()
 	}
 
 	isFinishing = true;
-	RequestChange(std::make_unique<MenuShell>(context));
+
+	if (context.settings.GetSettings().isLanguageChosen)
+	{
+		RequestChange(std::make_unique<MenuShellState>(context));
+	}
+	else
+	{
+		RequestChange(std::make_unique<LanguagePickerState>(context));
+	}
 }
 
 void CompanySplashState::UpdateOpacity()

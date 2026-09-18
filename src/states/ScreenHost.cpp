@@ -7,7 +7,7 @@
 #include "../core/Context.h"
 #include "../input/gamepad/GamepadHaptics.h"
 #include "../resources/Assets.h"
-#include "MenuScreen.h"
+#include "../ui/screens/MenuScreen.h"
 
 namespace
 {
@@ -15,9 +15,9 @@ namespace
 	// screen exits and the header starts to rise.
 	constexpr float ImpulseLead = 0.16f;
 
-	[[nodiscard]] Haptics::RGBColor ToRgb(sf::Color colour) noexcept
+	[[nodiscard]] Haptics::RGBColor ToRgb(sf::Color color) noexcept
 	{
-		return { colour.r, colour.g, colour.b };
+		return { color.r, color.g, color.b };
 	}
 }
 
@@ -36,41 +36,82 @@ ScreenHost::~ScreenHost()
 	context.gamepadHaptics.SetLightbarColor({});
 }
 
+Context& ScreenHost::GetContext()
+{
+	return context;
+}
+
+void ScreenHost::SetHeaderText(const sf::String& text)
+{
+	header.SetText(text);
+}
+
+void ScreenHost::OnNavigate(float /*direction*/)
+{
+}
+
+void ScreenHost::BeginPlay()
+{
+}
+
+bool ScreenHost::HasPersistentHeader() const
+{
+	return false;
+}
+
+void ScreenHost::OnHomeRebuilt()
+{
+}
+
 void ScreenHost::SetInitialScreen(std::unique_ptr<MenuScreen> initial)
 {
 	screen = std::move(initial);
 }
 
-void ScreenHost::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color colour,
-	sf::Vector2f fromCentre, float fromHeight, std::size_t entryIndex)
+MenuScreen* ScreenHost::GetCurrentScreen()
 {
-	if (phase != Phase::Steady || onSubScreen || !screen)
+	return screen.get();
+}
+
+UI::MenuHeader& ScreenHost::GetHeader()
+{
+	return header;
+}
+
+void ScreenHost::RenderOverlay(sf::RenderTarget& /*target*/)
+{
+}
+
+void ScreenHost::BeginForward(std::unique_ptr<MenuScreen> next, const sf::String& label, sf::Color color,
+	sf::Vector2f fromCenter, float fromHeight, std::size_t entryIndex)
+{
+	if (phase != Phase::Steady || isOnSubScreen || !screen)
 	{
 		return;
 	}
 
 	nextScreen = std::move(next);
 	pendingLabel = label;
-	pendingColour = colour;
-	pendingFromCentre = fromCentre;
+	pendingColor = color;
+	pendingFromCenter = fromCenter;
 	pendingFromHeight = fromHeight;
 	returnEntryIndex = entryIndex;
 
 	screen->PlayActivatePulse();
-	forwardStarted = false;
+	hasForwardStarted = false;
 	forwardTimer = 0.f;
 	phase = Phase::Forward;
 }
 
 void ScreenHost::BeginBack()
 {
-	if (phase != Phase::Steady || !onSubScreen || !screen)
+	if (phase != Phase::Steady || !isOnSubScreen || !screen)
 	{
 		return;
 	}
 
 	screen->StartExit();
-	mainRebuilt = false;
+	hasRebuiltMain = false;
 	phase = Phase::Back;
 }
 
@@ -83,38 +124,38 @@ void ScreenHost::AdvanceTransition(float deltaTime)
 
 	case Phase::Forward:
 		forwardTimer += deltaTime;
-		if (!forwardStarted && forwardTimer >= ImpulseLead)
+		if (!hasForwardStarted && forwardTimer >= ImpulseLead)
 		{
-			header.RiseFrom(pendingFromCentre, pendingFromHeight, pendingLabel, pendingColour);
+			header.RiseFrom(pendingFromCenter, pendingFromHeight, pendingLabel, pendingColor);
 			if (screen)
 			{
 				screen->StartExit();
 			}
-			forwardStarted = true;
+			hasForwardStarted = true;
 		}
-		if (forwardStarted && screen && screen->ExitFinished())
+		if (hasForwardStarted && screen && screen->IsExitFinished())
 		{
 			screen = std::move(nextScreen);
 			screen->PlayIntro();
-			onSubScreen = true;
+			isOnSubScreen = true;
 			phase = Phase::Steady;
 		}
 		break;
 
 	case Phase::Back:
-		if (!mainRebuilt && screen && screen->ExitFinished())
+		if (!hasRebuiltMain && screen && screen->IsExitFinished())
 		{
 			auto home = BuildHomeScreen(returnEntryIndex);
-			if (!HomeDrivesHeader())
+			if (!HasPersistentHeader())
 			{
-				header.SinkTo(home->HeaderReturnCentre(), home->HeaderReturnHeight());
+				header.SinkTo(home->GetHeaderReturnCenter(), home->GetHeaderReturnHeight());
 			}
 			screen = std::move(home);
-			onSubScreen = false;
-			mainRebuilt = true;
+			isOnSubScreen = false;
+			hasRebuiltMain = true;
 			OnHomeRebuilt();
 		}
-		if (mainRebuilt && (header.IsIdle() || header.IsSettled()))
+		if (hasRebuiltMain && (header.IsIdle() || header.IsSettled()))
 		{
 			phase = Phase::Steady;
 		}
@@ -144,9 +185,9 @@ void ScreenHost::Update(float deltaTime)
 
 	if (screen)
 	{
-		if (const std::optional<sf::Color> colour = screen->LightbarColour())
+		if (const std::optional<sf::Color> color = screen->GetLightbarColor(); color.has_value())
 		{
-			context.gamepadHaptics.SetLightbarColor(ToRgb(*colour));
+			context.gamepadHaptics.SetLightbarColor(ToRgb(*color));
 		}
 	}
 }
@@ -165,7 +206,7 @@ void ScreenHost::Render(sf::RenderTarget& target)
 	RenderOverlay(target);
 }
 
-bool ScreenHost::ShowsCursor() const
+bool ScreenHost::IsCursorVisible() const
 {
-	return screen ? screen->ShowsCursor() : true;
+	return screen ? screen->IsCursorVisible() : true;
 }

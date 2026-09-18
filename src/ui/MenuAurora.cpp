@@ -6,10 +6,11 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Shader.hpp>
 
+#include "../display/DisplaySettings.h"
+
 namespace
 {
-	constexpr float VirtualWidth = 1920.f;
-	constexpr float VirtualHeight = 1080.f;
+	using Display::VirtualSize;
 }
 
 namespace UI
@@ -27,9 +28,9 @@ namespace UI
 	void MenuAurora::Render(sf::RenderTarget& target) const
 	{
 		shader.setUniform("time", time);
-		shader.setUniform("resolution", sf::Glsl::Vec2(VirtualWidth, VirtualHeight));
+		shader.setUniform("resolution", sf::Glsl::Vec2(VirtualSize.x, VirtualSize.y));
 
-		sf::RectangleShape quad({ VirtualWidth, VirtualHeight });
+		sf::RectangleShape quad(VirtualSize);
 
 		sf::RenderStates states;
 		states.shader = &shader;

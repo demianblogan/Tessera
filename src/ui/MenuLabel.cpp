@@ -13,9 +13,9 @@
 #include <SFML/Graphics/Transform.hpp>
 #include <SFML/Graphics/VertexArray.hpp>
 
-#include "ColourUtils.h"
+#include "ColorUtils.h"
 #include "GlyphQuad.h"
-#include "../rendering/NeonGlow.h"
+#include "../primitives/NeonGlow.h"
 
 namespace
 {
@@ -31,6 +31,12 @@ namespace
 	constexpr float WaveAmplitude = 4.f;
 	constexpr float WaveSpeed = 2.0f;
 	constexpr float WavePhaseStep = 0.6f;
+
+	// SetText() -- auto glow box: padded well past the ink so the bloom has
+	// room to breathe.
+	constexpr float AutoGlowBoxWidthScale = 1.5f;
+	constexpr float AutoGlowBoxHeightScale = 2.4f;
+	constexpr float AutoGlowBoxPad = 120.f;
 
 	using UI::Darken;
 	using UI::MixToWhite;
@@ -82,9 +88,14 @@ namespace UI
 			glyphs.push_back({ codepoint, x - halfWidth });
 		}
 
-		inkCentreY = (inkTop + inkBottom) * 0.5f;
+		inkCenterY = (inkTop + inkBottom) * 0.5f;
 		inkSize = { penX, std::max(inkBottom - inkTop, 1.f) };
-		autoGlowBoxSize = { inkSize.x * 1.5f + 120.f, inkSize.y * 2.4f + 120.f };
+		autoGlowBoxSize = { inkSize.x * AutoGlowBoxWidthScale + AutoGlowBoxPad, inkSize.y * AutoGlowBoxHeightScale + AutoGlowBoxPad };
+	}
+
+	void MenuLabel::SetWaveEnabled(bool isWaveEnabled)
+	{
+		this->isWaveEnabled = isWaveEnabled;
 	}
 
 	void MenuLabel::SetGlowBoxSize(sf::Vector2f size)
@@ -92,7 +103,17 @@ namespace UI
 		fixedGlowBoxSize = size;
 	}
 
-	sf::Vector2f MenuLabel::GlowBox() const
+	sf::Vector2f MenuLabel::GetInkSize() const
+	{
+		return inkSize;
+	}
+
+	float MenuLabel::GetInkCenterY() const
+	{
+		return inkCenterY;
+	}
+
+	sf::Vector2f MenuLabel::GetGlowBox() const
 	{
 		return (fixedGlowBoxSize.x > 0.f && fixedGlowBoxSize.y > 0.f) ? fixedGlowBoxSize : autoGlowBoxSize;
 	}
@@ -102,23 +123,23 @@ namespace UI
 		waveTime += deltaTime;
 	}
 
-	float MenuLabel::WaveOffset(std::size_t index) const
+	float MenuLabel::GetWaveOffset(std::size_t index) const
 	{
-		if (!waveEnabled)
+		if (!isWaveEnabled)
 		{
 			return 0.f;
 		}
 		return WaveAmplitude * std::sin(waveTime * WaveSpeed + static_cast<float>(index) * WavePhaseStep);
 	}
 
-	sf::FloatRect MenuLabel::Bounds(sf::Vector2f centre, float scale) const
+	sf::FloatRect MenuLabel::GetBounds(sf::Vector2f center, float scale) const
 	{
 		return {
-			{ centre.x - inkSize.x * 0.5f * scale, centre.y - inkSize.y * 0.5f * scale },
+			{ center.x - inkSize.x * 0.5f * scale, center.y - inkSize.y * 0.5f * scale },
 			{ inkSize.x * scale, inkSize.y * scale } };
 	}
 
-	void MenuLabel::Draw(sf::RenderTarget& target, sf::Vector2f centre, float scale, sf::Color colour,
+	void MenuLabel::Draw(sf::RenderTarget& target, sf::Vector2f center, float scale, sf::Color color,
 		float alphaFraction, float whiten) const
 	{
 		if (glyphs.empty())
@@ -132,16 +153,16 @@ namespace UI
 			return;
 		}
 
-		const sf::Color base = whiten > 0.f ? MixToWhite(colour, whiten) : colour;
+		const sf::Color base = whiten > 0.f ? MixToWhite(color, whiten) : color;
 		const auto alpha = static_cast<std::uint8_t>(alphaFraction * 255.f);
 
 		sf::Transform transform;
-		transform.translate(centre);
+		transform.translate(center);
 		transform.scale({ scale, scale });
-		transform.translate({ 0.f, -inkCentreY });
+		transform.translate({ 0.f, -inkCenterY });
 
-		const sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(ShadowAlpha * alphaFraction * 255.f));
-		sf::Color outlineColour = Darken(base, OutlineDarken);   outlineColour.a = alpha;
+		const sf::Color shadowColor(0, 0, 0, static_cast<std::uint8_t>(ShadowAlpha * alphaFraction * 255.f));
+		sf::Color outlineColor = Darken(base, OutlineDarken);   outlineColor.a = alpha;
 		sf::Color fillTop = MixToWhite(base, GradientTopMix);     fillTop.a = alpha;
 		sf::Color fillBottom = Darken(base, GradientBottom);      fillBottom.a = alpha;
 
@@ -151,13 +172,13 @@ namespace UI
 
 		for (std::size_t i = 0; i < glyphs.size(); ++i)
 		{
-			const float waveY = WaveOffset(i);
+			const float waveY = GetWaveOffset(i);
 			const sf::Glyph& body = font->getGlyph(glyphs[i].codepoint, characterSize, false);
 			const sf::Glyph& rim = font->getGlyph(glyphs[i].codepoint, characterSize, false, OutlineThickness);
 
-			AppendGlyphQuad(shadow, glyphs[i].penX, body, shadowColour, shadowColour,
+			AppendGlyphQuad(shadow, glyphs[i].penX, body, shadowColor, shadowColor,
 				{ ShadowOffset.x, ShadowOffset.y + waveY });
-			AppendGlyphQuad(outline, glyphs[i].penX, rim, outlineColour, outlineColour, { 0.f, waveY });
+			AppendGlyphQuad(outline, glyphs[i].penX, rim, outlineColor, outlineColor, { 0.f, waveY });
 			AppendGlyphQuad(fill, glyphs[i].penX, body, fillTop, fillBottom, { 0.f, waveY });
 		}
 
@@ -170,7 +191,7 @@ namespace UI
 		target.draw(fill, states);
 	}
 
-	void MenuLabel::DrawGlow(sf::RenderTarget& target, NeonGlow& glow, sf::Vector2f centre, float scale,
+	void MenuLabel::DrawGlow(sf::RenderTarget& target, NeonGlow& glow, sf::Vector2f center, float scale,
 		sf::Color tint) const
 	{
 		if (glyphs.empty())
@@ -179,12 +200,12 @@ namespace UI
 		}
 
 		sf::Transform transform;
-		transform.translate(centre);
+		transform.translate(center);
 		transform.scale({ scale, scale });
-		transform.translate({ 0.f, -inkCentreY });
+		transform.translate({ 0.f, -inkCenterY });
 
-		const sf::Vector2f box = GlowBox();
-		const sf::FloatRect area{ { centre.x - box.x * 0.5f, centre.y - box.y * 0.5f }, box };
+		const sf::Vector2f box = GetGlowBox();
+		const sf::FloatRect area{ { center.x - box.x * 0.5f, center.y - box.y * 0.5f }, box };
 
 		glow.Draw(target, area,
 			[this, &transform](sf::RenderTarget& buffer, const sf::RenderStates& states)
@@ -194,13 +215,13 @@ namespace UI
 				{
 					AppendGlyphQuad(white, glyphs[i].penX,
 						font->getGlyph(glyphs[i].codepoint, characterSize, false),
-						sf::Color::White, sf::Color::White, { 0.f, WaveOffset(i) });
+						sf::Color::White, sf::Color::White, { 0.f, GetWaveOffset(i) });
 				}
 
-				sf::RenderStates s = states;
-				s.transform *= transform;
-				s.texture = &font->getTexture(characterSize);
-				buffer.draw(white, s);
+				sf::RenderStates glyphStates = states;
+				glyphStates.transform *= transform;
+				glyphStates.texture = &font->getTexture(characterSize);
+				buffer.draw(white, glyphStates);
 			},
 			tint, false);
 	}

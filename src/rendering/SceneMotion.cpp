@@ -13,9 +13,14 @@ namespace
 	constexpr float MaxX = 46.f;
 	constexpr float MaxY = 30.f;
 
-	// The always-on drift.
+	// The always-on drift: two independent sine waves, deliberately at
+	// different speeds and phases so the motion doesn't trace a simple
+	// repeating line/ellipse.
 	constexpr float IdleAmpX = 7.f;
 	constexpr float IdleAmpY = 4.5f;
+	constexpr float IdleSpeedX = 0.13f;
+	constexpr float IdleSpeedY = 0.09f;
+	constexpr float IdlePhaseOffsetY = 1.7f;
 
 	[[nodiscard]] float Clamp(float value, float limit)
 	{
@@ -40,11 +45,13 @@ void SceneMotion::Update(float deltaTime)
 	idleTime += deltaTime;
 }
 
-sf::Vector2f SceneMotion::Offset() const
+sf::Vector2f SceneMotion::GetOffset() const
 {
-	const sf::Vector2f drift{
-		std::sin(idleTime * 0.13f) * IdleAmpX,
-		std::sin(idleTime * 0.09f + 1.7f) * IdleAmpY };
+	const sf::Vector2f drift
+	{
+		std::sin(idleTime * IdleSpeedX) * IdleAmpX,
+		std::sin(idleTime * IdleSpeedY + IdlePhaseOffsetY) * IdleAmpY
+	};
 
 	return position + drift;
 }

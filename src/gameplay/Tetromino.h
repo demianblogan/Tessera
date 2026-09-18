@@ -17,7 +17,8 @@ public:
 		S,
 		Z,
 		J,
-		L
+		L,
+		Count   // Not a real piece -- the number of types above, for table sizing.
 	};
 
 private:
@@ -46,11 +47,11 @@ public:
 	[[nodiscard]] const sf::Vector2i& GetPosition() const;
 
 	// Board cells this piece occupies right now.
-	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> GetBlockPositions() const;
+	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BlockCount> GetBlockPositions() const;
 
 	// Board cells this piece would occupy at an arbitrary rotation state (and
 	// optional extra offset), without changing the piece -- used to trial SRS
 	// wall kicks before committing a rotation.
-	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> GetBlockPositions(
+	[[nodiscard]] std::array<sf::Vector2i, TetrominoShapes::BlockCount> GetBlockPositions(
 		int rotationIndex, sf::Vector2i extraOffset = {}) const;
 };

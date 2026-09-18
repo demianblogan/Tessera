@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <cstdint>
 #include <utility>
 
@@ -16,24 +17,31 @@
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Angle.hpp>
 
-#include "ColourUtils.h"
-#include "Easing.h"
+#include "ColorUtils.h"
+#include "../utils/Easing.h"
 #include "GlyphQuad.h"
 #include "TetrominoPalette.h"
-#include "../rendering/NeonGlow.h"
+#include "../primitives/NeonGlow.h"
 
 namespace
 {
-	constexpr float Pi = 3.14159265f;
+	constexpr float Pi = std::numbers::pi_v<float>;
 	constexpr float TwoPi = 2.f * Pi;
 	constexpr float QuarterTurn = Pi * 0.5f;
 
 	constexpr float RadiusX = 540.f;      // horizontal spread of the side entries
-	constexpr float SideBaseY = 150.f;    // a side entry sits this far below the centre
+	constexpr float SideBaseY = 150.f;    // a side entry sits this far below the center
 	constexpr float DepthDropY = 145.f;   // front drops this much more, back rises this much (back tucks behind the title)
 
 	constexpr float ScaleBack = 0.42f;
 	constexpr float ScaleFront = 1.12f;
+
+	// Ring alpha ramps from RingAlphaBase at the back to full opacity at the
+	// front, biased toward the front by the exponent (used both for the
+	// resting ring and, with its own depth fraction, for the fly-in).
+	constexpr float RingAlphaBase = 0.10f;
+	constexpr float RingAlphaScale = 0.90f;
+	constexpr float RingAlphaFrontBias = 1.6f;
 
 	constexpr float RotateDuration = 0.26f;
 
@@ -54,6 +62,7 @@ namespace
 	// ring turns). The source sprite points up; it is rotated a quarter turn.
 	constexpr float ArrowGap = 16.f;             // between the widest entry's edge and the arrow
 	constexpr float ArrowHeightFraction = 0.85f; // arrow on-screen height vs the front entry's text height
+	constexpr float ArrowMinScreenHeight = 12.f;
 	constexpr float ArrowHitPadding = 4.f;
 
 	// Entry text styling: dark rim, vertical gradient fill in the entry's own
@@ -72,9 +81,16 @@ namespace
 	constexpr float EntryMaxBlur = 9.f;    // local units at the very back
 	constexpr float EntryBlurFalloff = 1.9f;   // >1 keeps the sides fairly sharp, blurs the back
 	constexpr int EntryBlurTaps = 5;
+	constexpr float EntryBlurTapSpreadFactor = 0.55f;   // blends the tap alpha down as tap count grows
+	constexpr float EntryBlurTapsThreshold = 0.6f;      // minimum blur before the extra taps kick in
 
 	constexpr float EntryGlowIntensity = 0.55f;
 	constexpr float EntryArrivalFlashDuration = 0.24f;
+	constexpr float EntryArrivalFlashGlowWeight = 0.7f;   // how much the arrival flash can raise the glow strength
+	constexpr float EntryFrontGlowDepthThreshold = 0.15f;   // glow only once the front entry is mostly turned toward camera
+	constexpr float EntryFrontGlowBoxWidthPad = 60.f;
+	constexpr float EntryFrontGlowBoxWidthScale = 2.6f;
+	constexpr float EntryFrontGlowBoxHeightScale = 2.f;
 
 	// Idle "breath" of the front entry.
 	constexpr float EntryBreathAmplitude = 0.018f;
@@ -102,16 +118,21 @@ namespace
 
 	// The press ring is a soft, dense orange haze -- many overlapping additive
 	// bands rather than one thin outline.
-	constexpr sf::Color ArrowPulseColour{ 255, 138, 46 };
+	constexpr sf::Color ArrowPulseColor{ 255, 138, 46 };
 	constexpr float ArrowPulseRadiusStart = 10.f;
 	constexpr float ArrowPulseRadiusEnd = 40.f;
 	constexpr int ArrowPulseBands = 9;
 	constexpr float ArrowPulseBandSpread = 22.f;  // total radial thickness of the haze
 	constexpr float ArrowPulseBandWidth = 9.f;
+	constexpr float ArrowPulseBandAlphaScale = 90.f;
+
+	// DrawArrow() -- rest-state alpha: dim until hovered, full while hovered.
+	constexpr std::uint8_t ArrowHoveredAlpha = 255u;
+	constexpr std::uint8_t ArrowRestAlpha = 150u;
 
 	struct ArrowGeom
 	{
-		sf::Vector2f centre;
+		sf::Vector2f center;
 		float scale = 1.f;
 		sf::Vector2f halfExtent;   // on-screen, after the quarter-turn rotation
 	};
@@ -120,7 +141,7 @@ namespace
 		sf::Vector2u textureSize, int side) noexcept
 	{
 		// After a +/-90 turn the texture's width runs vertically on screen.
-		const float screenHeight = std::max(12.f, itemHeight * ArrowHeightFraction);
+		const float screenHeight = std::max(ArrowMinScreenHeight, itemHeight * ArrowHeightFraction);
 		const float scale = screenHeight / std::max(1.f, static_cast<float>(textureSize.x));
 		const sf::Vector2f halfExtent{
 			static_cast<float>(textureSize.y) * scale * 0.5f,
@@ -129,33 +150,34 @@ namespace
 		return { { x, frontSlot.y }, scale, halfExtent };
 	}
 
-	using UI::Easing::EaseOutCubic;
-	using UI::Easing::Lerp;
-	using UI::Easing::SmoothStep;
+	using Easing::EaseOutCubic;
+	using Easing::Lerp;
+	using Easing::SmoothStep;
 
-	[[nodiscard]] sf::Vector2f EllipsePos(sf::Vector2f center, float a) noexcept
+	[[nodiscard]] sf::Vector2f EllipsePos(sf::Vector2f center, float angle) noexcept
 	{
-		return { center.x + std::sin(a) * RadiusX, center.y + SideBaseY + std::cos(a) * DepthDropY };
+		return { center.x + std::sin(angle) * RadiusX, center.y + SideBaseY + std::cos(angle) * DepthDropY };
 	}
 
-	// Position at unrolled angle `a`: on the ring for a <= 0, on the straight
-	// tangent (rising to title level) for a > 0. C1-continuous at a = 0.
-	[[nodiscard]] sf::Vector2f PathPos(sf::Vector2f center, float a) noexcept
+	// Position at unrolled angle `angle`: on the ring for angle <= 0, on the
+	// straight tangent (rising to title level) for angle > 0. C1-continuous at
+	// angle = 0.
+	[[nodiscard]] sf::Vector2f PathPos(sf::Vector2f center, float angle) noexcept
 	{
-		if (a <= 0.f)
+		if (angle <= 0.f)
 		{
-			return EllipsePos(center, a);
+			return EllipsePos(center, angle);
 		}
 
 		const sf::Vector2f base = EllipsePos(center, 0.f);
-		const float lift = SmoothStep(a / LiftSpan);
-		return { base.x + a * RadiusX, Lerp(base.y, center.y, lift) };
+		const float lift = SmoothStep(angle / LiftSpan);
+		return { base.x + angle * RadiusX, Lerp(base.y, center.y, lift) };
 	}
 
 	[[nodiscard]] std::size_t PositiveMod(int value, std::size_t modulus) noexcept
 	{
-		const int m = static_cast<int>(modulus);
-		return static_cast<std::size_t>(((value % m) + m) % m);
+		const int modulusAsInt = static_cast<int>(modulus);
+		return static_cast<std::size_t>(((value % modulusAsInt) + modulusAsInt) % modulusAsInt);
 	}
 }
 
@@ -168,8 +190,8 @@ namespace UI
 	{
 	}
 
-	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled,
-		std::optional<sf::Color> colour)
+	void CarouselMenu::AddItem(const sf::String& text, std::function<void()> onActivate, bool isEnabled,
+		std::optional<sf::Color> color)
 	{
 		sf::Text label(font, text, characterSize);
 		const sf::FloatRect bounds = label.getLocalBounds();
@@ -177,11 +199,11 @@ namespace UI
 
 		maxItemHeight = std::max(maxItemHeight, bounds.size.y);
 
-		const sf::Color entryColour = !enabled
-			? UI::DisabledEntryColour
-			: colour.value_or(UI::TetrominoColours[items.size() % UI::TetrominoColours.size()]);
+		const sf::Color entryColor = !isEnabled
+			? UI::DisabledEntryColor
+			: color.value_or(UI::TetrominoColors[items.size() % UI::TetrominoColors.size()]);
 
-		Item item{ std::move(label), std::move(onActivate), {}, 0.f, entryColour, enabled };
+		Item item{ std::move(label), std::move(onActivate), {}, 0.f, entryColor, isEnabled };
 
 		// Walk the pen so each glyph can be drawn as its own quad (gradient fill
 		// + a real dark outline glyph); `sf::Text::findCharacterPos` is deprecated
@@ -195,7 +217,7 @@ namespace UI
 		float inkBottom = 0.f;
 		float inkLeft = 0.f;
 		float inkRight = 0.f;
-		bool anyInk = false;
+		bool hasAnyInk = false;
 		for (std::size_t i = 0; i < text.getSize(); ++i)
 		{
 			const char32_t codepoint = text[i];
@@ -213,25 +235,25 @@ namespace UI
 				inkBottom = std::max(inkBottom, gb.position.y + gb.size.y);
 
 				const float left = penX + gb.position.x;
-				inkLeft = anyInk ? std::min(inkLeft, left) : left;
-				inkRight = anyInk ? std::max(inkRight, left + gb.size.x) : left + gb.size.x;
-				anyInk = true;
+				inkLeft = hasAnyInk ? std::min(inkLeft, left) : left;
+				inkRight = hasAnyInk ? std::max(inkRight, left + gb.size.x) : left + gb.size.x;
+				hasAnyInk = true;
 			}
 			penX += font.getGlyph(codepoint, characterSize, false).advance;
 			previous = codepoint;
 		}
 
-		item.inkCentreY = (inkTop + inkBottom) * 0.5f;
+		item.inkCenterY = (inkTop + inkBottom) * 0.5f;
 
-		// Centre each entry on its visible ink, not on the advance box (whose
+		// Center each entry on its visible ink, not on the advance box (whose
 		// trailing side bearing would shift the word -- and so the arrows, which
 		// anchor to maxItemHalfWidth -- slightly left of the slot).
-		const float inkCentreX = anyInk ? (inkLeft + inkRight) * 0.5f : penX * 0.5f;
-		const float halfWidth = anyInk ? (inkRight - inkLeft) * 0.5f : penX * 0.5f;
+		const float inkCenterX = hasAnyInk ? (inkLeft + inkRight) * 0.5f : penX * 0.5f;
+		const float halfWidth = hasAnyInk ? (inkRight - inkLeft) * 0.5f : penX * 0.5f;
 		maxItemHalfWidth = std::max(maxItemHalfWidth, halfWidth);
 		for (const auto& [codepoint, x] : raw)
 		{
-			item.glyphs.push_back({ codepoint, x - inkCentreX });
+			item.glyphs.push_back({ codepoint, x - inkCenterX });
 		}
 
 		items.push_back(std::move(item));
@@ -250,15 +272,15 @@ namespace UI
 		}
 
 		frontIndex = static_cast<int>(index % items.size());
-		angle = static_cast<float>(frontIndex) * SlotStep();
+		angle = static_cast<float>(frontIndex) * GetSlotStep();
 		rotateFrom = angle;
 		rotateTo = angle;
 		rotateTimer = 1.f;
 	}
 
-	std::size_t CarouselMenu::CurrentFrontIndex() const
+	std::size_t CarouselMenu::GetCurrentFrontIndex() const
 	{
-		return FrontItem();
+		return GetFrontItem();
 	}
 
 	void CarouselMenu::SetSwooshCallback(std::function<void(std::size_t)> callback)
@@ -268,20 +290,20 @@ namespace UI
 
 	void CarouselMenu::Begin()
 	{
-		started = true;
+		hasStarted = true;
 		swooshFired.assign(items.size(), 0);
 	}
 
 	void CarouselMenu::Skip()
 	{
-		started = true;
+		hasStarted = true;
 		introTimer = 1.f;
 		swooshFired.assign(items.size(), 1);   // no swoosh when the intro is skipped
 	}
 
-	float CarouselMenu::IntroPathAngle(std::size_t index) const
+	float CarouselMenu::GetIntroPathAngle(std::size_t index) const
 	{
-		const float step = SlotStep();
+		const float step = GetSlotStep();
 		const float count = static_cast<float>(items.size());
 		const float introLead = -(count - 1.f) * step;
 		const float introTargetI = index == 0
@@ -294,22 +316,22 @@ namespace UI
 
 	bool CarouselMenu::IsReady() const
 	{
-		return started && introTimer >= 1.f;
+		return hasStarted && introTimer >= 1.f;
 	}
 
-	std::size_t CarouselMenu::FrontItem() const
+	std::size_t CarouselMenu::GetFrontItem() const
 	{
 		return items.empty() ? 0 : PositiveMod(frontIndex, items.size());
 	}
 
-	float CarouselMenu::SlotStep() const
+	float CarouselMenu::GetSlotStep() const
 	{
 		return items.empty() ? QuarterTurn : TwoPi / static_cast<float>(items.size());
 	}
 
-	sf::Color CarouselMenu::FrontColour() const
+	sf::Color CarouselMenu::GetFrontColor() const
 	{
-		return items.empty() ? UI::DisabledEntryColour : items[FrontItem()].colour;
+		return items.empty() ? UI::DisabledEntryColor : items[GetFrontItem()].color;
 	}
 
 	void CarouselMenu::RotateLeft()
@@ -321,7 +343,7 @@ namespace UI
 
 		--frontIndex;
 		rotateFrom = angle;
-		rotateTo = static_cast<float>(frontIndex) * SlotStep();
+		rotateTo = static_cast<float>(frontIndex) * GetSlotStep();
 		rotateTimer = 0.f;
 		arrowPressTime[0] = 0.f;
 	}
@@ -335,7 +357,7 @@ namespace UI
 
 		++frontIndex;
 		rotateFrom = angle;
-		rotateTo = static_cast<float>(frontIndex) * SlotStep();
+		rotateTo = static_cast<float>(frontIndex) * GetSlotStep();
 		rotateTimer = 0.f;
 		arrowPressTime[1] = 0.f;
 	}
@@ -347,8 +369,8 @@ namespace UI
 			return;
 		}
 
-		const Item& front = items[FrontItem()];
-		if (front.enabled && front.activate)
+		const Item& front = items[GetFrontItem()];
+		if (front.isEnabled && front.activate)
 		{
 			front.activate();
 		}
@@ -361,46 +383,46 @@ namespace UI
 
 	void CarouselMenu::StartExit()
 	{
-		if (exiting)
+		if (isExiting)
 		{
 			return;
 		}
-		exiting = true;
+		isExiting = true;
 
 		// Every entry except the front one (which the header takes over) bursts
 		// into pixels from where it currently sits.
 		for (std::size_t i = 0; i < items.size(); ++i)
 		{
-			if (i == FrontItem())
+			if (i == GetFrontItem())
 			{
 				continue;
 			}
 
-			const Placement placement = PlacementOf(i);
+			const Placement placement = GetPlacement(i);
 			const sf::Vector2f size = items[i].text.getLocalBounds().size * placement.scale;
-			dust.Emit(placement.position, size, items[i].colour, ExitDustPerEntry);
+			dust.Emit(placement.position, size, items[i].color, ExitDustPerEntry);
 		}
 	}
 
-	sf::Vector2f CarouselMenu::FrontEntryCentre() const
+	sf::Vector2f CarouselMenu::GetFrontEntryCenter() const
 	{
-		return items.empty() ? center : PlacementOf(FrontItem()).position;
+		return items.empty() ? center : GetPlacement(GetFrontItem()).position;
 	}
 
-	float CarouselMenu::FrontEntryHeight() const
+	float CarouselMenu::GetFrontEntryHeight() const
 	{
 		if (items.empty())
 		{
 			return 0.f;
 		}
 
-		const std::size_t front = FrontItem();
-		return items[front].text.getLocalBounds().size.y * PlacementOf(front).scale;
+		const std::size_t front = GetFrontItem();
+		return items[front].text.getLocalBounds().size.y * GetPlacement(front).scale;
 	}
 
 	void CarouselMenu::Update(float deltaTime)
 	{
-		if (!started)
+		if (!hasStarted)
 		{
 			return;
 		}
@@ -416,7 +438,7 @@ namespace UI
 		{
 			for (std::size_t i = 0; i < items.size() && i < swooshFired.size(); ++i)
 			{
-				if (!swooshFired[i] && IntroPathAngle(i) <= SwooshTriggerAngle)
+				if (!swooshFired[i] && GetIntroPathAngle(i) <= SwooshTriggerAngle)
 				{
 					swooshFired[i] = 1;
 					onSwoosh(i);
@@ -450,18 +472,18 @@ namespace UI
 		}
 	}
 
-	CarouselMenu::Placement CarouselMenu::PlacementOf(std::size_t index) const
+	CarouselMenu::Placement CarouselMenu::GetPlacement(std::size_t index) const
 	{
 		// Resting place on the ring.
-		const float a = static_cast<float>(index) * SlotStep() - angle;
-		const float ringDepth = std::cos(a);
-		const float t = (ringDepth + 1.f) * 0.5f;   // 0 at the back, 1 at the front
+		const float ringAngle = static_cast<float>(index) * GetSlotStep() - angle;
+		const float ringDepth = std::cos(ringAngle);
+		const float ringDepthFraction = (ringDepth + 1.f) * 0.5f;   // 0 at the back, 1 at the front
 
 		const sf::Vector2f ringPos{
-			center.x + std::sin(a) * RadiusX,
+			center.x + std::sin(ringAngle) * RadiusX,
 			center.y + SideBaseY + ringDepth * DepthDropY };
-		const float ringScale = Lerp(ScaleBack, ScaleFront, t);
-		const float ringAlpha = 0.10f + 0.90f * std::pow(t, 1.6f);
+		const float ringScale = Lerp(ScaleBack, ScaleFront, ringDepthFraction);
+		const float ringAlpha = RingAlphaBase + RingAlphaScale * std::pow(ringDepthFraction, RingAlphaFrontBias);
 
 		Placement placement;
 		placement.depth = ringDepth;
@@ -477,15 +499,15 @@ namespace UI
 		// Fly-in. Every entry rides the same path at the same rate; the lead
 		// entry's unrolled angle sweeps linearly from off-screen right down to
 		// its target, and each other entry sits a fixed offset behind it.
-		const float pathAngle = IntroPathAngle(index);
+		const float pathAngle = GetIntroPathAngle(index);
 
 		placement.position = PathPos(center, pathAngle);
 
 		if (pathAngle <= 0.f)
 		{
-			const float ct = (std::cos(pathAngle) + 1.f) * 0.5f;
-			placement.scale = Lerp(ScaleBack, ScaleFront, ct);
-			placement.alpha = 0.10f + 0.90f * std::pow(ct, 1.6f);
+			const float pathDepthFraction = (std::cos(pathAngle) + 1.f) * 0.5f;
+			placement.scale = Lerp(ScaleBack, ScaleFront, pathDepthFraction);
+			placement.alpha = RingAlphaBase + RingAlphaScale * std::pow(pathDepthFraction, RingAlphaFrontBias);
 			placement.depth = std::cos(pathAngle);
 		}
 		else
@@ -499,11 +521,11 @@ namespace UI
 		return placement;
 	}
 
-	void CarouselMenu::Render(sf::RenderTarget& target, bool frontHalf) const
+	void CarouselMenu::Render(sf::RenderTarget& target, bool isFrontHalf) const
 	{
 		// During the exit no entry is drawn: the front one is now the shell's
 		// header, the rest are pixels (see RenderBack).
-		if (exiting)
+		if (isExiting)
 		{
 			return;
 		}
@@ -513,12 +535,12 @@ namespace UI
 
 		for (std::size_t i = 0; i < items.size(); ++i)
 		{
-			const Placement placement = PlacementOf(i);
+			const Placement placement = GetPlacement(i);
 
 			// PlacementOf reports depth < 0 for anything still behind the title
 			// (including entries mid-curl during the fly-in).
 			const bool isFront = placement.depth >= 0.f;
-			if (isFront == frontHalf)
+			if (isFront == isFrontHalf)
 			{
 				drawList.push_back({ i, placement });
 			}
@@ -548,25 +570,25 @@ namespace UI
 
 		// A quick punch-and-flash on the front entry when it is activated.
 		float pulse = 0.f;
-		if (index == FrontItem() && activatePulseTime < ActivatePulseDuration)
+		if (index == GetFrontItem() && activatePulseTime < ActivatePulseDuration)
 		{
 			pulse = std::sin((1.f - activatePulseTime / ActivatePulseDuration) * Pi);
 		}
 
 		// The front entry breathes very slightly.
 		float scale = placement.scale;
-		if (index == FrontItem())
+		if (index == GetFrontItem())
 		{
-			scale *= BreathScale() * (1.f + ActivatePulseScale * pulse);
+			scale *= GetBreathScale() * (1.f + ActivatePulseScale * pulse);
 		}
 
 		sf::Transform transform;
 		transform.translate(placement.position);
 		transform.scale({ scale, scale });
-		transform.translate({ 0.f, -item.inkCentreY });
+		transform.translate({ 0.f, -item.inkCenterY });
 
-		sf::Color base = Desaturate(item.colour, (1.f - depthT) * EntryMaxDesaturate);
-		const float whiten = std::max(ArrivalFlash(index), ActivatePulseFlash * pulse);
+		sf::Color base = Desaturate(item.color, (1.f - depthT) * EntryMaxDesaturate);
+		const float whiten = std::max(GetArrivalFlash(index), ActivatePulseFlash * pulse);
 		if (whiten > 0.f)
 		{
 			base = MixToWhite(base, whiten);
@@ -575,12 +597,12 @@ namespace UI
 		// Side / back entries are drawn as a smear of offset copies (a cheap
 		// depth-of-field blur); the alpha is split across the taps.
 		const float blur = std::pow(1.f - depthT, EntryBlurFalloff) * EntryMaxBlur;
-		const int taps = blur > 0.6f ? EntryBlurTaps : 0;
-		const float tapFraction = taps == 0 ? 1.f : 1.f / (static_cast<float>(taps) * 0.55f + 1.f);
+		const int taps = blur > EntryBlurTapsThreshold ? EntryBlurTaps : 0;
+		const float tapFraction = taps == 0 ? 1.f : 1.f / (static_cast<float>(taps) * EntryBlurTapSpreadFactor + 1.f);
 		const auto tapAlpha = static_cast<std::uint8_t>(alphaFraction * tapFraction * 255.f);
 
-		const sf::Color shadowColour(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
-		sf::Color outlineColour = Darken(base, EntryOutlineDarken);   outlineColour.a = tapAlpha;
+		const sf::Color shadowColor(0, 0, 0, static_cast<std::uint8_t>(EntryShadowAlpha * alphaFraction * 255.f));
+		sf::Color outlineColor = Darken(base, EntryOutlineDarken);   outlineColor.a = tapAlpha;
 		sf::Color fillTop = MixToWhite(base, EntryGradientTopMix);     fillTop.a = tapAlpha;
 		sf::Color fillBottom = Darken(base, EntryGradientBottom);      fillBottom.a = tapAlpha;
 
@@ -593,8 +615,8 @@ namespace UI
 			const sf::Glyph& body = font.getGlyph(glyph.codepoint, characterSize, false);
 			const sf::Glyph& rim = font.getGlyph(glyph.codepoint, characterSize, false, EntryOutlineThickness);
 
-			AppendGlyphQuad(shadow, glyph.penX, body, shadowColour, shadowColour, EntryShadowOffset);
-			AppendGlyphQuad(outline, glyph.penX, rim, outlineColour, outlineColour);
+			AppendGlyphQuad(shadow, glyph.penX, body, shadowColor, shadowColor, EntryShadowOffset);
+			AppendGlyphQuad(outline, glyph.penX, rim, outlineColor, outlineColor);
 			AppendGlyphQuad(fill, glyph.penX, body, fillTop, fillBottom);
 		}
 
@@ -604,14 +626,13 @@ namespace UI
 
 		target.draw(shadow, states);
 
-		constexpr float Tau = 6.2831853f;
 		for (int k = 0; k <= taps; ++k)
 		{
 			sf::Vector2f offset;
 			if (k > 0)
 			{
-				const float a = static_cast<float>(k - 1) / static_cast<float>(taps) * Tau;
-				offset = { std::cos(a) * blur, std::sin(a) * blur };
+				const float tapAngle = static_cast<float>(k - 1) / static_cast<float>(taps) * TwoPi;
+				offset = { std::cos(tapAngle) * blur, std::sin(tapAngle) * blur };
 			}
 
 			sf::RenderStates tapStates = states;
@@ -621,7 +642,7 @@ namespace UI
 		}
 	}
 
-	float CarouselMenu::BreathScale() const
+	float CarouselMenu::GetBreathScale() const
 	{
 		if (!IsReady())
 		{
@@ -630,9 +651,9 @@ namespace UI
 		return 1.f + EntryBreathAmplitude * std::sin(breathTime * EntryBreathSpeed);
 	}
 
-	float CarouselMenu::ArrivalFlash(std::size_t index) const
+	float CarouselMenu::GetArrivalFlash(std::size_t index) const
 	{
-		if (index != FrontItem() || !items[index].enabled)
+		if (index != GetFrontItem() || !items[index].isEnabled)
 		{
 			return 0.f;
 		}
@@ -641,7 +662,7 @@ namespace UI
 
 	void CarouselMenu::RenderBack(sf::RenderTarget& target) const
 	{
-		if (exiting)
+		if (isExiting)
 		{
 			dust.Render(target);
 			return;
@@ -652,33 +673,35 @@ namespace UI
 
 	void CarouselMenu::DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const
 	{
-		if (items.empty() || !items[FrontItem()].enabled)
+		if (items.empty() || !items[GetFrontItem()].isEnabled)
 		{
 			return;
 		}
 
-		const std::size_t index = FrontItem();
-		const Placement placement = PlacementOf(index);
-		if (placement.depth < 0.15f)
+		const std::size_t index = GetFrontItem();
+		const Placement placement = GetPlacement(index);
+		if (placement.depth < EntryFrontGlowDepthThreshold)
 		{
 			return;
 		}
 
 		const Item& item = items[index];
-		const sf::Vector2f box{ maxItemHalfWidth * 2.6f + 60.f, maxItemHeight * 2.f };
+		const sf::Vector2f box{
+			maxItemHalfWidth * EntryFrontGlowBoxWidthScale + EntryFrontGlowBoxWidthPad,
+			maxItemHeight * EntryFrontGlowBoxHeightScale };
 		const sf::FloatRect area{
 			{ placement.position.x - box.x * 0.5f, placement.position.y - box.y * 0.5f }, box };
 
-		const float scale = placement.scale * BreathScale();
+		const float scale = placement.scale * GetBreathScale();
 
 		sf::Transform transform;
 		transform.translate(placement.position);
 		transform.scale({ scale, scale });
-		transform.translate({ 0.f, -item.inkCentreY });
+		transform.translate({ 0.f, -item.inkCenterY });
 
 		float strength = EntryGlowIntensity * std::clamp(placement.depth, 0.f, 1.f);
-		strength = std::max(strength, 0.7f * ArrivalFlash(index));
-		const sf::Color tint = ScaleRgb(item.colour, strength);
+		strength = std::max(strength, EntryArrivalFlashGlowWeight * GetArrivalFlash(index));
+		const sf::Color tint = ScaleRgb(item.color, strength);
 
 		glow.Draw(target, area,
 			[this, &item, &transform](sf::RenderTarget& buffer, const sf::RenderStates& states)
@@ -691,44 +714,44 @@ namespace UI
 						sf::Color::White, sf::Color::White);
 				}
 
-				sf::RenderStates s = states;
-				s.transform *= transform;
-				s.texture = &font.getTexture(characterSize);
-				buffer.draw(white, s);
+				sf::RenderStates glyphStates = states;
+				glyphStates.transform *= transform;
+				glyphStates.texture = &font.getTexture(characterSize);
+				buffer.draw(white, glyphStates);
 			},
 			tint, false);
 	}
 
 	void CarouselMenu::RenderFront(sf::RenderTarget& target, NeonGlow* glow) const
 	{
-		if (glow != nullptr && IsReady() && !exiting)
+		if (glow != nullptr && IsReady() && !isExiting)
 		{
 			DrawFrontGlow(target, *glow);
 		}
 
 		Render(target, true);
 
-		if (IsReady() && !exiting)
+		if (IsReady() && !isExiting)
 		{
 			DrawArrow(target, -1);
 			DrawArrow(target, 1);
 		}
 	}
 
-	sf::Vector2f CarouselMenu::FrontSlotPosition() const
+	sf::Vector2f CarouselMenu::GetFrontSlotPosition() const
 	{
 		return { center.x, center.y + SideBaseY + DepthDropY };
 	}
 
-	sf::FloatRect CarouselMenu::FrontItemBounds() const
+	sf::FloatRect CarouselMenu::GetFrontItemBounds() const
 	{
 		if (items.empty())
 		{
 			return {};
 		}
 
-		const std::size_t front = FrontItem();
-		const Placement placement = PlacementOf(front);
+		const std::size_t front = GetFrontItem();
+		const Placement placement = GetPlacement(front);
 
 		sf::Text label = items[front].text;
 		label.setPosition(placement.position);
@@ -736,22 +759,22 @@ namespace UI
 		return label.getGlobalBounds();
 	}
 
-	sf::FloatRect CarouselMenu::ArrowBounds(int side) const
+	sf::FloatRect CarouselMenu::GetArrowBounds(int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
+		const ArrowGeom arrowGeom = ComputeArrow(GetFrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
 			arrowTexture.getSize(), side);
 		return {
-			{ g.centre.x - g.halfExtent.x - ArrowHitPadding, g.centre.y - g.halfExtent.y - ArrowHitPadding },
-			{ 2.f * (g.halfExtent.x + ArrowHitPadding), 2.f * (g.halfExtent.y + ArrowHitPadding) } };
+			{ arrowGeom.center.x - arrowGeom.halfExtent.x - ArrowHitPadding, arrowGeom.center.y - arrowGeom.halfExtent.y - ArrowHitPadding },
+			{ 2.f * (arrowGeom.halfExtent.x + ArrowHitPadding), 2.f * (arrowGeom.halfExtent.y + ArrowHitPadding) } };
 	}
 
 	void CarouselMenu::DrawArrow(sf::RenderTarget& target, int side) const
 	{
-		const ArrowGeom g = ComputeArrow(FrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
+		const ArrowGeom arrowGeom = ComputeArrow(GetFrontSlotPosition(), maxItemHalfWidth * ScaleFront, maxItemHeight,
 			arrowTexture.getSize(), side);
 
-		const std::size_t idx = side < 0 ? 0u : 1u;
-		const float press = std::clamp(1.f - arrowPressTime[idx] / ArrowPressDuration, 0.f, 1.f);
+		const std::size_t pressIndex = side < 0 ? 0u : 1u;
+		const float press = std::clamp(1.f - arrowPressTime[pressIndex] / ArrowPressDuration, 0.f, 1.f);
 
 		// A soft, dense orange haze ring, expanding and fading as it settles.
 		if (press > 0.f)
@@ -765,29 +788,29 @@ namespace UI
 
 			for (int band = 0; band < ArrowPulseBands; ++band)
 			{
-				const float t = static_cast<float>(band) / static_cast<float>(ArrowPulseBands - 1);   // 0..1
-				const float offset = (t - 0.5f) * ArrowPulseBandSpread;
+				const float bandFraction = static_cast<float>(band) / static_cast<float>(ArrowPulseBands - 1);   // 0..1
+				const float offset = (bandFraction - 0.5f) * ArrowPulseBandSpread;
 				const float bandRadius = std::max(1.f, radius + offset);
 				// Brightest in the middle of the band, faint at the edges.
-				const float weight = 1.f - std::abs(t - 0.5f) * 2.f;
+				const float weight = 1.f - std::abs(bandFraction - 0.5f) * 2.f;
 
 				sf::CircleShape ring(bandRadius);
 				ring.setOrigin({ bandRadius, bandRadius });
-				ring.setPosition(g.centre);
+				ring.setPosition(arrowGeom.center);
 				ring.setFillColor(sf::Color::Transparent);
 				ring.setOutlineThickness(ArrowPulseBandWidth);
-				ring.setOutlineColor(sf::Color(ArrowPulseColour.r, ArrowPulseColour.g, ArrowPulseColour.b,
-					static_cast<std::uint8_t>(coreAlpha * weight * weight * 90.f)));
+				ring.setOutlineColor(sf::Color(ArrowPulseColor.r, ArrowPulseColor.g, ArrowPulseColor.b,
+					static_cast<std::uint8_t>(coreAlpha * weight * weight * ArrowPulseBandAlphaScale)));
 				target.draw(ring, additive);
 			}
 		}
 
 		// The arrow itself: squashed and nudged inward while pressed, tinted warm.
-		const float scale = g.scale * (1.f - ArrowPressDip * press);
-		const sf::Vector2f centre{ g.centre.x - static_cast<float>(side) * ArrowPressShift * press, g.centre.y };
+		const float scale = arrowGeom.scale * (1.f - ArrowPressDip * press);
+		const sf::Vector2f center{ arrowGeom.center.x - static_cast<float>(side) * ArrowPressShift * press, arrowGeom.center.y };
 
-		const std::uint8_t restAlpha = hoveredArrow == side ? 255u : 150u;
-		const sf::Color colour{
+		const std::uint8_t restAlpha = hoveredArrow == side ? ArrowHoveredAlpha : ArrowRestAlpha;
+		const sf::Color color{
 			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.r) * press),
 			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.g) * press),
 			static_cast<std::uint8_t>(255 - (255 - ArrowPressTint.b) * press),
@@ -799,8 +822,8 @@ namespace UI
 		// Source points up; a quarter turn aims it away from the entry -- left
 		// for a left click (ring turns left), right for a right click.
 		arrow.setRotation(sf::degrees(static_cast<float>(side) * 90.f));
-		arrow.setPosition(centre);
-		arrow.setColor(colour);
+		arrow.setPosition(center);
+		arrow.setColor(color);
 		target.draw(arrow);
 	}
 
@@ -812,11 +835,11 @@ namespace UI
 			return;
 		}
 
-		if (ArrowBounds(-1).contains(point))
+		if (GetArrowBounds(-1).contains(point))
 		{
 			hoveredArrow = -1;
 		}
-		else if (ArrowBounds(1).contains(point))
+		else if (GetArrowBounds(1).contains(point))
 		{
 			hoveredArrow = 1;
 		}
@@ -829,17 +852,17 @@ namespace UI
 			return PointerHit::None;
 		}
 
-		if (ArrowBounds(-1).contains(point))
+		if (GetArrowBounds(-1).contains(point))
 		{
 			RotateLeft();
 			return PointerHit::RotatedLeft;
 		}
-		if (ArrowBounds(1).contains(point))
+		if (GetArrowBounds(1).contains(point))
 		{
 			RotateRight();
 			return PointerHit::RotatedRight;
 		}
-		if (!items.empty() && items[FrontItem()].enabled && FrontItemBounds().contains(point))
+		if (!items.empty() && items[GetFrontItem()].isEnabled && GetFrontItemBounds().contains(point))
 		{
 			Activate();
 			return PointerHit::Activated;

@@ -6,5 +6,5 @@
 // main menu; bump it in step with each release tag.
 namespace GameVersion
 {
-	inline constexpr std::string_view Text = "v1.4.0";
+	inline constexpr std::string_view Text = "v1.7.0";
 }

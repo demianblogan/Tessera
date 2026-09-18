@@ -8,18 +8,18 @@
 
 namespace
 {
-	// The topmost occupied row in column x, or Board::HEIGHT if the column is
+	// The topmost occupied row in column x, or Board::Height if the column is
 	// empty (so "lower topRow" always means "more full").
 	int TopRow(const Board& board, int x)
 	{
-		for (int y = 0; y < Board::HEIGHT; y++)
+		for (int y = 0; y < Board::Height; y++)
 		{
-			if (board.GetGrid()[y][x].occupied)
+			if (board.GetGrid()[y][x].isOccupied)
 			{
 				return y;
 			}
 		}
-		return Board::HEIGHT;
+		return Board::Height;
 	}
 
 	// Moves the active piece to whichever rotation and horizontal position
@@ -44,7 +44,7 @@ namespace
 		{
 			const auto blocks = piece.GetBlockPositions(rotation);
 
-			int pieceMinX = Board::WIDTH;
+			int pieceMinX = Board::Width;
 			int pieceMaxX = -1;
 			for (const sf::Vector2i& block : blocks)
 			{
@@ -63,9 +63,9 @@ namespace
 					std::max(bottomOfColumn[static_cast<std::size_t>(localColumn)], block.y);
 			}
 
-			for (int x0 = 0; x0 <= Board::WIDTH - width; x0++)
+			for (int x0 = 0; x0 <= Board::Width - width; x0++)
 			{
-				int landingOffset = Board::HEIGHT;
+				int landingOffset = Board::Height;
 				for (int c = 0; c < width; c++)
 				{
 					if (bottomOfColumn[static_cast<std::size_t>(c)] < 0)
@@ -103,13 +103,13 @@ namespace
 		// board edge; if so, just place whatever orientation was reached.
 		for (int steps = ((bestRotation - startRotation) % 4 + 4) % 4; steps > 0; steps--)
 		{
-			if (!session.Rotate(true))
+			if (!session.RotateTetromino(true))
 			{
 				break;
 			}
 		}
 
-		int minX = Board::WIDTH;
+		int minX = Board::Width;
 		for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
 		{
 			minX = std::min(minX, block.x);
@@ -120,19 +120,19 @@ namespace
 
 		for (int i = 0; i < delta * direction; i++)
 		{
-			session.MoveHorizontal(direction);
+			session.MoveTetrominoHorizontal(direction);
 		}
 
-		session.HardDrop();
+		session.HardDropTetromino();
 	}
 
 	bool BoardHasAnyBlock(const Board& board)
 	{
-		for (int y = 0; y < Board::HEIGHT; y++)
+		for (int y = 0; y < Board::Height; y++)
 		{
-			for (int x = 0; x < Board::WIDTH; x++)
+			for (int x = 0; x < Board::Width; x++)
 			{
-				if (board.GetGrid()[y][x].occupied)
+				if (board.GetGrid()[y][x].isOccupied)
 				{
 					return true;
 				}
@@ -173,7 +173,7 @@ TEST_CASE("the next queue always holds five pieces")
 	// Locking pieces refills the queue from the bag each time.
 	for (int i = 0; i < 30 && session.GetPhase() != GameplaySession::Phase::GameOver; i++)
 	{
-		session.HardDrop();
+		session.HardDropTetromino();
 		session.Update(1.0f);
 		(void)session.ConsumeEvents();
 
@@ -201,7 +201,7 @@ TEST_CASE("the piece that spawns next matches the front of the queue")
 	GameplaySession session;
 	const Tetromino::Type expected = session.GetNextPiece(0).GetType();
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	session.Update(1.0f);
 	(void)session.ConsumeEvents();
 
@@ -218,7 +218,7 @@ TEST_CASE("the queue advances by exactly one slot per spawn")
 		before[static_cast<std::size_t>(i)] = session.GetNextPiece(i).GetType();
 	}
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	session.Update(1.0f);
 	(void)session.ConsumeEvents();
 
@@ -234,7 +234,7 @@ TEST_CASE("the spawn count is a pure change signal for the renderer")
 	GameplaySession session;
 	CHECK(session.GetSpawnCount() == 0);
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	session.Update(1.0f);
 	(void)session.ConsumeEvents();
 
@@ -251,7 +251,7 @@ TEST_CASE("holding for the first time stashes the piece and draws the next queue
 	const Tetromino::Type active = session.GetCurrentTetromino().GetType();
 	const Tetromino::Type upcoming = session.GetNextPiece(0).GetType();
 
-	CHECK(session.Hold());
+	CHECK(session.HoldTetromino());
 
 	CHECK(session.HasHeldPiece());
 	CHECK(session.GetHeldPiece().GetType() == active);
@@ -263,8 +263,8 @@ TEST_CASE("hold cannot be used twice on the same piece")
 {
 	GameplaySession session;
 
-	CHECK(session.Hold());
-	CHECK_FALSE(session.Hold());
+	CHECK(session.HoldTetromino());
+	CHECK_FALSE(session.HoldTetromino());
 }
 
 TEST_CASE("holding again swaps with what is already held, without touching the queue")
@@ -272,12 +272,12 @@ TEST_CASE("holding again swaps with what is already held, without touching the q
 	GameplaySession session;
 
 	const Tetromino::Type firstHeld = session.GetCurrentTetromino().GetType();
-	REQUIRE(session.Hold());
+	REQUIRE(session.HoldTetromino());
 
 	// Lock the piece hold just gave us, so hold is available again -- this also
 	// advances the queue by one (a normal spawn), which the swap below must not
 	// repeat.
-	session.HardDrop();
+	session.HardDropTetromino();
 	session.Update(1.0f);
 	(void)session.ConsumeEvents();
 	REQUIRE(session.CanHold());
@@ -290,7 +290,7 @@ TEST_CASE("holding again swaps with what is already held, without touching the q
 		queueBefore[static_cast<std::size_t>(i)] = session.GetNextPiece(i).GetType();
 	}
 
-	CHECK(session.Hold());
+	CHECK(session.HoldTetromino());
 
 	CHECK(session.GetCurrentTetromino().GetType() == firstHeld);
 	CHECK(session.GetHeldPiece().GetType() == thirdPiece);
@@ -305,10 +305,10 @@ TEST_CASE("hold becomes available again once the piece in play locks")
 {
 	GameplaySession session;
 
-	REQUIRE(session.Hold());
+	REQUIRE(session.HoldTetromino());
 	CHECK_FALSE(session.CanHold());
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	session.Update(1.0f);
 	(void)session.ConsumeEvents();
 
@@ -318,7 +318,7 @@ TEST_CASE("hold becomes available again once the piece in play locks")
 TEST_CASE("MoveHorizontal(0) is a no-op that reports no movement")
 {
 	GameplaySession session;
-	CHECK_FALSE(session.MoveHorizontal(0));
+	CHECK_FALSE(session.MoveTetrominoHorizontal(0));
 }
 
 TEST_CASE("horizontal movement stops at the wall")
@@ -329,7 +329,7 @@ TEST_CASE("horizontal movement stops at the wall")
 
 	for (int i = 0; i < 15; i++)
 	{
-		if (!session.MoveHorizontal(-1))
+		if (!session.MoveTetrominoHorizontal(-1))
 		{
 			everBlocked = true;
 		}
@@ -338,7 +338,7 @@ TEST_CASE("horizontal movement stops at the wall")
 	CHECK(everBlocked);
 
 	// Once blocked, it stays blocked while pushed the same way.
-	CHECK_FALSE(session.MoveHorizontal(-1));
+	CHECK_FALSE(session.MoveTetrominoHorizontal(-1));
 }
 
 TEST_CASE("gravity drops the piece one row once the fall delay elapses")
@@ -359,7 +359,7 @@ TEST_CASE("a soft-drop step lowers the piece by one row")
 
 	const int startY = session.GetCurrentTetromino().GetPosition().y;
 
-	session.SoftDropStep();
+	session.SoftDropTetrominoStep();
 
 	CHECK(session.GetCurrentTetromino().GetPosition().y == startY + 1);
 }
@@ -370,9 +370,9 @@ namespace
 	// locks, so this just parks it).
 	void DropToFloor(GameplaySession& session)
 	{
-		for (int i = 0; i < Board::HEIGHT + 4; i++)
+		for (int i = 0; i < Board::Height + 4; i++)
 		{
-			session.SoftDropStep();
+			session.SoftDropTetrominoStep();
 		}
 	}
 }
@@ -383,7 +383,7 @@ TEST_CASE("a piece resting on the floor waits out the lock delay before locking"
 	DropToFloor(session);
 
 	REQUIRE(session.GetPhase() == GameplaySession::Phase::Falling);
-	CHECK_FALSE(session.ConsumeEvents().landed);
+	CHECK_FALSE(session.ConsumeEvents().hasLanded);
 
 	// Just short of the delay: still in play.
 	session.Update(0.4f);
@@ -391,7 +391,7 @@ TEST_CASE("a piece resting on the floor waits out the lock delay before locking"
 
 	// Past it: locked, and a fresh piece has spawned back up in the buffer.
 	session.Update(0.2f);
-	CHECK(session.ConsumeEvents().landed);
+	CHECK(session.ConsumeEvents().hasLanded);
 	CHECK(session.GetCurrentTetromino().GetPosition().y < Board::BufferHeight);
 }
 
@@ -404,7 +404,7 @@ TEST_CASE("moving a resting piece resets the lock delay")
 	for (int i = 0; i < 10; i++)
 	{
 		session.Update(0.4f);
-		session.MoveHorizontal(i % 2 == 0 ? 1 : -1);
+		session.MoveTetrominoHorizontal(i % 2 == 0 ? 1 : -1);
 		CHECK(session.GetPhase() == GameplaySession::Phase::Falling);
 	}
 }
@@ -419,8 +419,8 @@ TEST_CASE("the lock-delay reset is capped so a piece cannot be stalled forever")
 	for (int i = 0; i < 200 && !locked; i++)
 	{
 		session.Update(0.45f);
-		session.MoveHorizontal(i % 2 == 0 ? 1 : -1);
-		locked = session.ConsumeEvents().landed;
+		session.MoveTetrominoHorizontal(i % 2 == 0 ? 1 : -1);
+		locked = session.ConsumeEvents().hasLanded;
 	}
 
 	CHECK(locked);
@@ -431,7 +431,7 @@ TEST_CASE("a soft-drop step awards one point")
 	GameplaySession session;
 
 	CHECK(session.GetScore() == 0);
-	session.SoftDropStep();
+	session.SoftDropTetrominoStep();
 	CHECK(session.GetScore() == 1);
 }
 
@@ -445,10 +445,10 @@ TEST_CASE("a hard drop awards two points per cell dropped")
 		startBottom = std::max(startBottom, block.y);
 	}
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	(void)session.ConsumeEvents();
 
-	const int cellsDropped = (Board::HEIGHT - 1) - startBottom;
+	const int cellsDropped = (Board::Height - 1) - startBottom;
 	CHECK(session.GetScore() == cellsDropped * 2);
 }
 
@@ -456,10 +456,10 @@ TEST_CASE("a hard drop locks a piece and reports the landing")
 {
 	GameplaySession session;
 
-	session.HardDrop();
+	session.HardDropTetromino();
 	const GameplaySession::Events events = session.ConsumeEvents();
 
-	CHECK(events.landed);
+	CHECK(events.hasLanded);
 	CHECK(BoardHasAnyBlock(session.GetBoard()));
 
 	// A fresh piece is in play again (unless the very first drop ended the game,
@@ -477,11 +477,11 @@ TEST_CASE("stacking pieces eventually ends the game, and the score stays consist
 
 	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
 	{
-		session.HardDrop();
+		session.HardDropTetromino();
 		session.Update(1.0f); // flushes any row-clear delay and one gravity tick
 		const GameplaySession::Events events = session.ConsumeEvents();
 
-		if (events.gameOver)
+		if (events.isGameOver)
 		{
 			sawGameOverEvent = true;
 			reason = events.gameOverReason;
@@ -510,7 +510,7 @@ TEST_CASE("hard-dropping into one narrow column ends the game without clearing a
 	// stack only ever fills columns 3-6 and no row can complete.
 	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
 	{
-		session.HardDrop();
+		session.HardDropTetromino();
 		session.Update(1.0f);
 		(void)session.ConsumeEvents();
 	}
@@ -542,7 +542,7 @@ TEST_CASE("combo tracks consecutive clears exactly, and back-to-back / perfect-c
 		session.Update(1.0f);
 		const GameplaySession::Events events = session.ConsumeEvents();
 
-		if (events.rowsCleared)
+		if (events.hasClearedRows)
 		{
 			++expectedCombo;
 			sawAnyClear = true;
@@ -550,12 +550,12 @@ TEST_CASE("combo tracks consecutive clears exactly, and back-to-back / perfect-c
 			CHECK(events.comboCount == expectedCombo);
 
 			// Only a Tetris counts as "difficult" for back-to-back so far.
-			if (events.backToBack)
+			if (events.hasBackToBack)
 			{
 				CHECK(events.clearedRowCount == 4);
 			}
 
-			if (events.perfectClear)
+			if (events.isPerfectClear)
 			{
 				CHECK(session.GetBoard().IsEmpty());
 			}
@@ -625,7 +625,7 @@ TEST_CASE("four rotations return the active piece to its spawn orientation")
 
 	for (int i = 0; i < 4; i++)
 	{
-		session.Rotate(true);
+		session.RotateTetromino(true);
 	}
 
 	CHECK(session.GetCurrentTetromino().GetRotationIndex() == 0);
@@ -639,20 +639,20 @@ TEST_CASE("a rotation blocked in place kicks the piece off the wall")
 	int guard = 0;
 	while (session.GetCurrentTetromino().GetType() != Tetromino::Type::I && guard++ < 10)
 	{
-		session.HardDrop();
+		session.HardDropTetromino();
 		session.Update(1.0f);
 		(void)session.ConsumeEvents();
 	}
 	REQUIRE(session.GetCurrentTetromino().GetType() == Tetromino::Type::I);
 
 	// Stand it up and push it against the right wall.
-	session.Rotate(true);
-	while (session.MoveHorizontal(1)) {}
+	session.RotateTetromino(true);
+	while (session.MoveTetrominoHorizontal(1)) {}
 
 	const int xBefore = session.GetCurrentTetromino().GetPosition().x;
 
 	// Rotating back to flat would poke through the wall in place, so it must kick.
-	const bool rotated = session.Rotate(true);
+	const bool rotated = session.RotateTetromino(true);
 
 	CHECK(rotated);
 	CHECK(session.GetCurrentTetromino().GetPosition().x < xBefore);
@@ -664,13 +664,13 @@ TEST_CASE("input is ignored once the game is over")
 
 	for (int piece = 0; piece < 400 && session.GetPhase() != GameplaySession::Phase::GameOver; piece++)
 	{
-		session.HardDrop();
+		session.HardDropTetromino();
 		session.Update(1.0f);
 		(void)session.ConsumeEvents();
 	}
 
 	REQUIRE(session.GetPhase() == GameplaySession::Phase::GameOver);
 
-	CHECK_FALSE(session.MoveHorizontal(-1));
-	CHECK_FALSE(session.Rotate(true));
+	CHECK_FALSE(session.MoveTetrominoHorizontal(-1));
+	CHECK_FALSE(session.RotateTetromino(true));
 }

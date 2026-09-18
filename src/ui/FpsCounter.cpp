@@ -8,11 +8,11 @@
 namespace UI
 {
 	FpsCounter::FpsCounter(const sf::Font& font)
-		: text(font, "FPS: --", 34)
+		: text(font, "FPS: --", CharacterSize)
 	{
-		text.setFillColor(sf::Color(255, 245, 170));
+		text.setFillColor(TextColor);
 		text.setOutlineColor(sf::Color::Black);
-		text.setOutlineThickness(3.f);
+		text.setOutlineThickness(OutlineThickness);
 	}
 
 	void FpsCounter::Update(float frameSeconds)

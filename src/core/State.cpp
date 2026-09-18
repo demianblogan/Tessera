@@ -4,7 +4,14 @@
 
 State::State(StateMachine& stateMachine)
 	: stateMachine(stateMachine)
+{}
+
+void State::OnResume()
+{}
+
+bool State::IsCursorVisible() const
 {
+	return true;
 }
 
 void State::RequestPush(std::unique_ptr<State> state)

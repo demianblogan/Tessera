@@ -13,7 +13,7 @@ namespace sf
 
 namespace UI
 {
-	// Ambient main-menu embers: small glowing motes in the tetromino colours
+	// Ambient main-menu embers: small glowing motes in the tetromino colors
 	// drifting slowly upward with a gentle sway, fading in and out. Additive,
 	// dim. No interaction, no state.
 	class MenuSparks
@@ -37,12 +37,12 @@ namespace UI
 			float age = 0.f;
 			float lifetime = 1.f;
 			float peakAlpha = 0.f;
-			sf::Color colour;
+			sf::Color color;
 		};
 
-		void Respawn(Spark& spark, bool initial);
+		void Respawn(Spark& spark, bool isInitial);
 
 		std::vector<Spark> sparks;
-		std::mt19937 rng;
+		std::mt19937 randomEngine;
 	};
 }

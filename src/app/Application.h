@@ -7,15 +7,15 @@
 
 #include "../audio/AudioBalance.h"
 #include "../audio/AudioPlayer.h"
-#include "../config/HapticSettings.h"
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
 #include "../display/DisplayManager.h"
-#include "../input/GamepadManager.h"
+#include "../haptics/HapticSettings.h"
+#include "../input/gamepad/GamepadManager.h"
 #include "../input/gamepad/GamepadHaptics.h"
 #include "../localization/LocalizationManager.h"
 #include "../resources/ResourceManager.h"
-#include "../resources/ShaderManager.h"
 #include "../settings/SettingsManager.h"
 #include "../statistics/HighScoreManager.h"
 #include "../ui/FpsCounter.h"
@@ -30,8 +30,24 @@ namespace sf
 
 class Application
 {
+public:
+	Application();
+	void Run();
+
 private:
-	static constexpr sf::Vector2f VIRTUAL_RESOLUTION{ 1920.f, 1080.f };
+	[[nodiscard]] bool IsWindowOpen() const;
+
+	// The two event kinds that act on the window itself rather than on any
+	// particular state: a close request, and a resize (the borderless
+	// full-screen window can't actually be resized today, but a windowed mode
+	// is planned). Every other event is forwarded to the active state.
+	void ApplyWindowLifecycleEvent(const sf::Event& event);
+
+	void UpdateCursorVisibility(const sf::Event& event);
+	void DrawCursor(sf::RenderTarget& target);
+	void HandleInput();
+	void Update(float deltaTime);
+	void Render();
 
 	// Upper bound on the delta time handed to a single Update(). A stall
 	// (window drag, minimize, debugger breakpoint, OS hiccup) would otherwise
@@ -47,8 +63,6 @@ private:
 	sf::RenderWindow window;
 
 	sf::RenderTexture renderTexture;
-	sf::RenderTexture gameplayTexture;
-	sf::RenderTexture finalTexture;
 	ShaderManager shaders;
 
 	// The 1920x1080 world the states render into (the render textures' view).
@@ -67,6 +81,7 @@ private:
 	AudioBalance balance;
 	HapticSettings hapticSettings;
 	AudioPlayer audioPlayer;
+	MusicPlayer musicPlayer;
 	GamepadManager gamepad;
 	Haptics::GamepadHaptics gamepadHaptics;
 	LocalizationManager localization;
@@ -74,28 +89,10 @@ private:
 	Context context;
 
 	// Both emplaced once loading finishes (they need loaded assets).
-	std::optional<UI::FpsCounter> fpsCounter;
+	std::optional<UI::FpsCounter> FPSCounter;
 	std::optional<UI::GlowingCursor> cursor;
 
 	// The system cursor is always hidden; this tracks whether the mouse is the
 	// input device in use, i.e. whether to draw our own cursor sprite.
-	bool cursorVisible = true;
-
-	[[nodiscard]] bool IsWindowOpen() const;
-
-	// The two event kinds that act on the window itself rather than on any
-	// particular state: a close request, and a resize (the borderless
-	// full-screen window can't actually be resized today, but a windowed mode
-	// is planned). Every other event is forwarded to the active state.
-	void ApplyWindowLifecycleEvent(const sf::Event& event);
-
-	void UpdateCursorVisibility(const sf::Event& event);
-	void DrawCursor(sf::RenderTarget& target);
-	void HandleInput();
-	void Update(float deltaTime);
-	void Render();
-
-public:
-	Application();
-	void Run();
+	bool isCursorVisible = true;
 };

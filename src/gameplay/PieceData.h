@@ -19,8 +19,8 @@
 // first piece is in play.
 namespace PieceData
 {
-	inline constexpr int BlockCount = TetrominoShapes::BLOCK_COUNT;
-	inline constexpr int RotationCount = TetrominoShapes::ROTATION_COUNT;
+	inline constexpr int BlockCount = TetrominoShapes::BlockCount;
+	inline constexpr int RotationCount = TetrominoShapes::RotationCount;
 
 	// The BlockCount block offsets for one rotation state, in the 4x4 local frame.
 	using BlockOffsets = std::array<sf::Vector2i, BlockCount>;
@@ -29,7 +29,7 @@ namespace PieceData
 	using Rotations = std::array<BlockOffsets, RotationCount>;
 
 	// Block offsets for one rotation state. `rotationIndex` is wrapped to 0..3.
-	[[nodiscard]] const BlockOffsets& Blocks(Tetromino::Type type, int rotationIndex);
+	[[nodiscard]] const BlockOffsets& GetBlocks(Tetromino::Type type, int rotationIndex);
 
 	// Replace one piece's rotation table (used by the JSON loader; also handy for
 	// tests that want a known layout).

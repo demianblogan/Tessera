@@ -43,13 +43,7 @@ namespace Haptics
 		GamepadHaptics& operator=(const GamepadHaptics&) = delete;
 
 		void SetVibrationEnabled(bool isVibrationEnabled) noexcept;
-		[[nodiscard]] bool IsVibrationEnabled() const noexcept;
-
 		void SetLightbarEnabled(bool isLightbarEnabled) noexcept;
-		[[nodiscard]] bool IsLightbarEnabled() const noexcept;
-
-		void SetAdaptiveTriggersEnabled(bool isAdaptiveTriggersEnabled) noexcept;
-		[[nodiscard]] bool IsAdaptiveTriggersEnabled() const noexcept;
 
 		// Starts (or strengthens) a vibration burst that fades linearly to
 		// zero over durationSeconds. Motor strengths are 0..1:
@@ -94,11 +88,11 @@ namespace Haptics
 		void PulseRightTriggerRecoil();
 
 		// DualSense/DualShock only -- no-op on Xbox. Holds a constant, heavy
-		// resistance on the right trigger for as long as active is true
+		// resistance on the right trigger for as long as isActive is true
 		// (e.g. while the laser beam is being held down); pass false to
 		// release it back to no resistance. Takes effect on the next
 		// Update() call; safe to call every frame with the same value.
-		void SetRightTriggerSustainedResistance(bool active) noexcept;
+		void SetRightTriggerSustainedResistance(bool isActive) noexcept;
 
 		// Advances the current pulse's fade-out and re-sends the resulting
 		// motor speeds (and, on DualSense, the lightbar color) to the

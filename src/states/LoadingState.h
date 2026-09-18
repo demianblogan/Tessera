@@ -35,8 +35,6 @@ private:
 	// appear-time buffer is sized from it; the bar geometry lives in the .cpp.
 	static constexpr int CellCount = 30;
 
-	void RefreshStageLabel();
-
 	Context& context;
 
 	Loading::Progress progress;
@@ -44,8 +42,11 @@ private:
 	std::function<void()> onLoaded;
 	std::jthread worker;
 
-	sf::Text stageLabel;
-	Loading::Stage labelledStage = Loading::Stage::Count;
+	// A single "Loading..." label -- the per-stage text (Audio/Music/
+	// Interface) it used to cycle through was never on screen long enough to
+	// read (the whole load finishes in about a second) and just looked like
+	// a typo cycling in place.
+	sf::Text label;
 
 	float elapsed = 0.f;
 	float displayedFraction = 0.f;
@@ -54,5 +55,5 @@ private:
 	// the bar reaches it.
 	std::vector<float> cellAppearTime = std::vector<float>(CellCount, -1.f);
 
-	bool handedOff = false;
+	bool hasHandedOff = false;
 };

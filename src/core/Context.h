@@ -3,10 +3,10 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include "../resources/ResourceManager.h"
-#include "../resources/ShaderManager.h"
 
 class AudioPlayer;
 class AudioBalance;
+class MusicPlayer;
 class HapticSettings;
 class StateMachine;
 class SettingsManager;
@@ -14,8 +14,15 @@ class HighScoreManager;
 class GamepadManager;
 class LocalizationManager;
 
-namespace Haptics { class GamepadHaptics; }
-namespace Display { class DisplayManager; }
+namespace Haptics
+{
+	class GamepadHaptics;
+}
+
+namespace Display
+{
+	class DisplayManager;
+}
 
 struct Context
 {
@@ -32,6 +39,7 @@ struct Context
     HighScoreManager& highScores;
     AudioPlayer& audioPlayer;
     AudioBalance& audioBalance;
+    MusicPlayer& musicPlayer;
     HapticSettings& hapticSettings;
     ShaderManager& shaders;
     GamepadManager& gamepad;
@@ -49,6 +57,7 @@ struct Context
         ShaderManager& shaders,
         AudioPlayer& audioPlayer,
         AudioBalance& audioBalance,
+        MusicPlayer& musicPlayer,
         HapticSettings& hapticSettings,
         Display::DisplayManager& display,
         SettingsManager& settings,

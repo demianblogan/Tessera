@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <cstdint>
 #include <string>
 
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -15,23 +15,26 @@
 #include <SFML/Window/Mouse.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
+#include "../display/DisplaySettings.h"
 #include "../input/MenuInput.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../statistics/HighScoreManager.h"
-#include "../ui/Easing.h"
+#include "../utils/Easing.h"
 #include "../utils/Random.h"
 #include "GameplayState.h"
-#include "MenuShell.h"
+#include "MenuShellState.h"
 
 namespace
 {
-	constexpr sf::Vector2f Screen{ 1920.f, 1080.f };
-	constexpr float CentreX = 960.f;
+	using Display::VirtualSize;
 
-	constexpr float ScreenCentreY = 540.f;
+	constexpr float CenterX = 960.f;
+
+	constexpr float ScreenCenterY = 540.f;
 	constexpr float PanelX = 260.f;
 	constexpr float PanelW = 1400.f;
 	constexpr float PanelHRecord = 840.f;
@@ -49,18 +52,17 @@ namespace
 	constexpr float BadgeOffset = 636.f;
 
 	// The name row: a recessed field with the Save Record button to its right,
-	// centred vertically on this offset from the panel top.
+	// centered vertically on this offset from the panel top.
 	constexpr float NameRowOffset = 742.f;
 	constexpr float FieldWidth = 520.f;
 	constexpr float FieldHeight = 96.f;
-	constexpr float FieldCentreX = 960.f - 170.f;
-	constexpr float SaveCentreX = 960.f + 340.f;
+	constexpr float FieldCenterX = 960.f - 170.f;
 	constexpr float FieldTextInset = 30.f;
 
 	constexpr float StatSpread = 400.f;
 
-	[[nodiscard]] float PanelHeightFor(bool record) { return record ? PanelHRecord : PanelHPlain; }
-	[[nodiscard]] float PanelTopFor(bool record) { return ScreenCentreY - PanelHeightFor(record) * 0.5f; }
+	[[nodiscard]] float PanelHeightFor(bool isRecord) { return isRecord ? PanelHRecord : PanelHPlain; }
+	[[nodiscard]] float PanelTopFor(bool isRecord) { return ScreenCenterY - PanelHeightFor(isRecord) * 0.5f; }
 
 	constexpr unsigned int HeadingSize = 128;
 	constexpr unsigned int ScoreLabelSize = 44;
@@ -91,7 +93,91 @@ namespace
 	constexpr float PlayAgainDelay = 0.16f;
 	constexpr float MainMenuDelay = 0.24f;
 
-	constexpr float Pi = 3.14159265f;
+	constexpr float Pi = std::numbers::pi_v<float>;
+
+	// GetFlickerBrightness() -- "GAME OVER" idle neon flicker: a constant faint
+	// shimmer, plus two independent periodic dropouts (a full blackout and a
+	// dimmer half-power dip) that don't line up, so the failure never repeats.
+	constexpr float FlickerShimmerAmount = 0.05f;
+	constexpr float FlickerShimmerSpeed = 43.f;
+	constexpr float FlickerDropoutPeriod = 2.7f;
+	constexpr float FlickerDropoutWindow = 0.05f;
+	constexpr float FlickerDropoutBrightness = 0.22f;
+	constexpr float FlickerDimPeriod = 4.3f;
+	constexpr float FlickerDimPhaseOffset = 1.35f;
+	constexpr float FlickerDimWindow = 0.09f;
+	constexpr float FlickerDimFactor = 0.45f;
+
+	// Render() -- content fades in only once appear has cleared this floor,
+	// over the remaining span, so the panel itself is visibly first.
+	constexpr float ContentAlphaRampStart = 0.2f;
+	constexpr float ContentAlphaRampSpan = 0.8f;
+
+	// Render() -- how far the heading rises into place as headingDrop settles.
+	constexpr float HeadingRiseDistance = 70.f;
+
+	// Render() -- glitch shake: independent sine jitter on each axis, scaled by
+	// how far into the glitch pulse we are.
+	constexpr float GlitchJitterXSpeed = 190.f;
+	constexpr float GlitchJitterXAmount = 7.f;
+	constexpr float GlitchJitterYSpeed = 250.f;
+	constexpr float GlitchJitterYAmount = 4.f;
+
+	// Render() -- chromatic split: red/cyan copies of the heading pulled apart
+	// during a glitch.
+	constexpr float ChromaticSplitBase = 6.f;
+	constexpr float ChromaticSplitScale = 10.f;
+	constexpr float ChromaticSplitAlpha = 0.85f;
+	const sf::Color ChromaticRed{ 255, 60, 60 };
+	const sf::Color ChromaticCyan{ 60, 200, 255 };
+
+	// Render() -- the heading's own neon bloom box, sized to comfortably clear
+	// the widest word in any language.
+	constexpr float HeadingGlowBoxWidth = 1280.f;
+	constexpr float HeadingGlowBoxHeight = 280.f;
+	constexpr float HeadingGlowFlickerWeight = 0.75f;
+
+	// Render() -- the name-field text cursor blinks on for this fraction of
+	// each one-second cycle.
+	constexpr float CursorBlinkOnFraction = 0.55f;
+
+	constexpr float PromptAlphaFraction = 0.9f;
+
+	// Render() -- Save Record button alpha: full once available, dim once
+	// already saved, dimmer still while disabled (no name typed yet).
+	constexpr float SavedAlphaFraction = 0.55f;
+	constexpr float DisabledSaveAlphaFraction = 0.32f;
+
+	constexpr float SaveFocusedScale = 1.06f;
+	constexpr float SavePulseScaleBoost = 0.12f;
+
+	// Constructor/Update() -- glitch timing: how long between glitches, and
+	// how long each one lasts. The gap widens once idle (first glitch is
+	// sooner, to catch the eye early).
+	constexpr float InitialGlitchCooldownMin = 1.6f;
+	constexpr float InitialGlitchCooldownMax = 3.4f;
+	constexpr float GlitchCooldownMin = 1.9f;
+	constexpr float GlitchCooldownMax = 4.6f;
+	constexpr float GlitchDurationMin = 0.08f;
+	constexpr float GlitchDurationMax = 0.18f;
+
+	// Constructor -- the backdrop is desaturated toward this grey before the
+	// scene-dim overlay darkens it further.
+	const sf::Color BackdropTint{ 150, 150, 150 };
+
+	// BuildContent() -- shared text outline/tracking for the heading and the
+	// summary lines.
+	constexpr float HeadingOutlineThickness = 4.f;
+	constexpr float LineLetterSpacing = 1.1f;
+	constexpr float BadgeLetterSpacing = 1.2f;
+	constexpr float BadgeOutlineThickness = 3.f;
+	const sf::Color BadgeOutlineColor{ 70, 44, 0 };
+
+	// SaveRecord()/Update() -- how fast the save-button pulse decays per second.
+	constexpr float SavePulseDecaySpeed = 2.4f;
+
+	// Activate()'s unsaved-record confirmation chime, pitched down a touch.
+	constexpr float UnsavedConfirmPitch = 0.85f;
 
 	const sf::Color HeadingFill{ 250, 236, 233 };
 	const sf::Color HeadingOutline{ 120, 20, 20 };
@@ -101,12 +187,12 @@ namespace
 	const sf::Color HeadingFillGold{ 255, 246, 220 };
 	const sf::Color HeadingOutlineGold{ 132, 88, 8 };
 	const sf::Color HeadingGlowTintGold{ 255, 196, 74 };
-	const sf::Color LabelColour{ 168, 150, 158 };
-	const sf::Color ScoreColour{ 252, 244, 240 };
-	const sf::Color StatValueColour{ 224, 228, 236 };
-	const sf::Color BadgeColour{ 255, 208, 120 };
-	const sf::Color NameColour{ 252, 244, 240 };
-	const sf::Color PromptColour{ 150, 148, 160 };
+	const sf::Color LabelColor{ 168, 150, 158 };
+	const sf::Color ScoreColor{ 252, 244, 240 };
+	const sf::Color StatValueColor{ 224, 228, 236 };
+	const sf::Color BadgeColor{ 255, 208, 120 };
+	const sf::Color NameColor{ 252, 244, 240 };
+	const sf::Color PromptColor{ 150, 148, 160 };
 	const sf::Color PlayHue{ 90, 205, 130 };
 	const sf::Color MenuHue{ 228, 232, 240 };
 	const sf::Color SaveHue{ 255, 208, 120 };
@@ -120,18 +206,18 @@ namespace
 
 	[[nodiscard]] sf::FloatRect NameFieldBounds(float panelTop)
 	{
-		return { { FieldCentreX - FieldWidth * 0.5f, panelTop + NameRowOffset - FieldHeight * 0.5f },
+		return { { FieldCenterX - FieldWidth * 0.5f, panelTop + NameRowOffset - FieldHeight * 0.5f },
 			{ FieldWidth, FieldHeight } };
 	}
 
-	[[nodiscard]] sf::FloatRect PanelBoundsFor(bool record)
+	[[nodiscard]] sf::FloatRect PanelBoundsFor(bool isRecord)
 	{
-		return { { PanelX, PanelTopFor(record) }, { PanelW, PanelHeightFor(record) } };
+		return { { PanelX, PanelTopFor(isRecord) }, { PanelW, PanelHeightFor(isRecord) } };
 	}
 
-	[[nodiscard]] const sf::Texture& FrameTextureFor(Context& context, bool record)
+	[[nodiscard]] const sf::Texture& FrameTextureFor(Context& context, bool isRecord)
 	{
-		return context.textures.Get(record
+		return context.textures.Get(isRecord
 			? Assets::TextureID::UiFrameWarning
 			: Assets::TextureID::UiFrameRed);
 	}
@@ -141,16 +227,16 @@ namespace
 		return static_cast<std::uint8_t>(std::clamp(value, 0.f, 1.f) * 255.f);
 	}
 
-	[[nodiscard]] sf::Color Faded(sf::Color colour, float alpha)
+	[[nodiscard]] sf::Color Faded(sf::Color color, float alpha)
 	{
-		return sf::Color(colour.r, colour.g, colour.b, ToAlpha(alpha));
+		return sf::Color(color.r, color.g, color.b, ToAlpha(alpha));
 	}
 
-	void PlaceCentred(sf::Text& text, sf::Vector2f centre)
+	void PlaceCentered(sf::Text& text, sf::Vector2f center)
 	{
 		const sf::FloatRect bounds = text.getLocalBounds();
 		text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-		text.setPosition(centre);
+		text.setPosition(center);
 	}
 
 	void PlaceLeft(sf::Text& text, sf::Vector2f leftMiddle)
@@ -160,23 +246,29 @@ namespace
 		text.setPosition(leftMiddle);
 	}
 
+	constexpr float FieldOutlineThickness = 2.f;
+	constexpr float FieldLipThickness = 4.f;
+	constexpr float FieldEdgeThickness = 2.f;
+	constexpr float FieldLipAlphaFraction = 0.7f;
+	constexpr float FieldEdgeAlphaFraction = 0.5f;
+
 	void DrawRecessedField(sf::RenderTarget& target, const sf::FloatRect& bounds, float alpha)
 	{
 		sf::RectangleShape well(bounds.size);
 		well.setPosition(bounds.position);
 		well.setFillColor(Faded(FieldFill, alpha));
-		well.setOutlineThickness(-2.f);
+		well.setOutlineThickness(-FieldOutlineThickness);
 		well.setOutlineColor(Faded(FieldShadow, alpha));
 		target.draw(well);
 
-		sf::RectangleShape topLip({ bounds.size.x, 4.f });
+		sf::RectangleShape topLip({ bounds.size.x, FieldLipThickness });
 		topLip.setPosition(bounds.position);
-		topLip.setFillColor(Faded(FieldShadow, alpha * 0.7f));
+		topLip.setFillColor(Faded(FieldShadow, alpha * FieldLipAlphaFraction));
 		target.draw(topLip);
 
-		sf::RectangleShape bottomEdge({ bounds.size.x, 2.f });
-		bottomEdge.setPosition({ bounds.position.x, bounds.position.y + bounds.size.y - 2.f });
-		bottomEdge.setFillColor(Faded(FieldHighlight, alpha * 0.5f));
+		sf::RectangleShape bottomEdge({ bounds.size.x, FieldEdgeThickness });
+		bottomEdge.setPosition({ bounds.position.x, bounds.position.y + bounds.size.y - FieldEdgeThickness });
+		bottomEdge.setFillColor(Faded(FieldHighlight, alpha * FieldEdgeAlphaFraction));
 		target.draw(bottomEdge);
 	}
 
@@ -188,8 +280,8 @@ namespace
 		return std::to_string(minutes) + ":" + (rest < 10 ? "0" : "") + std::to_string(rest);
 	}
 
-	using UI::Easing::EaseOutBack;
-	using UI::Easing::SmoothStep;
+	using Easing::EaseOutBack;
+	using Easing::SmoothStep;
 }
 
 GameOverState::GameOverState(Context& context, int finalScore, int finalLines, int finalLevel, float finalSeconds)
@@ -204,7 +296,7 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 	, buttonY(panelTop + PanelHeightFor(isRecord) + ButtonGap)
 	, backdrop(context.textures.Get(Assets::TextureID::GameplayBackground))
 	, panel(FrameTextureFor(context, isRecord), PanelBoundsFor(isRecord),
-		UI::MenuFrameSourceBorder, PanelTargetBorder)
+		MenuFrameSourceBorder, PanelTargetBorder)
 	, heading(context.fonts.Get(Assets::FontID::Main), "", HeadingSize)
 	, recordBadge(context.fonts.Get(Assets::FontID::Main), "", BadgeSize)
 	, nameField(context.fonts.Get(Assets::FontID::Main), "", NameSize)
@@ -219,8 +311,8 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 		context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur),
 		context.audioPlayer)
 {
-	backdrop.setColor(sf::Color(150, 150, 150));
-	glitchCooldown = Random::Float(1.6f, 3.4f);
+	backdrop.setColor(BackdropTint);
+	glitchCooldown = Random::Float(InitialGlitchCooldownMin, InitialGlitchCooldownMax);
 
 	if (isRecord)
 	{
@@ -240,20 +332,26 @@ GameOverState::GameOverState(Context& context, int finalScore, int finalLines, i
 				recordRank++;
 			}
 		}
-		recordRank = std::min<int>(recordRank, static_cast<int>(HighScoreManager::MAX_RECORDS));
+		recordRank = std::min<int>(recordRank, static_cast<int>(HighScoreManager::MaxRecords));
 	}
 
 	playAgainLabel.SetText(context.localization.GetText(TextKey::GameOver::PlayAgain));
 	mainMenuLabel.SetText(context.localization.GetText(TextKey::GameOver::MainMenu));
 	saveLabel.SetText(context.localization.GetText(TextKey::GameOver::SaveRecord));
 
+	// "Save Record" runs much longer in some languages than in English (which
+	// is why saveCenterX used to be a fixed offset) -- anchor it from the
+	// field's actual right edge instead, so it can never creep onto the field.
+	constexpr float SaveButtonGap = 40.f;
+	const sf::FloatRect nameFieldBounds = NameFieldBounds(panelTop);
+	saveCenterX = nameFieldBounds.position.x + nameFieldBounds.size.x + SaveButtonGap + saveLabel.GetInkSize().x * 0.5f;
+
 	BuildContent();
 
-	sf::Music& music = context.music.Get(Assets::MusicID::GameOver);
-	if (music.getStatus() != sf::Music::Status::Playing)
-	{
-		music.play();
-	}
+	// The gameplay music keeps playing underneath, just muffled -- same duck
+	// as the pause menu -- with the game-over sting a one-shot sound on top.
+	context.musicPlayer.SetDucked(true);
+	context.audioPlayer.Play(Assets::SoundID::GameOver);
 }
 
 void GameOverState::BuildContent()
@@ -262,17 +360,17 @@ void GameOverState::BuildContent()
 	const sf::Font& font = context.fonts.Get(Assets::FontID::Main);
 
 	heading.setString(text.GetText(TextKey::GameOver::Title));
-	heading.setOutlineThickness(4.f);
-	heading.setLetterSpacing(1.1f);
+	heading.setOutlineThickness(HeadingOutlineThickness);
+	heading.setLetterSpacing(LineLetterSpacing);
 
 	lines.clear();
 
-	const auto add = [&](const sf::String& string, unsigned int size, sf::Vector2f centre, sf::Color colour)
+	const auto add = [&](const sf::String& string, unsigned int size, sf::Vector2f center, sf::Color color)
 	{
 		sf::Text line(font, string, size);
-		line.setLetterSpacing(1.1f);
-		PlaceCentred(line, centre);
-		lines.push_back({ std::move(line), colour });
+		line.setLetterSpacing(LineLetterSpacing);
+		PlaceCentered(line, center);
+		lines.push_back({ std::move(line), color });
 	};
 
 	const float scoreLabelY = panelTop + ScoreLabelOffset;
@@ -280,49 +378,49 @@ void GameOverState::BuildContent()
 	const float statLabelY = panelTop + StatLabelOffset;
 	const float statValueY = panelTop + StatValueOffset;
 
-	add(text.GetText(TextKey::GameOver::Score), ScoreLabelSize, { CentreX, scoreLabelY }, LabelColour);
-	add(std::to_string(finalScore), ScoreValueSize, { CentreX, scoreValueY }, ScoreColour);
+	add(text.GetText(TextKey::GameOver::Score), ScoreLabelSize, { CenterX, scoreLabelY }, LabelColor);
+	add(std::to_string(finalScore), ScoreValueSize, { CenterX, scoreValueY }, ScoreColor);
 
-	const float leftX = CentreX - StatSpread;
-	add(text.GetText(TextKey::GameOver::Lines), StatLabelSize, { leftX, statLabelY }, LabelColour);
-	add(std::to_string(finalLines), StatValueSize, { leftX, statValueY }, StatValueColour);
-	add(text.GetText(TextKey::GameOver::Level), StatLabelSize, { CentreX, statLabelY }, LabelColour);
-	add(std::to_string(finalLevel), StatValueSize, { CentreX, statValueY }, StatValueColour);
-	add(text.GetText(TextKey::GameOver::Time), StatLabelSize, { CentreX + StatSpread, statLabelY }, LabelColour);
-	add(FormatTime(finalSeconds), StatValueSize, { CentreX + StatSpread, statValueY }, StatValueColour);
+	const float leftX = CenterX - StatSpread;
+	add(text.GetText(TextKey::GameOver::Lines), StatLabelSize, { leftX, statLabelY }, LabelColor);
+	add(std::to_string(finalLines), StatValueSize, { leftX, statValueY }, StatValueColor);
+	add(text.GetText(TextKey::GameOver::Level), StatLabelSize, { CenterX, statLabelY }, LabelColor);
+	add(std::to_string(finalLevel), StatValueSize, { CenterX, statValueY }, StatValueColor);
+	add(text.GetText(TextKey::GameOver::Time), StatLabelSize, { CenterX + StatSpread, statLabelY }, LabelColor);
+	add(FormatTime(finalSeconds), StatValueSize, { CenterX + StatSpread, statValueY }, StatValueColor);
 
 	if (isRecord)
 	{
 		recordBadge.setString(text.GetText(TextKey::GameOver::NewRecord) + sf::String("   #" + std::to_string(recordRank)));
-		recordBadge.setLetterSpacing(1.2f);
-		recordBadge.setOutlineThickness(3.f);
-		recordBadge.setOutlineColor(sf::Color(70, 44, 0));
-		PlaceCentred(recordBadge, { CentreX, panelTop + BadgeOffset });
+		recordBadge.setLetterSpacing(BadgeLetterSpacing);
+		recordBadge.setOutlineThickness(BadgeOutlineThickness);
+		recordBadge.setOutlineColor(BadgeOutlineColor);
+		PlaceCentered(recordBadge, { CenterX, panelTop + BadgeOffset });
 
 		namePrompt.setString(text.GetText(TextKey::GameOver::EnterName));
 	}
 }
 
-float GameOverState::FlickerBrightness() const
+float GameOverState::GetFlickerBrightness() const
 {
 	if (headingDrop < 1.f)
 	{
 		return 1.f;
 	}
 
-	float brightness = 1.f - 0.05f * std::abs(std::sin(idleTime * 43.f));
-	if (std::fmod(idleTime, 2.7f) < 0.05f)
+	float brightness = 1.f - FlickerShimmerAmount * std::abs(std::sin(idleTime * FlickerShimmerSpeed));
+	if (std::fmod(idleTime, FlickerDropoutPeriod) < FlickerDropoutWindow)
 	{
-		brightness = 0.22f;   // a full dropout, like a failing tube
+		brightness = FlickerDropoutBrightness;   // a full dropout, like a failing tube
 	}
-	if (std::fmod(idleTime + 1.35f, 4.3f) < 0.09f)
+	if (std::fmod(idleTime + FlickerDimPhaseOffset, FlickerDimPeriod) < FlickerDimWindow)
 	{
-		brightness *= 0.45f;
+		brightness *= FlickerDimFactor;
 	}
 	return brightness;
 }
 
-bool GameOverState::NameEntered() const
+bool GameOverState::IsNameEntered() const
 {
 	for (const char32_t character : playerName)
 	{
@@ -334,7 +432,7 @@ bool GameOverState::NameEntered() const
 	return false;
 }
 
-sf::String GameOverState::TrimmedName() const
+sf::String GameOverState::GetTrimmedName() const
 {
 	std::size_t start = 0;
 	std::size_t end = playerName.getSize();
@@ -349,22 +447,22 @@ sf::String GameOverState::TrimmedName() const
 	return playerName.substring(start, end - start);
 }
 
-bool GameOverState::CanSave() const
+bool GameOverState::IsSaveAllowed() const
 {
-	return isRecord && !recordSaved && NameEntered();
+	return isRecord && !hasSavedRecord && IsNameEntered();
 }
 
 void GameOverState::SaveRecord()
 {
-	if (!CanSave())
+	if (!IsSaveAllowed())
 	{
 		return;
 	}
 
-	context.highScores.AddRecord({ TrimmedName(), finalScore, finalLines, finalLevel });
+	context.highScores.AddRecord({ GetTrimmedName(), finalScore, finalLines, finalLevel });
 	context.highScores.Save();
 
-	recordSaved = true;
+	hasSavedRecord = true;
 	savePulse = 1.f;
 	saveLabel.SetText(context.localization.GetText(TextKey::GameOver::Saved));
 	context.audioPlayer.Play(Assets::SoundID::NextLevel);
@@ -403,7 +501,7 @@ void GameOverState::Activate()
 		leaveDialog.Show(context.localization.GetText(TextKey::GameOver::UnsavedRecord),
 			context.localization.GetText(TextKey::Common::Yes),
 			context.localization.GetText(TextKey::Common::No));
-		context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
+		context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, UnsavedConfirmPitch);
 		return;
 	}
 
@@ -418,6 +516,16 @@ void GameOverState::BeginLeave()
 	leaveTimer = 0.f;
 }
 
+bool GameOverState::IsCursorVisible() const
+{
+	return true;
+}
+
+bool GameOverState::HasUnsavedRecord() const
+{
+	return isRecord && !hasSavedRecord;
+}
+
 void GameOverState::HandleEvent(const sf::Event& event)
 {
 	if (leaving != Leaving::No)
@@ -427,7 +535,7 @@ void GameOverState::HandleEvent(const sf::Event& event)
 
 	if (leaveDialog.IsOpen())
 	{
-		leaveDialog.Navigate(MenuInput::Resolve(event, context.gamepad));
+		leaveDialog.Navigate(MenuInput::ResolveAction(event, context.gamepad));
 
 		if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 		{
@@ -455,11 +563,11 @@ void GameOverState::HandleEvent(const sf::Event& event)
 
 	const auto selectSound = [this] { context.audioPlayer.Restart(Assets::SoundID::MenuItemSelected); };
 
-	switch (MenuInput::Resolve(event, context.gamepad))
+	switch (MenuInput::ResolveAction(event, context.gamepad))
 	{
 	case MenuInput::Action::Up:
 		// Save Record sits above the bottom row; reach it by going up.
-		if (CanSave() && focus != Focus::Save)
+		if (IsSaveAllowed() && focus != Focus::Save)
 		{
 			focus = Focus::Save;
 			selectSound();
@@ -496,23 +604,23 @@ void GameOverState::HandleEvent(const sf::Event& event)
 		break;
 	}
 
-	const auto hit = [&](sf::Vector2f point, UI::MenuLabel& label, sf::Vector2f centre) -> bool
+	const auto hit = [&](sf::Vector2f point, UI::MenuLabel& label, sf::Vector2f center) -> bool
 	{
-		return label.Bounds(centre, 1.f).contains(point);
+		return label.GetBounds(center, 1.f).contains(point);
 	};
 
 	if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 	{
 		const sf::Vector2f point = context.window.mapPixelToCoords(moved->position);
-		if (CanSave() && hit(point, saveLabel, { SaveCentreX, panelTop + NameRowOffset }))
+		if (IsSaveAllowed() && hit(point, saveLabel, { saveCenterX, panelTop + NameRowOffset }))
 		{
 			focus = Focus::Save;
 		}
-		else if (hit(point, playAgainLabel, { CentreX - ButtonSpacing, buttonY }))
+		else if (hit(point, playAgainLabel, { CenterX - ButtonSpacing, buttonY }))
 		{
 			focus = Focus::PlayAgain;
 		}
-		else if (hit(point, mainMenuLabel, { CentreX + ButtonSpacing, buttonY }))
+		else if (hit(point, mainMenuLabel, { CenterX + ButtonSpacing, buttonY }))
 		{
 			focus = Focus::MainMenu;
 		}
@@ -524,17 +632,17 @@ void GameOverState::HandleEvent(const sf::Event& event)
 			return;
 		}
 		const sf::Vector2f point = context.window.mapPixelToCoords(pressed->position);
-		if (CanSave() && hit(point, saveLabel, { SaveCentreX, panelTop + NameRowOffset }))
+		if (IsSaveAllowed() && hit(point, saveLabel, { saveCenterX, panelTop + NameRowOffset }))
 		{
 			SaveRecord();
 			return;
 		}
-		if (hit(point, playAgainLabel, { CentreX - ButtonSpacing, buttonY }))
+		if (hit(point, playAgainLabel, { CenterX - ButtonSpacing, buttonY }))
 		{
 			focus = Focus::PlayAgain;
 			Activate();
 		}
-		else if (hit(point, mainMenuLabel, { CentreX + ButtonSpacing, buttonY }))
+		else if (hit(point, mainMenuLabel, { CenterX + ButtonSpacing, buttonY }))
 		{
 			focus = Focus::MainMenu;
 			Activate();
@@ -548,15 +656,15 @@ void GameOverState::Update(float deltaTime)
 	headingDrop = std::min(1.f, headingDrop + deltaTime * HeadingDropSpeed);
 	pressTime += deltaTime;
 	cursorTime += deltaTime;
-	savePulse = std::max(0.f, savePulse - deltaTime * 2.4f);
+	savePulse = std::max(0.f, savePulse - deltaTime * SavePulseDecaySpeed);
 
 	leaveDialog.Update(deltaTime);
-	if (const std::optional<bool> answer = leaveDialog.TakeResult(); answer && *answer)
+	if (const std::optional<bool> answer = leaveDialog.TakeResult(); answer.has_value() && *answer)
 	{
 		BeginLeave();
 	}
 
-	if (focus == Focus::Save && !CanSave())
+	if (focus == Focus::Save && !IsSaveAllowed())
 	{
 		focus = Focus::PlayAgain;
 	}
@@ -580,13 +688,13 @@ void GameOverState::Update(float deltaTime)
 	{
 		idleTime += deltaTime;
 
-		if (glitchActive)
+		if (isGlitchActive)
 		{
 			glitchTime += deltaTime;
 			if (glitchTime >= glitchDuration)
 			{
-				glitchActive = false;
-				glitchCooldown = Random::Float(1.9f, 4.6f);
+				isGlitchActive = false;
+				glitchCooldown = Random::Float(GlitchCooldownMin, GlitchCooldownMax);
 			}
 		}
 		else
@@ -594,9 +702,9 @@ void GameOverState::Update(float deltaTime)
 			glitchCooldown -= deltaTime;
 			if (glitchCooldown <= 0.f)
 			{
-				glitchActive = true;
+				isGlitchActive = true;
 				glitchTime = 0.f;
-				glitchDuration = Random::Float(0.08f, 0.18f);
+				glitchDuration = Random::Float(GlitchDurationMin, GlitchDurationMax);
 			}
 		}
 	}
@@ -615,33 +723,33 @@ void GameOverState::Update(float deltaTime)
 	else if (leaving == Leaving::MainMenu && leaveTimer >= MainMenuDelay)
 	{
 		RequestClear();
-		RequestPush(std::make_unique<MenuShell>(context));
+		RequestPush(std::make_unique<MenuShellState>(context));
 	}
 }
 
-void GameOverState::DrawButton(sf::RenderTarget& target, UI::MenuLabel& label, sf::Vector2f centre,
-	sf::Color hue, bool selected, float alpha)
+void GameOverState::DrawButton(sf::RenderTarget& target, UI::MenuLabel& label, sf::Vector2f center,
+	sf::Color hue, bool isSelected, float alpha)
 {
-	const float press = (selected && pressTime < PressDuration)
+	const float press = (isSelected && pressTime < PressDuration)
 		? std::sin(std::clamp(1.f - pressTime / PressDuration, 0.f, 1.f) * Pi)
 		: 0.f;
-	const float scale = (selected ? SelectedScale : 1.f) + PressPunch * press;
-	const float drawAlpha = alpha * (selected ? 1.f : UnselectedAlpha);
+	const float scale = (isSelected ? SelectedScale : 1.f) + PressPunch * press;
+	const float drawAlpha = alpha * (isSelected ? 1.f : UnselectedAlpha);
 
-	if (selected)
+	if (isSelected)
 	{
-		label.DrawGlow(target, buttonGlow, centre, scale,
+		label.DrawGlow(target, buttonGlow, center, scale,
 			sf::Color(hue.r, hue.g, hue.b, static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255.f * ButtonGlowIntensity)));
 	}
 
-	label.Draw(target, centre, scale, hue, drawAlpha, PressFlash * press);
+	label.Draw(target, center, scale, hue, drawAlpha, PressFlash * press);
 }
 
 void GameOverState::Render(sf::RenderTarget& target)
 {
 	target.draw(backdrop);
 
-	sf::RectangleShape dim(Screen);
+	sf::RectangleShape dim(VirtualSize);
 	dim.setFillColor(sf::Color(0, 0, 0, SceneDim));
 	target.draw(dim);
 
@@ -651,7 +759,7 @@ void GameOverState::Render(sf::RenderTarget& target)
 	}
 
 	const float in = SmoothStep(appear);
-	const auto contentAlpha = std::clamp((appear - 0.2f) / 0.8f, 0.f, 1.f);
+	const auto contentAlpha = std::clamp((appear - ContentAlphaRampStart) / ContentAlphaRampSpan, 0.f, 1.f);
 
 	panel.SetColor(sf::Color(255, 255, 255, ToAlpha(in)));
 	panel.Draw(target);
@@ -663,16 +771,18 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 	if (contentAlpha > 0.f)
 	{
-		const float rise = (1.f - EaseOutBack(headingDrop)) * 70.f;
-		const float flicker = FlickerBrightness();
-		const float glitch = glitchActive
+		const float rise = (1.f - EaseOutBack(headingDrop)) * HeadingRiseDistance;
+		const float flicker = GetFlickerBrightness();
+		const float glitch = isGlitchActive
 			? std::sin(std::clamp(glitchTime / std::max(0.01f, glitchDuration), 0.f, 1.f) * Pi)
 			: 0.f;
 
 		const sf::Vector2f jitter = glitch > 0.f
-			? sf::Vector2f{ std::sin(glitchTime * 190.f) * glitch * 7.f, std::sin(glitchTime * 250.f) * glitch * 4.f }
+			? sf::Vector2f{
+				std::sin(glitchTime * GlitchJitterXSpeed) * glitch * GlitchJitterXAmount,
+				std::sin(glitchTime * GlitchJitterYSpeed) * glitch * GlitchJitterYAmount }
 			: sf::Vector2f{ 0.f, 0.f };
-		const sf::Vector2f base{ CentreX + jitter.x, panelTop + HeadingOffset - rise + jitter.y };
+		const sf::Vector2f base{ CenterX + jitter.x, panelTop + HeadingOffset - rise + jitter.y };
 
 		sf::RenderStates additive;
 		additive.blendMode = sf::BlendAdd;
@@ -680,22 +790,22 @@ void GameOverState::Render(sf::RenderTarget& target)
 		// Chromatic split during a glitch.
 		if (glitch > 0.f)
 		{
-			const float dx = 6.f + glitch * 10.f;
+			const float dx = ChromaticSplitBase + glitch * ChromaticSplitScale;
 			heading.setOutlineColor(sf::Color(0, 0, 0, 0));
-			heading.setFillColor(sf::Color(255, 60, 60, ToAlpha(contentAlpha * 0.85f)));
-			PlaceCentred(heading, { base.x + dx, base.y });
+			heading.setFillColor(Faded(ChromaticRed, contentAlpha * ChromaticSplitAlpha));
+			PlaceCentered(heading, { base.x + dx, base.y });
 			target.draw(heading, additive);
-			heading.setFillColor(sf::Color(60, 200, 255, ToAlpha(contentAlpha * 0.85f)));
-			PlaceCentred(heading, { base.x - dx, base.y });
+			heading.setFillColor(Faded(ChromaticCyan, contentAlpha * ChromaticSplitAlpha));
+			PlaceCentered(heading, { base.x - dx, base.y });
 			target.draw(heading, additive);
 		}
 
-		const auto lit = [flicker](sf::Color c)
+		const auto lit = [flicker](sf::Color color)
 		{
 			return sf::Color(
-				static_cast<std::uint8_t>(static_cast<float>(c.r) * flicker),
-				static_cast<std::uint8_t>(static_cast<float>(c.g) * flicker),
-				static_cast<std::uint8_t>(static_cast<float>(c.b) * flicker), c.a);
+				static_cast<std::uint8_t>(static_cast<float>(color.r) * flicker),
+				static_cast<std::uint8_t>(static_cast<float>(color.g) * flicker),
+				static_cast<std::uint8_t>(static_cast<float>(color.b) * flicker), color.a);
 		};
 
 		const sf::Color headingFill = isRecord ? HeadingFillGold : HeadingFill;
@@ -704,13 +814,14 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 		heading.setFillColor(Faded(lit(headingFill), contentAlpha));
 		heading.setOutlineColor(Faded(headingOutline, contentAlpha * flicker));
-		PlaceCentred(heading, base);
+		PlaceCentered(heading, base);
 
 		const sf::FloatRect glowArea{
-			{ CentreX - 640.f, panelTop + HeadingOffset - 150.f }, { 1280.f, 280.f } };
+			{ CenterX - HeadingGlowBoxWidth * 0.5f, panelTop + HeadingOffset - HeadingGlowBoxHeight * 0.5f },
+			{ HeadingGlowBoxWidth, HeadingGlowBoxHeight } };
 		headingGlow.Draw(target, glowArea,
 			[this](sf::RenderTarget& buffer, const sf::RenderStates& states) { buffer.draw(heading, states); },
-			Faded(headingGlowTint, contentAlpha * flicker * 0.75f), false);
+			Faded(headingGlowTint, contentAlpha * flicker * HeadingGlowFlickerWeight), false);
 
 		target.draw(heading);
 
@@ -722,7 +833,7 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 		if (isRecord)
 		{
-			recordBadge.setFillColor(Faded(BadgeColour, contentAlpha));
+			recordBadge.setFillColor(Faded(BadgeColor, contentAlpha));
 			target.draw(recordBadge);
 
 			const sf::FloatRect field = NameFieldBounds(panelTop);
@@ -731,45 +842,46 @@ void GameOverState::Render(sf::RenderTarget& target)
 
 			DrawRecessedField(target, field, contentAlpha);
 
-			if (NameEntered())
+			if (IsNameEntered())
 			{
-				const bool showCursor = std::fmod(cursorTime, 1.f) < 0.55f;
-				nameField.setString(playerName + (showCursor ? sf::String("|") : sf::String(" ")));
+				const bool isCursorShown = std::fmod(cursorTime, 1.f) < CursorBlinkOnFraction;
+				nameField.setString(playerName + (isCursorShown ? sf::String("|") : sf::String(" ")));
 				PlaceLeft(nameField, { textLeft, rowY });
-				nameField.setFillColor(Faded(NameColour, contentAlpha));
+				nameField.setFillColor(Faded(NameColor, contentAlpha));
 				target.draw(nameField);
 			}
 			else
 			{
-				namePrompt.setFillColor(Faded(PromptColour, contentAlpha * 0.9f));
+				namePrompt.setFillColor(Faded(PromptColor, contentAlpha * PromptAlphaFraction));
 				PlaceLeft(namePrompt, { textLeft, rowY });
 				target.draw(namePrompt);
 			}
 
-			const bool saveFocused = leaving == Leaving::No && !leaveDialog.IsOpen() && focus == Focus::Save;
-			const sf::Color saveHue = recordSaved ? SavedHue : SaveHue;
-			const float saveAlpha = contentAlpha * (recordSaved ? 0.55f : (CanSave() ? 1.f : 0.32f));
+			const bool isSaveFocused = leaving == Leaving::No && !leaveDialog.IsOpen() && focus == Focus::Save;
+			const sf::Color saveHue = hasSavedRecord ? SavedHue : SaveHue;
+			const float saveAlpha = contentAlpha
+				* (hasSavedRecord ? SavedAlphaFraction : (IsSaveAllowed() ? 1.f : DisabledSaveAlphaFraction));
 			const float pulse = savePulse > 0.f ? std::sin(std::clamp(savePulse, 0.f, 1.f) * Pi) : 0.f;
-			const float saveScale = (saveFocused ? 1.06f : 1.f) + 0.12f * pulse;
+			const float saveScale = (isSaveFocused ? SaveFocusedScale : 1.f) + SavePulseScaleBoost * pulse;
 
-			if (saveFocused)
+			if (isSaveFocused)
 			{
-				saveLabel.DrawGlow(target, buttonGlow, { SaveCentreX, rowY }, saveScale,
+				saveLabel.DrawGlow(target, buttonGlow, { saveCenterX, rowY }, saveScale,
 					sf::Color(saveHue.r, saveHue.g, saveHue.b, ToAlpha(contentAlpha * ButtonGlowIntensity)));
 			}
-			saveLabel.Draw(target, { SaveCentreX, rowY }, saveScale, saveHue, saveAlpha, PressFlash * pulse);
+			saveLabel.Draw(target, { saveCenterX, rowY }, saveScale, saveHue, saveAlpha, PressFlash * pulse);
 		}
 	}
 
 	const float buttonAlpha = contentAlpha;
-	DrawButton(target, playAgainLabel, { CentreX - ButtonSpacing, buttonY }, PlayHue,
+	DrawButton(target, playAgainLabel, { CenterX - ButtonSpacing, buttonY }, PlayHue,
 		leaving == Leaving::No && focus == Focus::PlayAgain, buttonAlpha);
-	DrawButton(target, mainMenuLabel, { CentreX + ButtonSpacing, buttonY }, MenuHue,
+	DrawButton(target, mainMenuLabel, { CenterX + ButtonSpacing, buttonY }, MenuHue,
 		leaving == Leaving::No && focus == Focus::MainMenu, buttonAlpha);
 
 	if (leaving == Leaving::MainMenu)
 	{
-		sf::RectangleShape fade(Screen);
+		sf::RectangleShape fade(VirtualSize);
 		fade.setFillColor(sf::Color(0, 0, 0, ToAlpha(leaveTimer / MainMenuDelay)));
 		target.draw(fade);
 	}

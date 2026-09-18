@@ -35,6 +35,32 @@ Cross-cutting decisions:
 
 ## Released
 
+### v1.6.0 — Gameplay depth & escalation
+
+Third version of the wound-down roadmap. The version that finishes the
+gameplay: modern rules, the feedback toggles that go with them, and the
+escalation that makes the one endless mode get harder over time.
+
+- **Modern rules** — SRS rotation + wall kicks + T-spin (3-corner rule), lock
+  delay + move reset, hold piece, 5-deep next queue, 7-bag, buffer rows above
+  the field + block-out / lock-out, guideline-style scoring (Single / Double /
+  Triple / Tetris multipliers, combo, back-to-back, Perfect Clear), on-board
+  callouts. Authored piece shapes and SRS kick tables load from
+  `assets/data/pieces.json` / `srs_kicks.json`, overriding the built-in tables
+  if present.
+- **Gameplay-settings toggles** with a mechanic behind them now: ghost piece,
+  hold, next-queue length, 7-bag vs random, plus a Hold rebind key —
+  `GameplayCategoryPanel` rows + `GameSettings` format 9.
+- **Gamepad vibration on gameplay actions** — land, hard-drop, wall contact,
+  row-clear, tetris, level-up, top-out, T-spin, gated by the existing
+  Vibration toggle.
+- **`gameplay/EscalationDirector`** — 4 cumulative tiers by elapsed time
+  (Base, Speed Surge, Garbage, Chaos), each tier's first effect time-gated to
+  a guaranteed window rather than left to play speed. In-game callouts,
+  haptics, and golden-lock / garbage-row visuals react to the current tier.
+- In-game controls legend swaps to Xbox / PlayStation icons when a pad is in
+  use (`input/GamepadPrompts`).
+
 ### v1.5.0 — Gameplay presentation & Game Over
 
 Second version of the wound-down roadmap. The in-game screen and the game-over
@@ -89,8 +115,10 @@ screen brought up to the menu-shell standard. No gameplay-rules changes.
   / `ui/Spacer` deleted (the HUD rewrite orphaned the last of them) along with
   the `button_background.png` / `panel_background.png` textures; `ui/CarouselMenu`
   centres each entry on its visible ink so the nav arrows sit symmetrically.
-  *(`ui/Element` and `ui/Slider` stay — the Audio panel's volume sliders use
-  them.)*
+  *(`ui/Element` and `ui/Slider` were kept at the time on the assumption the
+  Audio panel's volume sliders used them; they actually use `UI::SliderRow`
+  (`ui/OptionRow`, shipped in v1.2.0) and `ui/Element` / `ui/Slider` had no
+  callers left — found and removed in the v1.7.0 sweep.)*
 
 ### v1.4.0 — Menu cleanup & flow
 
@@ -472,61 +500,68 @@ did) and forcing months of Tetris content is the wrong trade. The menu framework
 was always meant as a reusable cross-project UI library — it carries forward
 regardless.
 
-**v1.4.0 — Menu cleanup & flow** and **v1.5.0 — Gameplay presentation & Game
-Over** shipped (see Released).
-
-### v1.6.0 — Gameplay depth & escalation
-
-The version that finishes the gameplay. Likely splits in two as it is built
-(rules first, then escalation content).
-
-- **Modern rules, so it feels right to play:** SRS rotation + wall kicks +
-  T-spin (3-corner rule), lock delay + move reset, hold piece, 5-deep next
-  queue, 7-bag confirmed, buffer rows above the field + block-out / lock-out,
-  guideline-style scoring (Single / Double / Triple / Tetris multipliers, combo,
-  back-to-back, Perfect Clear), on-board callouts.
-- **Gameplay-settings toggles** that now have a mechanic behind them: ghost
-  piece, hold, next-queue length, 7-bag vs random. Extend `GameplayCategoryPanel`
-  (rows + `GameSettings` fields, bump FormatVersion). Hold needs a new
-  rebindable key — `ControlSettings` field, a Keyboard row, a Gamepad
-  assignment. If Gameplay grows past ~6 rows, split it into sub-sections.
-- **Gamepad vibration on gameplay actions** — land / hard-drop / wall contact /
-  row-clear / tetris / level-up / top-out / T-spin, gated by the existing
-  Vibration toggle. `input/gamepad/GamepadHaptics` is already in the tree and
-  wired; only the gameplay firing is missing.
-- **Escalation design** — how the single endless mode gets harder over time:
-  which bonuses, obstacles and rule modifiers appear at which point, and the
-  pacing of pressure vs breather stretches. (This absorbs the old campaign
-  "modifier pool" idea as escalation tiers rather than discrete levels.)
+**v1.4.0 — Menu cleanup & flow**, **v1.5.0 — Gameplay presentation & Game
+Over** and **v1.6.0 — Gameplay depth & escalation** shipped (see Released).
 
 ### v1.7.0 — Localization & final refactor
 
 The final version. After it the game is done — there is no v2.0.
 
-- **Localization** — the multi-language load + first-run picker + live switch
-  for the settled five (English, Spanish, German, Russian, Ukrainian). The UI
-  scaffold shipped in v1.2.0; port `LocalizationRevision` + a text-warmup pass
-  from ULA. Deferred to here because retranslating churning strings mid-build is
-  wasteful.
-- **Project-wide refactor and polish** — tighten the feel, clean the code, pull
+- **Localization** — ✅ done. Language enum + `GameSettings` persistence
+  (format 10), catalog loading with an English fallback merge, a revision
+  counter so every open screen switches live with no restart, a first-run
+  picker before the main menu, and full translations (English, Spanish,
+  German, Russian, Ukrainian) for every catalog key including the on-board
+  callouts. The UI scaffold shipped in v1.2.0.
+- **Gameplay visual effects** — ✅ done. Line-clear effects scale with rank
+  (Single through Tetris), a real bloom glow on the well border while a combo
+  holds, escalation tiers (see `EscalationDirector`) get their own ambience
+  and HUD reaction, a soft trail between the falling piece and its ghost, an
+  animated hard-drop slide instead of an instant teleport, and grey impact
+  dust on both hard-drop landings and wall hits.
+- **Audio pass** — partly done. `audio/MusicPlayer` shuffles three gameplay
+  tracks into an endless, non-repeating playlist and ducks them (same easing
+  as the pause menu) while the game-over sting plays; every menu nav / toggle
+  sound is now consistently pitched by direction (vertical lists, checkboxes,
+  mouse-clicked slider arrows, the gamepad reference panel). Still open: a
+  number of gameplay sounds are missing or reuse a placeholder (e.g. Hold
+  still borrows the rotate sound — see `GameplayState::TryHold`).
+- **A shortcut to the game** — resolved as just the exe's own icon
+  (`assets/other/icon.ico` via `Tessera.rc`), not a desktop/Start Menu
+  shortcut or installer.
+- **Project-wide refactor and polish** — ✅ done. A folder-by-folder style pass
+  over the whole `src/` tree (naming, magic numbers, header layout, dead-code
+  removal), plus the items below. Tighten the feel, clean the code, pull
   back any improvements from ULA's shared helpers (`NineSliceFrame`,
   `TextLayout`, `NeonGlow`, `GamepadHaptics`), a final dead-code sweep.
-  Known dead-on-arrival for that sweep: the blurred-backdrop render path —
-  `State::Backdrop::BlurredPrevious` is returned by no state (Pause moved to
-  `mosaic.frag`), leaving the `else` branch in `Application::Render`,
-  `blur.frag` / `ShaderID::Blur`, `Application::gameplayTexture` /
-  `finalTexture`, and `StateMachine::RenderStatesExceptTop` / `RenderTopState`
-  all unreachable.
-- **Release** — README as a finished piece, screenshots / GIFs, itch.io page,
+  ✅ The blurred-backdrop render path was removed earlier
+  (`State::Backdrop::BlurredPrevious` was returned by no state once Pause
+  moved to `mosaic.frag`) — `blur.frag` / `ShaderID::Blur`,
+  `Application::gameplayTexture` / `finalTexture`, and
+  `StateMachine::RenderStatesExceptTop` / `RenderTopState` are all gone.
+  ✅ The broader pass landed too: the old `ui/Element` + `ui/Slider` widgets
+  (superseded by `UI::SliderRow` since v1.2.0) deleted; three orphaned
+  localization keys (`options.coming_soon`, `options.key_pause`,
+  `hud.controls`) removed from `TextKeys.h` and every catalog; the near-
+  identical toggle/carousel row-sound branch in `GameplayCategoryPanel` /
+  `GraphicsCategoryPanel` / `HudCategoryPanel` collapsed into shared
+  `SettingsCategoryPanel::*RowByType` helpers; `pieces.json` / `srs_kicks.json`
+  / `audio_balance.json` / `haptics.json` moved from hardcoded strings in
+  `Application.cpp` into `Assets::Paths::Data` alongside every other asset
+  path; a couple of comments that had gone stale (the HUD's hold-piece
+  outline, the Hold sound) reworded to match what the code actually does.
+- **Release** — README as a finished piece (rebuilt to the same standard as
+  ULA's: badges, feature/controls tables, `docs/ARCHITECTURE.md` /
+  `docs/CONTROLS.md` / `docs/GAMEPLAY.md` / `docs/PATTERNS.md`) — ✅ done.
+  Still open: screenshots / GIFs for `docs/media/`, an itch.io page,
   `Tessera-v1.7.0-win64.zip`, GitHub Release as the last one.
 
 ### Visual overhaul (spans v1.6.0–v1.7.0)
 
 The whole game look is still to be raised. `panel_background` /
-`button_background` are now unused by the game (the HUD and menus nine-slice
-the `menu_background_*_frame` set instead); they and any other legacy art
-want either replacing or removing in the v1.7.0 sweep. The author sources art
-as each version needs it.
+`button_background` are gone (removed in v1.5.0 with `ui/Button` / `ui/Panel`,
+their last users); any further legacy art wants replacing or removing as the
+author sources new art for each version.
 
 ---
 

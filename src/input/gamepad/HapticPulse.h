@@ -1,25 +1,25 @@
 #pragma once
 
-#include "../../config/HapticSettings.h"
+#include "../../haptics/HapticSettings.h"
 #include "GamepadHaptics.h"
 
 // Thin adapters between the plain data in HapticSettings and the GamepadHaptics
-// primitive, so call sites read as one line: Haptics::Pulse(haptics, settings.hardDrop).
+// primitive, so call sites read as one line: Haptics::TriggerPulse(haptics, settings.hardDrop).
 namespace Haptics
 {
-	inline void Pulse(GamepadHaptics& haptics, const HapticSettings::Rumble& rumble)
+	inline void TriggerPulse(GamepadHaptics& haptics, const HapticSettings::Rumble& rumble)
 	{
 		haptics.PulseVibration(rumble.lowMotor, rumble.highMotor, rumble.duration);
 	}
 
-	[[nodiscard]] inline RGBColor ToRgb(HapticSettings::Colour colour) noexcept
+	[[nodiscard]] inline RGBColor ConvertToRGB(HapticSettings::Color color) noexcept
 	{
-		return { colour.r, colour.g, colour.b };
+		return { color.r, color.g, color.b };
 	}
 
-	inline void FlashLightbar(GamepadHaptics& haptics, HapticSettings::Colour colour,
+	inline void FlashLightbar(GamepadHaptics& haptics, HapticSettings::Color color,
 		float durationSeconds, int blinks = 1)
 	{
-		haptics.PulseLightbar(ToRgb(colour), durationSeconds, blinks);
+		haptics.PulseLightbar(ConvertToRGB(color), durationSeconds, blinks);
 	}
 }

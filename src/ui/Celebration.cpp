@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <cstdint>
 
 #include <SFML/Graphics/BlendMode.hpp>
@@ -9,12 +10,14 @@
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
+#include "../display/DisplaySettings.h"
 #include "../utils/Random.h"
 
 namespace
 {
-	constexpr sf::Vector2f Screen{ 1920.f, 1080.f };
-	constexpr float Pi = 3.14159265f;
+	using Display::VirtualSize;
+
+	constexpr float Pi = std::numbers::pi_v<float>;
 
 	constexpr float MinLaunchGap = 0.45f;
 	constexpr float MaxLaunchGap = 1.25f;
@@ -31,6 +34,89 @@ namespace
 	constexpr float CornerInset = 7.f;
 	constexpr float CornerFlashFade = 1.f / 0.09f;
 
+	// Celebration::Celebration -- initial delay before the very first shell.
+	constexpr float InitialLaunchDelayMin = 0.1f;
+	constexpr float InitialLaunchDelayMax = 0.4f;
+
+	// Explode() -- burst spark tuning ranges.
+	constexpr float ExplodeBaseSpeedMin = 150.f;
+	constexpr float ExplodeBaseSpeedMax = 260.f;
+	constexpr float ExplodeSpeedSpreadMin = 0.35f;
+	constexpr float ExplodeSpeedSpreadMax = 1.15f;
+	constexpr float ExplodeSizeMin = 1.8f;
+	constexpr float ExplodeSizeMax = 3.6f;
+	constexpr float ExplodeLifeMin = 0.7f;
+	constexpr float ExplodeLifeMax = 1.5f;
+	constexpr float ExplodeGravityMin = 160.f;
+	constexpr float ExplodeGravityMax = 260.f;
+	constexpr float ExplodeDragMin = 0.28f;
+	constexpr float ExplodeDragMax = 0.5f;
+	constexpr int ExplodeColorJitterAmount = 22;
+
+	// Update() -- rocket spawn / flight tuning.
+	constexpr float RocketSpawnMarginX = 320.f;      // kept clear of the screen edges
+	constexpr float RocketSpawnBelowScreenY = 20.f;  // spawns this far below the bottom edge
+	constexpr float RocketVelocityXMin = -45.f;
+	constexpr float RocketVelocityXMax = 45.f;
+	constexpr float RocketVelocityYMin = -780.f;
+	constexpr float RocketVelocityYMax = -600.f;
+	constexpr float RocketFuseMin = 0.75f;
+	constexpr float RocketFuseMax = 1.15f;
+	constexpr float ApexVelocityThreshold = -30.f;   // near the top of the arc: explode even if the fuse hasn't burned out
+
+	// Update() -- corner jet spark tuning.
+	constexpr float CornerJetSpreadAngleMin = -0.6f;
+	constexpr float CornerJetSpreadAngleMax = 0.6f;
+	constexpr float CornerJetSpeedMin = 190.f;
+	constexpr float CornerJetSpeedMax = 470.f;
+	constexpr float CornerJetSizeMin = 2.6f;
+	constexpr float CornerJetSizeMax = 5.4f;
+	constexpr float CornerJetLifeMin = 0.5f;
+	constexpr float CornerJetLifeMax = 1.1f;
+	constexpr float CornerJetGravityMin = 120.f;
+	constexpr float CornerJetGravityMax = 240.f;
+	constexpr float CornerJetDragMin = 0.18f;
+	constexpr float CornerJetDragMax = 0.4f;
+	constexpr float CornerJetColorPickChance = 0.4f;   // chance of the paler of the two corner-jet colors
+
+	// Shared culling boundary for both firework showers and corner jets: fades
+	// out just above the buttons below the panel.
+	constexpr float PanelBottomFadeY = 1006.f;
+	constexpr float PanelBottomFadeSpan = 26.f;
+
+	// RenderCornerSparks() -- muzzle-flash geometry and alpha scales.
+	constexpr float CornerFlashOuterRadiusBase = 8.f;
+	constexpr float CornerFlashOuterRadiusScale = 20.f;
+	constexpr float CornerFlashInnerRadiusBase = 3.f;
+	constexpr float CornerFlashInnerRadiusScale = 7.f;
+	constexpr float CornerFlashOuterAlphaScale = 90.f;
+	constexpr float CornerFlashInnerAlphaScale = 210.f;
+	const sf::Color CornerFlashOuterColor{ 255, 210, 130 };
+	const sf::Color CornerFlashInnerColor{ 255, 248, 232 };
+
+	// Update() -- once a corner's muzzle flash fades out, it waits a random
+	// span in this range before firing again.
+	constexpr float CornerFlashRetriggerMin = 0.05f;
+	constexpr float CornerFlashRetriggerMax = 0.20f;
+
+	// Update() -- the two corner-jet spark colors (see CornerJetColorPickChance).
+	const sf::Color CornerJetColorPale{ 255, 248, 224 };
+	const sf::Color CornerJetColorWarm{ 255, 206, 110 };
+
+	// SetCorners() -- unit diagonal (sqrt(2)/2), for aiming a jet at a true 45
+	// degrees regardless of the panel's aspect ratio.
+	constexpr float DiagonalUnit = 0.70710678f;
+
+	// Render*() -- particle point counts (rounder shapes cost more to draw, so
+	// only the few large muzzle-flash discs get the smoothest circle).
+	constexpr unsigned int RocketPointCount = 10;
+	constexpr unsigned int CornerFlashPointCount = 16;
+	constexpr unsigned int CornerSparkPointCount = 8;
+
+	// RenderFireworks() -- the rising shell itself, before it bursts.
+	constexpr float RocketDotRadius = 2.6f;
+	const sf::Color RocketDotColor{ 255, 240, 210 };
+
 	const std::array<sf::Color, 6> WarmPalette = { {
 		sf::Color(255, 214, 128),
 		sf::Color(255, 176, 92),
@@ -45,13 +131,13 @@ namespace
 		return WarmPalette[static_cast<std::size_t>(Random::Int(0, static_cast<int>(WarmPalette.size()) - 1))];
 	}
 
-	[[nodiscard]] sf::Color Jitter(sf::Color colour, int amount)
+	[[nodiscard]] sf::Color Jitter(sf::Color color, int amount)
 	{
 		const auto nudge = [&](std::uint8_t channel)
 		{
 			return static_cast<std::uint8_t>(std::clamp(static_cast<int>(channel) + Random::Int(-amount, amount), 0, 255));
 		};
-		return sf::Color(nudge(colour.r), nudge(colour.g), nudge(colour.b));
+		return sf::Color(nudge(color.r), nudge(color.g), nudge(color.b));
 	}
 }
 
@@ -59,7 +145,7 @@ namespace UI
 {
 	Celebration::Celebration()
 	{
-		launchTimer = Random::Float(0.1f, 0.4f);
+		launchTimer = Random::Float(InitialLaunchDelayMin, InitialLaunchDelayMax);
 		rockets.reserve(8);
 		burstSparks.reserve(512);
 		cornerSparks.reserve(256);
@@ -67,16 +153,16 @@ namespace UI
 
 	void Celebration::SetCorners(const std::array<sf::Vector2f, 4>& corners)
 	{
-		sf::Vector2f centre{ 0.f, 0.f };
+		sf::Vector2f center{ 0.f, 0.f };
 		for (const sf::Vector2f& corner : corners)
 		{
-			centre += corner;
+			center += corner;
 		}
-		centre /= 4.f;
+		center /= 4.f;
 
 		for (std::size_t i = 0; i < corners.size(); ++i)
 		{
-			const sf::Vector2f away = corners[i] - centre;
+			const sf::Vector2f away = corners[i] - center;
 			const float length = std::sqrt(away.x * away.x + away.y * away.y);
 			const sf::Vector2f inward = length > 0.f ? -away / length : sf::Vector2f{ 0.f, 0.f };
 
@@ -87,33 +173,33 @@ namespace UI
 			// corner up-and-left, the bottom-right down-and-right, and so on. Use
 			// the sign of the offset (not its magnitude) so it is a true 45
 			// degrees regardless of how wide the panel is.
-			const float sx = away.x >= 0.f ? 1.f : -1.f;
-			const float sy = away.y >= 0.f ? 1.f : -1.f;
-			cornerDirections[i] = { sx * 0.70710678f, sy * 0.70710678f };
+			const float signX = away.x >= 0.f ? 1.f : -1.f;
+			const float signY = away.y >= 0.f ? 1.f : -1.f;
+			cornerDirections[i] = { signX * DiagonalUnit, signY * DiagonalUnit };
 		}
 
-		cornersSet = true;
+		isCornersSet = true;
 	}
 
 	void Celebration::Explode(const Rocket& rocket)
 	{
 		const int count = Random::Int(MinBurst, MaxBurst);
-		const float baseSpeed = Random::Float(150.f, 260.f);
+		const float baseSpeed = Random::Float(ExplodeBaseSpeedMin, ExplodeBaseSpeedMax);
 
 		for (int i = 0; i < count; ++i)
 		{
 			const float angle = Random::Float(0.f, 2.f * Pi);
-			const float speed = baseSpeed * Random::Float(0.35f, 1.15f);
+			const float speed = baseSpeed * Random::Float(ExplodeSpeedSpreadMin, ExplodeSpeedSpreadMax);
 
 			Spark spark;
 			spark.position = rocket.position;
 			spark.velocity = { std::cos(angle) * speed, std::sin(angle) * speed };
-			spark.size = Random::Float(1.8f, 3.6f);
-			spark.maxLife = Random::Float(0.7f, 1.5f);
+			spark.size = Random::Float(ExplodeSizeMin, ExplodeSizeMax);
+			spark.maxLife = Random::Float(ExplodeLifeMin, ExplodeLifeMax);
 			spark.life = spark.maxLife;
-			spark.gravity = Random::Float(160.f, 260.f);
-			spark.drag = Random::Float(0.28f, 0.5f);
-			spark.colour = Jitter(rocket.colour, 22);
+			spark.gravity = Random::Float(ExplodeGravityMin, ExplodeGravityMax);
+			spark.drag = Random::Float(ExplodeDragMin, ExplodeDragMax);
+			spark.color = Jitter(rocket.color, ExplodeColorJitterAmount);
 			burstSparks.push_back(spark);
 		}
 	}
@@ -127,10 +213,12 @@ namespace UI
 			launchTimer = Random::Float(MinLaunchGap, MaxLaunchGap);
 
 			Rocket rocket;
-			rocket.position = { Random::Float(320.f, Screen.x - 320.f), Screen.y + 20.f };
-			rocket.velocity = { Random::Float(-45.f, 45.f), Random::Float(-780.f, -600.f) };
-			rocket.fuse = Random::Float(0.75f, 1.15f);
-			rocket.colour = PickWarm();
+			rocket.position = { Random::Float(RocketSpawnMarginX, VirtualSize.x - RocketSpawnMarginX),
+				VirtualSize.y + RocketSpawnBelowScreenY };
+			rocket.velocity = { Random::Float(RocketVelocityXMin, RocketVelocityXMax),
+				Random::Float(RocketVelocityYMin, RocketVelocityYMax) };
+			rocket.fuse = Random::Float(RocketFuseMin, RocketFuseMax);
+			rocket.color = PickWarm();
 			rockets.push_back(rocket);
 		}
 
@@ -143,7 +231,7 @@ namespace UI
 
 		for (auto it = rockets.begin(); it != rockets.end();)
 		{
-			if (it->fuse <= 0.f || it->velocity.y >= -30.f)
+			if (it->fuse <= 0.f || it->velocity.y >= ApexVelocityThreshold)
 			{
 				Explode(*it);
 				it = rockets.erase(it);
@@ -170,7 +258,7 @@ namespace UI
 		std::erase_if(burstSparks, [](const Spark& spark) { return spark.life <= 0.f; });
 
 		// Corner jets.
-		if (cornersSet)
+		if (isCornersSet)
 		{
 			for (std::size_t corner = 0; corner < cornerFlash.size(); ++corner)
 			{
@@ -179,7 +267,7 @@ namespace UI
 				if (cornerFlashTimer[corner] <= 0.f)
 				{
 					cornerFlash[corner] = 1.f;
-					cornerFlashTimer[corner] = Random::Float(0.05f, 0.20f);
+					cornerFlashTimer[corner] = Random::Float(CornerFlashRetriggerMin, CornerFlashRetriggerMax);
 				}
 			}
 
@@ -190,24 +278,26 @@ namespace UI
 			for (int i = 0; i < toEmit; ++i)
 			{
 				const std::size_t corner = static_cast<std::size_t>(Random::Int(0, 3));
-				const sf::Vector2f dir = cornerDirections[corner];
-				const float spread = Random::Float(-0.6f, 0.6f);
-				const float cos = std::cos(spread);
-				const float sin = std::sin(spread);
-				const sf::Vector2f aimed{ dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos };
-				const float speed = Random::Float(190.f, 470.f);
+				const sf::Vector2f direction = cornerDirections[corner];
+				const float spread = Random::Float(CornerJetSpreadAngleMin, CornerJetSpreadAngleMax);
+				const float cosSpread = std::cos(spread);
+				const float sinSpread = std::sin(spread);
+				const sf::Vector2f aimed{
+					direction.x * cosSpread - direction.y * sinSpread,
+					direction.x * sinSpread + direction.y * cosSpread };
+				const float speed = Random::Float(CornerJetSpeedMin, CornerJetSpeedMax);
 
 				Spark spark;
 				spark.position = cornerPoints[corner];
 				spark.velocity = aimed * speed;
-				spark.size = Random::Float(2.6f, 5.4f);
-				spark.maxLife = Random::Float(0.5f, 1.1f);
+				spark.size = Random::Float(CornerJetSizeMin, CornerJetSizeMax);
+				spark.maxLife = Random::Float(CornerJetLifeMin, CornerJetLifeMax);
 				spark.life = spark.maxLife;
-				spark.gravity = Random::Float(120.f, 240.f);
-				spark.drag = Random::Float(0.18f, 0.4f);
-				spark.colour = Random::Float(0.f, 1.f) < 0.4f
-					? sf::Color(255, 248, 224)
-					: sf::Color(255, 206, 110);
+				spark.gravity = Random::Float(CornerJetGravityMin, CornerJetGravityMax);
+				spark.drag = Random::Float(CornerJetDragMin, CornerJetDragMax);
+				spark.color = Random::Float(0.f, 1.f) < CornerJetColorPickChance
+					? CornerJetColorPale
+					: CornerJetColorWarm;
 				cornerSparks.push_back(spark);
 			}
 		}
@@ -225,14 +315,14 @@ namespace UI
 		additive.blendMode = sf::BlendAdd;
 
 		sf::CircleShape dot;
-		dot.setPointCount(10);
+		dot.setPointCount(RocketPointCount);
 
 		for (const Rocket& rocket : rockets)
 		{
-			dot.setRadius(2.6f);
-			dot.setOrigin({ 2.6f, 2.6f });
+			dot.setRadius(RocketDotRadius);
+			dot.setOrigin({ RocketDotRadius, RocketDotRadius });
 			dot.setPosition(rocket.position);
-			dot.setFillColor(sf::Color(255, 240, 210));
+			dot.setFillColor(RocketDotColor);
 			target.draw(dot, additive);
 		}
 
@@ -240,7 +330,7 @@ namespace UI
 		{
 			const float fade = std::clamp(spark.life / spark.maxLife, 0.f, 1.f);
 			// Keep the shower clear of the buttons below the panel.
-			const float regionFade = std::clamp((1006.f - spark.position.y) / 26.f, 0.f, 1.f);
+			const float regionFade = std::clamp((PanelBottomFadeY - spark.position.y) / PanelBottomFadeSpan, 0.f, 1.f);
 			const float alpha = fade * fade * regionFade;
 			if (alpha <= 0.f)
 			{
@@ -250,7 +340,7 @@ namespace UI
 			dot.setRadius(spark.size);
 			dot.setOrigin({ spark.size, spark.size });
 			dot.setPosition(spark.position);
-			dot.setFillColor(sf::Color(spark.colour.r, spark.colour.g, spark.colour.b,
+			dot.setFillColor(sf::Color(spark.color.r, spark.color.g, spark.color.b,
 				static_cast<std::uint8_t>(alpha * 255.f)));
 			target.draw(dot, additive);
 		}
@@ -262,7 +352,7 @@ namespace UI
 		additive.blendMode = sf::BlendAdd;
 
 		sf::CircleShape dot;
-		dot.setPointCount(16);
+		dot.setPointCount(CornerFlashPointCount);
 
 		// The muzzle flash at each corner where the jet fires from.
 		for (std::size_t corner = 0; corner < cornerFlash.size(); ++corner)
@@ -273,27 +363,29 @@ namespace UI
 				continue;
 			}
 
-			const float outer = 8.f + 20.f * flash;
+			const float outer = CornerFlashOuterRadiusBase + CornerFlashOuterRadiusScale * flash;
 			dot.setRadius(outer);
 			dot.setOrigin({ outer, outer });
 			dot.setPosition(cornerPoints[corner]);
-			dot.setFillColor(sf::Color(255, 210, 130, static_cast<std::uint8_t>(flash * 90.f)));
+			dot.setFillColor(sf::Color(CornerFlashOuterColor.r, CornerFlashOuterColor.g, CornerFlashOuterColor.b,
+				static_cast<std::uint8_t>(flash * CornerFlashOuterAlphaScale)));
 			target.draw(dot, additive);
 
-			const float inner = 3.f + 7.f * flash;
+			const float inner = CornerFlashInnerRadiusBase + CornerFlashInnerRadiusScale * flash;
 			dot.setRadius(inner);
 			dot.setOrigin({ inner, inner });
 			dot.setPosition(cornerPoints[corner]);
-			dot.setFillColor(sf::Color(255, 248, 232, static_cast<std::uint8_t>(flash * 210.f)));
+			dot.setFillColor(sf::Color(CornerFlashInnerColor.r, CornerFlashInnerColor.g, CornerFlashInnerColor.b,
+				static_cast<std::uint8_t>(flash * CornerFlashInnerAlphaScale)));
 			target.draw(dot, additive);
 		}
 
-		dot.setPointCount(8);
+		dot.setPointCount(CornerSparkPointCount);
 
 		for (const Spark& spark : cornerSparks)
 		{
 			const float fade = std::clamp(spark.life / spark.maxLife, 0.f, 1.f);
-			const float regionFade = std::clamp((1006.f - spark.position.y) / 26.f, 0.f, 1.f);
+			const float regionFade = std::clamp((PanelBottomFadeY - spark.position.y) / PanelBottomFadeSpan, 0.f, 1.f);
 			const float alpha = fade * regionFade;
 			if (alpha <= 0.f)
 			{
@@ -303,7 +395,7 @@ namespace UI
 			dot.setRadius(spark.size);
 			dot.setOrigin({ spark.size, spark.size });
 			dot.setPosition(spark.position);
-			dot.setFillColor(sf::Color(spark.colour.r, spark.colour.g, spark.colour.b,
+			dot.setFillColor(sf::Color(spark.color.r, spark.color.g, spark.color.b,
 				static_cast<std::uint8_t>(alpha * 255.f)));
 			target.draw(dot, additive);
 		}

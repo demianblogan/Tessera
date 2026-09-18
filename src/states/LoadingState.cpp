@@ -10,29 +10,30 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Audio/Music.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include "../audio/MusicPlayer.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
+#include "../display/DisplaySettings.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
-#include "../ui/Easing.h"
+#include "../utils/Easing.h"
 #include "CompanySplashState.h"
 
 namespace
 {
-	constexpr sf::Vector2f VirtualSize{ 1920.f, 1080.f };
+	using Display::VirtualSize;
 
 	constexpr float BarWidth = 1200.f;
 	constexpr float BarOutline = 3.f;
 	constexpr float BarInnerPadding = 10.f;
 	constexpr float CellGap = 4.f;
-	constexpr float BarCentreY = VirtualSize.y * 0.5f;
+	constexpr float BarCenterY = VirtualSize.y * 0.5f;
 
 	// The block spritesheet is a horizontal strip of 16px cells; the first
-	// five are the most distinct colours.
+	// five are the most distinct colors.
 	constexpr int BlockSpriteSize = 16;
 	constexpr int BlockVariants = 5;
 
@@ -42,6 +43,7 @@ namespace
 	// How fast the drawn fill chases the loader's coarse per-stage fraction,
 	// and how a freshly filled cell slides + fades into its slot.
 	constexpr float FractionSmoothing = 4.f;
+	constexpr float NearCompleteThreshold = 0.999f;
 	constexpr float CellAppearDuration = 0.4f;
 	constexpr float CellSlideCells = 1.8f;
 
@@ -52,20 +54,7 @@ namespace
 	constexpr sf::Color BarFrame{ 90, 120, 160 };
 	constexpr sf::Color BarTrack{ 8, 10, 16, 220 };
 
-	[[nodiscard]] std::string_view StageKey(Loading::Stage stage) noexcept
-	{
-		switch (stage)
-		{
-		case Loading::Stage::Audio:     return TextKey::Loading::Audio;
-		case Loading::Stage::Music:     return TextKey::Loading::Music;
-		case Loading::Stage::Interface:
-		case Loading::Stage::Count:     return TextKey::Loading::Interface;
-		}
-
-		return TextKey::Loading::Interface;
-	}
-
-	using UI::Easing::EaseOutCubic;
+	using Easing::EaseOutCubic;
 }
 
 LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
@@ -73,26 +62,24 @@ LoadingState::LoadingState(Context& context, std::function<void()> onLoaded)
 	, context(context)
 	, job(context.soundBuffers, context.music, context.fonts)
 	, onLoaded(std::move(onLoaded))
-	, stageLabel(context.fonts.Get(Assets::FontID::Loading), "", LabelSize)
+	, label(context.fonts.Get(Assets::FontID::Loading), context.localization.GetText(TextKey::Loading::Label), LabelSize)
 {
-	stageLabel.setFillColor(sf::Color::White);
+	label.setFillColor(sf::Color::White);
+
+	const sf::FloatRect bounds = label.getLocalBounds();
+	label.setOrigin({
+		bounds.position.x + bounds.size.x * 0.5f,
+		bounds.position.y + bounds.size.y });
 
 	// The shell music runs from here through the splash and into the menu.
 	// (Loaded synchronously by Application so it is ready this early.)
-	sf::Music& music = context.music.Get(Assets::MusicID::MainMenu);
-	music.setLooping(true);
-	if (music.getStatus() != sf::Music::Status::Playing)
-	{
-		music.play();
-	}
+	context.musicPlayer.PlayMainMenu();
 
 	worker = std::jthread(
 		[this](std::stop_token stopToken)
 		{
 			job.Run(std::move(stopToken), progress);
 		});
-
-	RefreshStageLabel();
 }
 
 void LoadingState::HandleEvent(const sf::Event& /*event*/)
@@ -100,31 +87,13 @@ void LoadingState::HandleEvent(const sf::Event& /*event*/)
 	// No skipping: the assets have to finish loading regardless.
 }
 
-void LoadingState::RefreshStageLabel()
-{
-	const Loading::Stage stage = progress.GetStage();
-	stageLabel.setString(context.localization.GetText(StageKey(stage)));
-
-	const sf::FloatRect bounds = stageLabel.getLocalBounds();
-	stageLabel.setOrigin({
-		bounds.position.x + bounds.size.x * 0.5f,
-		bounds.position.y + bounds.size.y });
-
-	labelledStage = stage;
-}
-
 void LoadingState::Update(float deltaTime)
 {
 	elapsed += deltaTime;
 
-	if (progress.GetStage() != labelledStage)
-	{
-		RefreshStageLabel();
-	}
-
 	const float target = progress.Fraction();
 	displayedFraction += (target - displayedFraction) * std::min(1.f, FractionSmoothing * deltaTime);
-	if (progress.IsDone() && displayedFraction > 0.999f)
+	if (progress.IsDone() && displayedFraction > NearCompleteThreshold)
 	{
 		displayedFraction = 1.f;
 	}
@@ -140,7 +109,7 @@ void LoadingState::Update(float deltaTime)
 		}
 	}
 
-	if (handedOff || !progress.IsDone() || filledCells < CellCount)
+	if (hasHandedOff || !progress.IsDone() || filledCells < CellCount)
 	{
 		return;
 	}
@@ -148,7 +117,7 @@ void LoadingState::Update(float deltaTime)
 	const float lastSettled = cellAppearTime[static_cast<std::size_t>(CellCount - 1)] + CellAppearDuration + HandoffLinger;
 	if (elapsed >= lastSettled)
 	{
-		handedOff = true;
+		hasHandedOff = true;
 		if (onLoaded)
 		{
 			onLoaded();
@@ -174,7 +143,7 @@ void LoadingState::Render(sf::RenderTarget& target)
 
 	const sf::Vector2f barTopLeft{
 		(VirtualSize.x - barSize.x) * 0.5f,
-		BarCentreY - barSize.y * 0.5f };
+		BarCenterY - barSize.y * 0.5f };
 
 	sf::RectangleShape frame(barSize);
 	frame.setPosition(barTopLeft);
@@ -200,21 +169,21 @@ void LoadingState::Render(sf::RenderTarget& target)
 				continue;
 			}
 
-			const float t = std::clamp((elapsed - appearTime) / CellAppearDuration, 0.f, 1.f);
-			const float eased = EaseOutCubic(t);
+			const float appearFraction = std::clamp((elapsed - appearTime) / CellAppearDuration, 0.f, 1.f);
+			const float eased = EaseOutCubic(appearFraction);
 
 			const float slotX = innerLeft + static_cast<float>(i) * slotWidth;
-			const float x = slotX + (1.f - eased) * slideDistance;
+			const float drawX = slotX + (1.f - eased) * slideDistance;
 
 			block.setTextureRect(sf::IntRect{
 				{ (i % BlockVariants) * BlockSpriteSize, 0 },
 				{ BlockSpriteSize, BlockSpriteSize } });
-			block.setPosition({ x, innerTop });
+			block.setPosition({ drawX, innerTop });
 			block.setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(eased * 255.f)));
 			target.draw(block);
 		}
 	}
 
-	stageLabel.setPosition({ VirtualSize.x * 0.5f, barTopLeft.y - LabelGap });
-	target.draw(stageLabel);
+	label.setPosition({ VirtualSize.x * 0.5f, barTopLeft.y - LabelGap });
+	target.draw(label);
 }

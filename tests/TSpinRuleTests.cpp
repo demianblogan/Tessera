@@ -37,7 +37,7 @@ TEST_CASE("Detect is None for a non-T piece, even with every corner filled")
 	MarkOccupied(board, 6, 11);
 
 	const Tetromino piece(Tetromino::Type::O, { 4, 9 });
-	CHECK(TSpinRule::Detect(board, piece, true) == TSpinRule::Result::None);
+	CHECK(TSpinRule::DetectTSpin(board, piece, true) == TSpinRule::Result::None);
 }
 
 TEST_CASE("Detect is None unless the last action was a rotation")
@@ -49,7 +49,7 @@ TEST_CASE("Detect is None unless the last action was a rotation")
 	MarkOccupied(board, 6, 11);
 
 	const Tetromino t = MakeT(5, 10, 0);
-	CHECK(TSpinRule::Detect(board, t, false) == TSpinRule::Result::None);
+	CHECK(TSpinRule::DetectTSpin(board, t, false) == TSpinRule::Result::None);
 }
 
 TEST_CASE("Detect is None with only two corners filled")
@@ -60,7 +60,7 @@ TEST_CASE("Detect is None with only two corners filled")
 	MarkOccupied(board, 6, 9);
 
 	const Tetromino t = MakeT(5, 10, 0);
-	CHECK(TSpinRule::Detect(board, t, true) == TSpinRule::Result::None);
+	CHECK(TSpinRule::DetectTSpin(board, t, true) == TSpinRule::Result::None);
 }
 
 TEST_CASE("Detect is Full when both front corners are filled")
@@ -71,7 +71,7 @@ TEST_CASE("Detect is Full when both front corners are filled")
 	MarkOccupied(board, 4, 11);   // BL (back)
 
 	const Tetromino t = MakeT(5, 10, 0);
-	CHECK(TSpinRule::Detect(board, t, true) == TSpinRule::Result::Full);
+	CHECK(TSpinRule::DetectTSpin(board, t, true) == TSpinRule::Result::Full);
 }
 
 TEST_CASE("Detect is Mini when three corners are filled but not both front ones")
@@ -83,7 +83,7 @@ TEST_CASE("Detect is Mini when three corners are filled but not both front ones"
 	// TR, the other front corner, stays empty.
 
 	const Tetromino t = MakeT(5, 10, 0);
-	CHECK(TSpinRule::Detect(board, t, true) == TSpinRule::Result::Mini);
+	CHECK(TSpinRule::DetectTSpin(board, t, true) == TSpinRule::Result::Mini);
 }
 
 TEST_CASE("Detect treats the wall as a filled corner")
@@ -98,7 +98,7 @@ TEST_CASE("Detect treats the wall as a filled corner")
 	MarkOccupied(board, 1, 9);    // TR (front for rotation 1)
 	MarkOccupied(board, 1, 11);   // BR (front for rotation 1)
 
-	CHECK(TSpinRule::Detect(board, t, true) == TSpinRule::Result::Full);
+	CHECK(TSpinRule::DetectTSpin(board, t, true) == TSpinRule::Result::Full);
 }
 
 TEST_CASE("Detect treats the floor as a filled corner")
@@ -106,11 +106,11 @@ TEST_CASE("Detect treats the floor as a filled corner")
 	Board board;
 
 	// T pointing up, centre resting on the very last row.
-	const int centreY = Board::HEIGHT - 1;
+	const int centreY = Board::Height - 1;
 	MarkOccupied(board, 4, centreY - 1);   // TL
 	MarkOccupied(board, 6, centreY - 1);   // TR
 	// Both bottom corners are past the floor -- filled automatically.
 
 	const Tetromino t = MakeT(5, centreY, 0);
-	CHECK(TSpinRule::Detect(board, t, true) == TSpinRule::Result::Full);
+	CHECK(TSpinRule::DetectTSpin(board, t, true) == TSpinRule::Result::Full);
 }

@@ -16,17 +16,17 @@ TEST_CASE("the tier advances at each of its time thresholds, reported once as an
 
 	director.Update(EscalationDirector::SpeedSurgeTierStart - 1.f);
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::Base);
-	CHECK_FALSE(director.ConsumeEvents().tierChanged);
+	CHECK_FALSE(director.ConsumeEvents().hasTierChanged);
 
 	director.Update(2.f);   // crosses into SpeedSurge
 	const EscalationDirector::Events afterSurge = director.ConsumeEvents();
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::SpeedSurge);
-	CHECK(afterSurge.tierChanged);
+	CHECK(afterSurge.hasTierChanged);
 	CHECK(afterSurge.tier == EscalationDirector::Tier::SpeedSurge);
 
 	// No further change mid-tier.
 	director.Update(1.f);
-	CHECK_FALSE(director.ConsumeEvents().tierChanged);
+	CHECK_FALSE(director.ConsumeEvents().hasTierChanged);
 
 	director.Update(EscalationDirector::GarbageTierStart - EscalationDirector::SpeedSurgeTierStart - 2.f);
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::Garbage);
@@ -61,79 +61,69 @@ TEST_CASE("Speed Surge fires periodically once unlocked, doubles fall speed whil
 
 	// Just short of the first (shorter) delay: not yet.
 	director.Update(EscalationDirector::FirstSurgeDelay - 0.1f);
-	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
+	CHECK_FALSE(director.ConsumeEvents().hasSurgeStarted);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
 
 	// Crossing it starts the surge.
 	director.Update(0.2f);
-	CHECK(director.ConsumeEvents().surgeStarted);
+	CHECK(director.ConsumeEvents().hasSurgeStarted);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(EscalationDirector::SurgeFallMultiplier));
 
 	// It ends after SurgeDuration.
 	director.Update(EscalationDirector::SurgeDuration + 0.1f);
-	CHECK(director.ConsumeEvents().surgeEnded);
+	CHECK(director.ConsumeEvents().hasSurgeEnded);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
 
 	// The next one waits a full SurgeInterval, not the shorter first delay.
 	director.Update(EscalationDirector::SurgeInterval - 0.1f);
-	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
+	CHECK_FALSE(director.ConsumeEvents().hasSurgeStarted);
 
 	director.Update(0.2f);
-	CHECK(director.ConsumeEvents().surgeStarted);
+	CHECK(director.ConsumeEvents().hasSurgeStarted);
 }
 
-TEST_CASE("garbage rows are queued every LinesPerGarbageRow, only once the Garbage tier is reached")
+TEST_CASE("no garbage row is queued before the Garbage tier, however long the run goes")
+{
+	EscalationDirector director;
+	director.Update(EscalationDirector::GarbageTierStart - 1.f);
+	(void)director.ConsumeEvents();
+	CHECK_FALSE(director.ConsumePendingGarbageRow());
+}
+
+TEST_CASE("a garbage row is queued within GarbageMaxInterval of entering the Garbage tier")
 {
 	EscalationDirector director;
 
-	// Still before Garbage -- clears never queue anything.
+	// Approach the tier boundary in two steps, the second one small: a single
+	// big jump across it would hand UpdateGarbage() that whole jump's delta
+	// time as if it were all spent inside the tier, overcounting the first
+	// interval and firing it early.
 	director.Update(EscalationDirector::GarbageTierStart - 1.f);
-	(void)director.ConsumeEvents();
-	director.NotifyLinesCleared(EscalationDirector::LinesPerGarbageRow);
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
-
-	director.Update(2.f);   // now in Garbage
+	director.Update(1.01f);
 	(void)director.ConsumeEvents();
 
-	director.NotifyLinesCleared(EscalationDirector::LinesPerGarbageRow - 1);
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
+	director.Update(EscalationDirector::GarbageMaxInterval + 0.1f);
 
-	director.NotifyLinesCleared(1);   // crosses the threshold
 	CHECK(director.ConsumePendingGarbageRow());
 	CHECK_FALSE(director.ConsumePendingGarbageRow());   // only the one row
 }
 
-TEST_CASE("the first garbage row is granted on a timer even with no lines cleared yet")
+TEST_CASE("garbage rows keep coming on a re-rolled timer, one at a time")
 {
 	EscalationDirector director;
-	director.Update(EscalationDirector::GarbageTierStart + 0.01f);
+	director.Update(EscalationDirector::GarbageTierStart - 1.f);
+	director.Update(1.01f);
 	(void)director.ConsumeEvents();
+	(void)director.ConsumePendingGarbageRow();   // drain whatever entering the tier itself queued
 
-	// No clears at all -- just short of the deadline, nothing yet.
-	director.Update(EscalationDirector::FirstGarbageDelay - 0.1f);
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
-
-	// Crossing it grants exactly one, with nothing still queued behind it.
-	director.Update(0.2f);
-	CHECK(director.ConsumePendingGarbageRow());
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
-
-	// It only ever fires once -- letting more time pass doesn't grant another.
-	director.Update(EscalationDirector::FirstGarbageDelay * 2.f);
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
-}
-
-TEST_CASE("a burst clear can queue more than one garbage row, drained one at a time")
-{
-	EscalationDirector director;
-	director.Update(EscalationDirector::GarbageTierStart);
-	(void)director.ConsumeEvents();
-
-	director.NotifyLinesCleared(EscalationDirector::LinesPerGarbageRow * 2);
-
-	CHECK(director.ConsumePendingGarbageRow());
-	CHECK(director.ConsumePendingGarbageRow());
-	CHECK_FALSE(director.ConsumePendingGarbageRow());
+	// The interval is randomised, so check one row at a time across several
+	// intervals' worth of elapsed time, rather than asserting an exact count.
+	for (int i = 0; i < 5; ++i)
+	{
+		director.Update(EscalationDirector::GarbageMaxInterval + 0.1f);
+		CHECK(director.ConsumePendingGarbageRow());
+		CHECK_FALSE(director.ConsumePendingGarbageRow());
+	}
 }
 
 TEST_CASE("golden pieces are only offered every PiecesPerGoldenPiece spawns in the Chaos tier")

@@ -11,74 +11,68 @@ namespace
 {
 	// Pieces spawn low in the hidden buffer, so they sit just above the visible
 	// field and drop into view the way modern Tetris shows them entering.
-	constexpr sf::Vector2i SpawnPosition{ Board::WIDTH / 2 - 2, Board::BufferHeight - 2 };
+	constexpr sf::Vector2i SpawnPosition =
+	{
+		Board::Width / 2 - 2,
+		Board::BufferHeight - 2
+	};
 }
 
 GameplaySession::GameplaySession(Config config)
-	: tetrominoBag(config.sevenBagEnabled)
+	: tetrominoBag(config.isSevenBagEnabled)
 	, currentTetromino(tetrominoBag.Next(), SpawnPosition)
 	, nextQueueLength(std::clamp(config.nextQueueLength, MinNextQueueLength, MaxNextQueueLength))
 {
-	for (int i = 0; i < nextQueueLength; ++i)
-	{
+	for (int i = 0; i < nextQueueLength; i++)
 		nextQueue.push_back(tetrominoBag.Next());
-	}
 
 	ResetLockState();
 }
 
-bool GameplaySession::MoveHorizontal(int direction)
+bool GameplaySession::MoveTetrominoHorizontal(int direction)
 {
 	if (phase != Phase::Falling || direction == 0)
-	{
 		return false;
-	}
 
 	Tetromino movedTetromino = currentTetromino;
 	movedTetromino.Move(direction > 0 ? 1 : -1, 0);
 
 	if (!board.CanPlace(movedTetromino))
-	{
 		return false;
-	}
 
 	currentTetromino = movedTetromino;
-	lastActionWasRotation = false;
+	wasLastActionRotation = false;
 	OnPieceShifted();
+
 	return true;
 }
 
-bool GameplaySession::Rotate(bool clockwise)
+bool GameplaySession::RotateTetromino(bool isClockwise)
 {
 	if (phase != Phase::Falling)
-	{
 		return false;
-	}
 
 	const int fromRotation = currentTetromino.GetRotationIndex();
-	const int toRotation = (fromRotation + (clockwise ? 1 : 3)) % 4;
+	const int toRotation = (fromRotation + (isClockwise ? 1 : TetrominoShapes::RotationCount - 1))
+		% TetrominoShapes::RotationCount;
 
 	// SRS wall kicks: try each offset in order and take the first that fits, so a
 	// rotation into a wall or the stack slides clear instead of failing.
-	for (const sf::Vector2i& kick : KickData::Offsets(currentTetromino.GetType(), fromRotation, toRotation))
+	for (const sf::Vector2i& kick : KickData::GetOffsets(currentTetromino.GetType(), fromRotation, toRotation))
 	{
 		Tetromino candidate = currentTetromino;
 
-		if (clockwise)
-		{
+		if (isClockwise)
 			candidate.RotateClockwise();
-		}
 		else
-		{
 			candidate.RotateCounterClockwise();
-		}
 
 		candidate.Move(kick.x, kick.y);
 
 		if (board.CanPlace(candidate))
 		{
 			currentTetromino = candidate;
-			lastActionWasRotation = true;
+			wasLastActionRotation = true;
 			OnPieceShifted();
 			return true;
 		}
@@ -87,31 +81,28 @@ bool GameplaySession::Rotate(bool clockwise)
 	return false;
 }
 
-bool GameplaySession::Hold()
+bool GameplaySession::HoldTetromino()
 {
-	if (phase != Phase::Falling || holdUsedThisTurn)
-	{
+	if (phase != Phase::Falling || wasHoldUsedThisTurn)
 		return false;
-	}
 
 	const Tetromino::Type currentType = currentTetromino.GetType();
 
-	if (heldType)
+	if (heldType.has_value())
 	{
 		// Swap: the piece that was held drops in at the spawn position; the
 		// active piece takes its place in the hold slot. The queue is untouched.
 		const Tetromino::Type swapped = *heldType;
 		heldType = currentType;
 		currentTetromino = { swapped, SpawnPosition };
+
 		// A swap, not a spawn -- the piece coming back out never carries a
 		// golden bonus (and the one going in loses whatever it had).
-		currentPieceIsGolden = false;
+		isCurrentPieceGolden = false;
 		ResetLockState();
 
 		if (!board.CanPlace(currentTetromino))
-		{
 			EndGame(GameOverReason::BlockOut);
-		}
 	}
 	else
 	{
@@ -119,26 +110,26 @@ bool GameplaySession::Hold()
 		// as a normal spawn.
 		heldType = currentType;
 		if (!SpawnNextTetromino())
-		{
 			EndGame(GameOverReason::BlockOut);
-		}
 	}
 
-	holdUsedThisTurn = true;
+	wasHoldUsedThisTurn = true;
 	return true;
 }
 
 Tetromino GameplaySession::GetHeldPiece() const
 {
-	return { heldType.value_or(Tetromino::Type::I), { 0, 0 } };
+	return
+	{
+		heldType.value_or(Tetromino::Type::I),
+		{ 0, 0 }
+	};
 }
 
-void GameplaySession::SoftDropStep()
+void GameplaySession::SoftDropTetrominoStep()
 {
 	if (phase != Phase::Falling)
-	{
 		return;
-	}
 
 	Tetromino movedTetromino = currentTetromino;
 	movedTetromino.Move(0, 1);
@@ -150,16 +141,15 @@ void GameplaySession::SoftDropStep()
 		score += SoftDropScorePerCell;
 		OnPieceDescended();
 	}
+
 	// Otherwise the piece is resting; the lock delay in Update() locks it. Soft
 	// drop is faster gravity, not an instant lock.
 }
 
-void GameplaySession::HardDrop()
+void GameplaySession::HardDropTetromino()
 {
 	if (phase != Phase::Falling)
-	{
 		return;
-	}
 
 	int cellsDropped = 0;
 
@@ -169,12 +159,10 @@ void GameplaySession::HardDrop()
 		movedTetromino.Move(0, 1);
 
 		if (!board.CanPlace(movedTetromino))
-		{
 			break;
-		}
 
 		currentTetromino = movedTetromino;
-		++cellsDropped;
+		cellsDropped++;
 	}
 
 	score += cellsDropped * HardDropScorePerCell;
@@ -191,8 +179,8 @@ void GameplaySession::Update(float deltaTime)
 		escalation.Update(deltaTime);
 
 		const EscalationDirector::Events escalationEvents = escalation.ConsumeEvents();
-		pendingEvents.speedSurgeStarted = pendingEvents.speedSurgeStarted || escalationEvents.surgeStarted;
-		pendingEvents.speedSurgeEnded = pendingEvents.speedSurgeEnded || escalationEvents.surgeEnded;
+		pendingEvents.hasSpeedSurgeStarted = pendingEvents.hasSpeedSurgeStarted || escalationEvents.hasSurgeStarted;
+		pendingEvents.hasSpeedSurgeEnded = pendingEvents.hasSpeedSurgeEnded || escalationEvents.hasSurgeEnded;
 	}
 
 	if (phase == Phase::ClearingRows)
@@ -200,19 +188,15 @@ void GameplaySession::Update(float deltaTime)
 		clearTimer += deltaTime;
 
 		if (clearTimer < RowClearDelay)
-		{
 			return;
-		}
 
 		const int clearedRows = static_cast<int>(clearingRows.size());
 
 		// Checked before ClearRows() erases the rows it would otherwise read.
-		const bool goldenBonus = board.RowsContainGolden(clearingRows);
+		const bool isGoldenBonus = board.RowsContainGolden(clearingRows);
 
 		board.ClearRows(clearingRows);
 		clearingRows.clear();
-
-		escalation.NotifyLinesCleared(clearedRows);
 
 		const TSpinRule::Result tSpin = pendingTSpinResult;
 		pendingTSpinResult = TSpinRule::Result::None;
@@ -242,29 +226,22 @@ void GameplaySession::Update(float deltaTime)
 		// either (nothing smaller in between) scores the line-clear part at
 		// 1.5x. Evaluated against the state left by the *previous* clear, then
 		// updated for the next one.
-		const bool isDifficultClear = tSpin != TSpinRule::Result::None
-			|| scoringRows == static_cast<int>(LineClearScores.size());
-		const bool earnedBackToBack = isDifficultClear && backToBackActive;
-		if (earnedBackToBack)
-		{
-			lineScore = static_cast<int>(static_cast<float>(lineScore) * BackToBackMultiplier);
-		}
-		backToBackActive = isDifficultClear;
+		const bool isDifficultClear =
+			tSpin != TSpinRule::Result::None || scoringRows == static_cast<int>(LineClearScores.size());
+		const bool earnedBackToBack = isDifficultClear && isBackToBackActive;
 
-		// Escalation's Chaos-tier golden bonus: a clear that took a golden lock
-		// doubles the line-clear score, on top of any back-to-back multiplier.
-		if (goldenBonus)
-		{
-			lineScore *= 2;
-		}
+		if (earnedBackToBack)
+			lineScore = static_cast<int>(static_cast<float>(lineScore) * BackToBackMultiplier);
+		isBackToBackActive = isDifficultClear;
+
+		if (isGoldenBonus)
+			lineScore *= GoldenBonusMultiplier;
 
 		// Combo: every clear beyond the first in an unbroken chain adds its own
 		// bonus, on top of (not multiplied by) the line-clear score above.
-		++comboCount;
+		comboCount++;
 		if (comboCount > 0)
-		{
 			score += ComboScorePerLevel * comboCount * level;
-		}
 
 		score += lineScore;
 
@@ -276,36 +253,30 @@ void GameplaySession::Update(float deltaTime)
 		// Perfect Clear: nothing left on the board at all.
 		const bool isPerfectClear = board.IsEmpty();
 		if (isPerfectClear)
-		{
 			score += PerfectClearScores[scoringRows - 1] * level;
-		}
 
-		pendingEvents.rowsCleared = true;
+		pendingEvents.hasClearedRows = true;
 		pendingEvents.clearedRowCount = clearedRows;
 		pendingEvents.comboCount = comboCount;   // never negative here: it was just incremented from >= -1
-		pendingEvents.backToBack = earnedBackToBack;
-		pendingEvents.perfectClear = isPerfectClear;
-		pendingEvents.goldenLineBonus = goldenBonus;
-		pendingEvents.tSpin = tSpin != TSpinRule::Result::None;
-		pendingEvents.tSpinMini = tSpin == TSpinRule::Result::Mini;
-		pendingEvents.leveledUp = level > previousLevel;
+		pendingEvents.hasBackToBack = earnedBackToBack;
+		pendingEvents.isPerfectClear = isPerfectClear;
+		pendingEvents.hasGoldenLineBonus = isGoldenBonus;
+		pendingEvents.isTSpin = tSpin != TSpinRule::Result::None;
+		pendingEvents.isTSpinMini = tSpin == TSpinRule::Result::Mini;
+		pendingEvents.hasLeveledUp = level > previousLevel;
 
 		fallDelay = GravityDelayForLevel(level);
 
 		phase = Phase::Falling;
 
 		if (!SpawnNextTetromino())
-		{
 			EndGame(GameOverReason::BlockOut);
-		}
 
 		return;
 	}
 
 	if (phase != Phase::Falling)
-	{
 		return;
-	}
 
 	// Gravity: step the piece down for each fall-delay's worth of time. Stop at
 	// the first step it can't take -- the lock delay below takes over there. A
@@ -338,9 +309,7 @@ void GameplaySession::Update(float deltaTime)
 		lockTimer += deltaTime;
 
 		if (lockTimer >= LockDelay)
-		{
 			LockAndScan();
-		}
 	}
 }
 
@@ -349,6 +318,86 @@ GameplaySession::Events GameplaySession::ConsumeEvents()
 	Events consumed = std::move(pendingEvents);
 	pendingEvents = {};
 	return consumed;
+}
+
+GameplaySession::Phase GameplaySession::GetPhase() const
+{
+	return phase;
+}
+
+bool GameplaySession::IsFalling() const
+{
+	return phase == Phase::Falling;
+}
+
+GameplaySession::GameOverReason GameplaySession::GetGameOverReason() const
+{
+	return gameOverReason;
+}
+
+const Board& GameplaySession::GetBoard() const
+{
+	return board;
+}
+
+const Tetromino& GameplaySession::GetCurrentTetromino() const
+{
+	return currentTetromino;
+}
+
+int GameplaySession::GetNextCount() const
+{
+	return static_cast<int>(nextQueue.size());
+}
+
+int GameplaySession::GetSpawnCount() const
+{
+	return spawnCount;
+}
+
+bool GameplaySession::HasHeldPiece() const
+{
+	return heldType.has_value();
+}
+
+bool GameplaySession::CanHold() const
+{
+	return !wasHoldUsedThisTurn;
+}
+
+const std::vector<int>& GameplaySession::GetClearingRows() const
+{
+	return clearingRows;
+}
+
+int GameplaySession::GetScore() const
+{
+	return score;
+}
+
+int GameplaySession::GetLevel() const
+{
+	return level;
+}
+
+int GameplaySession::GetLinesCleared() const
+{
+	return totalLinesCleared;
+}
+
+float GameplaySession::GetElapsedSeconds() const
+{
+	return elapsedSeconds;
+}
+
+bool GameplaySession::IsCurrentPieceGolden() const
+{
+	return isCurrentPieceGolden;
+}
+
+EscalationDirector::Tier GameplaySession::GetEscalationTier() const
+{
+	return escalation.CurrentTier();
 }
 
 Tetromino GameplaySession::GetGhostTetromino() const
@@ -361,9 +410,7 @@ Tetromino GameplaySession::GetGhostTetromino() const
 		movedTetromino.Move(0, 1);
 
 		if (!board.CanPlace(movedTetromino))
-		{
 			break;
-		}
 
 		ghostTetromino = movedTetromino;
 	}
@@ -373,21 +420,21 @@ Tetromino GameplaySession::GetGhostTetromino() const
 
 void GameplaySession::LockAndScan()
 {
-	pendingEvents.landed = true;
+	pendingEvents.hasLanded = true;
 	pendingEvents.landedBlocks = currentTetromino.GetBlockPositions();
 
 	// T-spin check happens against the resting position, before this piece's
-	// own cells join the board (they're never diagonal from its centre, so it
+	// own cells join the board (they're never diagonal from its center, so it
 	// wouldn't matter either way, but the intent reads clearer this way).
-	const TSpinRule::Result tSpin = TSpinRule::Detect(board, currentTetromino, lastActionWasRotation);
+	const TSpinRule::Result tSpin = TSpinRule::DetectTSpin(board, currentTetromino, wasLastActionRotation);
 
 	// Lock-out: the piece came to rest without any part reaching the visible
 	// field, so the stack has overflowed the top.
-	const bool lockedOut = IsEntirelyInBuffer(currentTetromino);
+	const bool isLockedOut = IsEntirelyInBuffer(currentTetromino);
 
-	board.LockTetromino(currentTetromino, currentPieceIsGolden);
+	board.LockTetromino(currentTetromino, isCurrentPieceGolden);
 
-	if (lockedOut)
+	if (isLockedOut)
 	{
 		EndGame(GameOverReason::LockOut);
 		return;
@@ -402,7 +449,7 @@ void GameplaySession::LockAndScan()
 		// forward until then.
 		pendingTSpinResult = tSpin;
 
-		pendingEvents.rowsDetected = true;
+		pendingEvents.hasDetectedRows = true;
 		pendingEvents.detectedRows = fullRows;
 
 		clearingRows = fullRows;
@@ -420,14 +467,12 @@ void GameplaySession::LockAndScan()
 	{
 		score += (tSpin == TSpinRule::Result::Full ? TSpinNoClearScore : TSpinMiniNoClearScore) * level;
 
-		pendingEvents.tSpin = true;
-		pendingEvents.tSpinMini = tSpin == TSpinRule::Result::Mini;
+		pendingEvents.isTSpin = true;
+		pendingEvents.isTSpinMini = tSpin == TSpinRule::Result::Mini;
 	}
 
 	if (!SpawnNextTetromino())
-	{
 		EndGame(GameOverReason::BlockOut);
-	}
 }
 
 bool GameplaySession::SpawnNextTetromino()
@@ -437,27 +482,25 @@ bool GameplaySession::SpawnNextTetromino()
 	// tops out fails the spawn exactly like an unspawnable position would.
 	if (escalation.ConsumePendingGarbageRow())
 	{
-		if (!board.PushGarbageRow(Random::Int(0, Board::WIDTH - 1)))
-		{
+		if (!board.PushGarbageRow(Random::Int(0, Board::Width - 1)))
 			return false;
-		}
-		pendingEvents.garbagePushed = true;
+		pendingEvents.hasGarbagePushed = true;
 	}
 
 	const Tetromino::Type type = nextQueue.front();
 	nextQueue.pop_front();
 	nextQueue.push_back(tetrominoBag.Next());
-	++spawnCount;
+	spawnCount++;
 
 	currentTetromino = { type, SpawnPosition };
-	currentPieceIsGolden = escalation.ShouldSpawnGoldenPiece();
+	isCurrentPieceGolden = escalation.ShouldSpawnGoldenPiece();
 
 	ResetLockState();
 
 	// A genuinely new piece is in play, so hold is available again. (Hold()
 	// itself also reaches this path the first time it's used, in which case it
-	// immediately sets holdUsedThisTurn back to true afterwards.)
-	holdUsedThisTurn = false;
+	// immediately sets wasHoldUsedThisTurn back to true afterwards.)
+	wasHoldUsedThisTurn = false;
 
 	return board.CanPlace(currentTetromino);
 }
@@ -472,7 +515,7 @@ void GameplaySession::ResetLockState()
 	lockTimer = 0.f;
 	lockResets = 0;
 	lowestRow = PieceBottomRow();
-	lastActionWasRotation = false;
+	wasLastActionRotation = false;
 }
 
 float GameplaySession::GravityDelayForLevel(int level)
@@ -491,9 +534,7 @@ int GameplaySession::PieceBottomRow() const
 {
 	int bottom = 0;
 	for (const sf::Vector2i& block : currentTetromino.GetBlockPositions())
-	{
 		bottom = std::max(bottom, block.y);
-	}
 	return bottom;
 }
 
@@ -510,7 +551,7 @@ void GameplaySession::OnPieceDescended()
 	// behind no longer applies -- except a hard drop's fall, which never calls
 	// this (see HardDrop()), so rotating into a spin and hard-dropping it still
 	// counts.
-	lastActionWasRotation = false;
+	wasLastActionRotation = false;
 
 	const int bottom = PieceBottomRow();
 	if (bottom > lowestRow)
@@ -537,7 +578,7 @@ void GameplaySession::OnPieceShifted()
 	if (lockResets < MaxLockResets && IsResting())
 	{
 		lockTimer = 0.f;
-		++lockResets;
+		lockResets++;
 	}
 }
 
@@ -545,20 +586,15 @@ void GameplaySession::EndGame(GameOverReason reason)
 {
 	phase = Phase::GameOver;
 	gameOverReason = reason;
-	pendingEvents.gameOver = true;
+	pendingEvents.isGameOver = true;
 	pendingEvents.gameOverReason = reason;
 }
 
 bool GameplaySession::IsEntirelyInBuffer(const Tetromino& tetromino)
 {
 	for (const sf::Vector2i& block : tetromino.GetBlockPositions())
-	{
 		if (block.y >= Board::BufferHeight)
-		{
 			return false;
-		}
-	}
 
 	return true;
 }
-

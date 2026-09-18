@@ -4,12 +4,15 @@
 
 #include <SFML/Graphics/Color.hpp>
 
+#include "../gameplay/Tetromino.h"
+
 namespace UI
 {
-	// The seven classic tetromino colours (I, O, T, S, Z, J, L) -- the game's
+	// The seven classic tetromino colors (I, O, T, S, Z, J, L) -- the game's
 	// signature palette, shared by the title letters, the ring entries and the
 	// ambient menu sparks.
-	inline constexpr std::array<sf::Color, 7> TetrominoColours{
+	inline constexpr std::array<sf::Color, static_cast<std::size_t>(Tetromino::Type::Count)> TetrominoColors
+	{
 		sf::Color{ 0, 240, 240 },    // I - cyan
 		sf::Color{ 245, 220, 40 },   // O - yellow
 		sf::Color{ 180, 60, 240 },   // T - purple
@@ -20,5 +23,5 @@ namespace UI
 	};
 
 	// A disabled menu entry's flat grey.
-	inline constexpr sf::Color DisabledEntryColour{ 146, 150, 158 };
+	inline constexpr sf::Color DisabledEntryColor{ 146, 150, 158 };
 }

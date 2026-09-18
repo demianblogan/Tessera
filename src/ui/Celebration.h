@@ -14,7 +14,7 @@ namespace sf
 namespace UI
 {
 	// The high-score flourish on the game-over screen: firework shells that rise
-	// from below the screen and burst in warm colours, plus four continuous jets
+	// from below the screen and burst in warm colors, plus four continuous jets
 	// of sparks streaming out of the panel's corners. Additive, CPU particles.
 	// Fireworks draw behind the panel (RenderFireworks), the corner jets in front
 	// of it (RenderCornerSparks).
@@ -37,7 +37,7 @@ namespace UI
 			sf::Vector2f position;
 			sf::Vector2f velocity;
 			float fuse = 0.f;
-			sf::Color colour;
+			sf::Color color;
 		};
 
 		struct Spark
@@ -49,7 +49,7 @@ namespace UI
 			float maxLife = 1.f;
 			float gravity = 200.f;
 			float drag = 0.f;
-			sf::Color colour;
+			sf::Color color;
 		};
 
 		void Explode(const Rocket& rocket);
@@ -58,7 +58,7 @@ namespace UI
 		std::array<sf::Vector2f, 4> cornerDirections{};
 		std::array<float, 4> cornerFlash{};
 		std::array<float, 4> cornerFlashTimer{};
-		bool cornersSet = false;
+		bool isCornersSet = false;
 
 		std::vector<Rocket> rockets;
 		std::vector<Spark> burstSparks;

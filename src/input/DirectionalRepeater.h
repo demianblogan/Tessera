@@ -24,7 +24,19 @@ public:
 
 private:
 	Timing timing;
+
+	// The direction currently "charged" (-1, 0, +1). A change from one held
+	// direction straight to the other -- not just release -- counts as a fresh
+	// press and restarts the charge below.
 	int activeDirection = 0;
+
+	// How long activeDirection has been held without a reset, counted up to
+	// timing.delayedAutoShift before auto-repeat is allowed to start.
 	float heldTime = 0.f;
+
+	// Time banked toward the next auto-repeat step once the DAS delay has
+	// passed. Accumulating instead of stepping once per frame means a single
+	// long frame (a stall, a lost window focus) still produces the right
+	// number of steps instead of dropping them.
 	float repeatAccumulator = 0.f;
 };

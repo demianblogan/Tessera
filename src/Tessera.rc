@@ -1,0 +1,4 @@
+// The application icon shown in Explorer, the taskbar and Alt+Tab -- the
+// window itself is borderless fullscreen with no title bar, so this resource
+// is the only place the icon is actually visible.
+IDI_ICON1 ICON "../assets/other/icon.ico"

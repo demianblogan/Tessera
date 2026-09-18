@@ -18,8 +18,8 @@ namespace TSpinRule
 	};
 
 	// `piece` is the T resting at its final position, about to lock.
-	// `lastActionWasRotation` must be true -- a T-spin is only ever the payoff
+	// `isLastActionRotation` must be true -- a T-spin is only ever the payoff
 	// of a rotation, never of sliding or falling into place -- or this always
 	// returns None. Also always None for anything other than a T piece.
-	[[nodiscard]] Result Detect(const Board& board, const Tetromino& piece, bool lastActionWasRotation);
+	[[nodiscard]] Result DetectTSpin(const Board& board, const Tetromino& piece, bool isLastActionRotation);
 }

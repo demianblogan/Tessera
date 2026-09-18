@@ -5,22 +5,26 @@
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "ColourUtils.h"
-#include "Easing.h"
+#include "ColorUtils.h"
+#include "../utils/Easing.h"
 
 namespace
 {
 	constexpr unsigned int HeaderTextSize = 110;
-	constexpr sf::Vector2f HeaderCentre{ 960.f, 120.f };
+	constexpr sf::Vector2f HeaderCenter{ 960.f, 120.f };
 
 	constexpr float RiseDuration = 0.28f;
 	constexpr float SinkDuration = 0.24f;
 
 	constexpr float GlowIntensity = 0.55f;
 	constexpr float GlowBreathSpeed = 2.0f;
+	constexpr float GlowBreathBase = 0.85f;
+	constexpr float GlowBreathAmplitude = 0.15f;
 
-	using UI::Easing::EaseOutCubic;
-	using UI::Easing::Lerp;
+	constexpr float RiseAlphaRampRate = 1.6f;   // how fast the rising header fades in, vs. its rise timer
+
+	using Easing::EaseOutCubic;
+	using Easing::Lerp;
 }
 
 namespace UI
@@ -31,26 +35,31 @@ namespace UI
 	{
 	}
 
-	void MenuHeader::RiseFrom(sf::Vector2f fromCentre, float fromHeight, const sf::String& text, sf::Color newColour)
+	void MenuHeader::RiseFrom(sf::Vector2f fromCenter, float fromHeight, const sf::String& text, sf::Color newColor)
 	{
-		colour = newColour;
+		color = newColor;
 		label.SetText(text);
 
-		fromPosition = fromCentre;
-		toPosition = HeaderCentre;
-		fromScale = std::max(fromHeight, 1.f) / label.InkSize().y;
+		fromPosition = fromCenter;
+		toPosition = HeaderCenter;
+		fromScale = std::max(fromHeight, 1.f) / label.GetInkSize().y;
 		toScale = 1.f;
 
 		mode = Mode::Rising;
 		timer = 0.f;
 	}
 
-	void MenuHeader::SinkTo(sf::Vector2f toCentre, float toHeight)
+	void MenuHeader::SetText(const sf::String& text)
 	{
-		fromPosition = HeaderCentre;
-		toPosition = toCentre;
+		label.SetText(text);
+	}
+
+	void MenuHeader::SinkTo(sf::Vector2f toCenter, float toHeight)
+	{
+		fromPosition = HeaderCenter;
+		toPosition = toCenter;
 		fromScale = 1.f;
-		toScale = std::max(toHeight, 1.f) / label.InkSize().y;
+		toScale = std::max(toHeight, 1.f) / label.GetInkSize().y;
 
 		mode = Mode::Sinking;
 		timer = 0.f;
@@ -80,18 +89,18 @@ namespace UI
 		}
 	}
 
-	MenuHeader::Pose MenuHeader::CurrentPose() const
+	MenuHeader::Pose MenuHeader::GetCurrentPose() const
 	{
 		if (mode == Mode::Shown)
 		{
 			return { toPosition, toScale, 1.f };
 		}
 
-		const float e = EaseOutCubic(timer);
+		const float ease = EaseOutCubic(timer);
 		Pose pose;
-		pose.position = Lerp(fromPosition, toPosition, e);
-		pose.scale = Lerp(fromScale, toScale, e);
-		pose.alpha = mode == Mode::Rising ? std::min(1.f, timer * 1.6f) : 1.f - timer;
+		pose.position = Lerp(fromPosition, toPosition, ease);
+		pose.scale = Lerp(fromScale, toScale, ease);
+		pose.alpha = mode == Mode::Rising ? std::min(1.f, timer * RiseAlphaRampRate) : 1.f - timer;
 		return pose;
 	}
 
@@ -102,17 +111,17 @@ namespace UI
 			return;
 		}
 
-		const Pose pose = CurrentPose();
+		const Pose pose = GetCurrentPose();
 		if (pose.alpha <= 0.f)
 		{
 			return;
 		}
 
-		const float breath = 0.85f + 0.15f * std::sin(animTime * GlowBreathSpeed);
-		const sf::Color glowTint = ScaleRgb(colour, GlowIntensity * breath * std::clamp(pose.alpha, 0.f, 1.f));
+		const float breath = GlowBreathBase + GlowBreathAmplitude * std::sin(animTime * GlowBreathSpeed);
+		const sf::Color glowTint = ScaleRgb(color, GlowIntensity * breath * std::clamp(pose.alpha, 0.f, 1.f));
 
 		label.DrawGlow(target, glow, pose.position, pose.scale, glowTint);
-		label.Draw(target, pose.position, pose.scale, colour, pose.alpha);
+		label.Draw(target, pose.position, pose.scale, color, pose.alpha);
 	}
 
 	bool MenuHeader::IsIdle() const

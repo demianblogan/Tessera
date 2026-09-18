@@ -23,7 +23,7 @@ game_over.level      = LEVEL
 game_over.time       = TIME
 game_over.new_record  = NEW BEST
 game_over.enter_name  = Enter your name
-game_over.save_record = Save Record
+game_over.save_record = Save
 game_over.saved       = Saved
 game_over.unsaved_record = Leave without saving your record?
 game_over.play_again  = Play Again
@@ -37,7 +37,6 @@ options.audio    = Audio
 options.controls = Controls
 options.language = Language
 options.back     = Back
-options.coming_soon = Coming soon.
 
 options.controls_keyboard = Keyboard
 options.controls_gamepad  = Gamepad
@@ -63,10 +62,11 @@ options.hud_time            = Show Time:
 options.hud_controls_legend = Show Controls Legend:
 
 options.language_english   = English
-options.language_spanish   = Spanish
-options.language_german    = German
-options.language_russian   = Russian
-options.language_ukrainian = Ukrainian
+options.language_spanish   = Español
+options.language_german    = Deutsch
+options.language_russian   = Русский
+options.language_ukrainian = Українська
+options.language_selected  = Selected
 
 options.key_move_left   = Move Piece Left
 options.key_move_right  = Move Piece Right
@@ -75,7 +75,6 @@ options.key_hard_drop   = Drop Piece
 options.key_rotate_cw   = Rotate Piece Right
 options.key_rotate_ccw  = Rotate Piece Left
 options.key_hold        = Hold Piece
-options.key_pause       = Pause
 
 options.gamepad_xbox        = XBOX
 options.gamepad_playstation = PlayStation
@@ -120,9 +119,7 @@ records.reset         = Reset
 records.back          = Back
 records.confirm_reset = Delete every record?
 
-loading.audio     = Loading Audio...
-loading.music     = Loading Music...
-loading.interface = Loading Interface...
+loading.label = Loading...
 
 hud.hold  = HOLD
 hud.next  = NEXT
@@ -131,7 +128,6 @@ hud.lines = LINES
 hud.level = LEVEL
 hud.time  = TIME
 
-hud.controls  = CONTROLS
 hud.move      = Move
 hud.rotate    = Rotate
 hud.soft_drop = Soft Drop

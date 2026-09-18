@@ -27,10 +27,13 @@
     <ClCompile Include="src\core\State.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\NineSliceFrame.cpp">
+    <ClCompile Include="src\primitives\NineSliceFrame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\CompanySplashState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\states\LanguagePickerState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\LoadingState.cpp">
@@ -39,43 +42,43 @@
     <ClCompile Include="src\loading\AssetLoadJob.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\MenuShell.cpp">
+    <ClCompile Include="src\states\MenuShellState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\ScreenHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\MenuScreen.cpp">
+    <ClCompile Include="src\ui\screens\MenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\MainMenuScreen.cpp">
+    <ClCompile Include="src\ui\screens\MainMenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\CreditsScreen.cpp">
+    <ClCompile Include="src\ui\screens\CreditsScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\OptionsScreen.cpp">
+    <ClCompile Include="src\ui\screens\OptionsScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\AudioCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\AudioCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\SettingsCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\SettingsCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\GraphicsCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\GraphicsCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\KeyboardCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\KeyboardCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\GamepadCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\GamepadCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\GameplayCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\GameplayCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\HudCategoryPanel.cpp">
+    <ClCompile Include="src\ui\panels\HUDCategoryPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\input\KeyName.cpp">
@@ -90,7 +93,10 @@
     <ClCompile Include="src\audio\AudioBalance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\config\HapticSettings.cpp">
+    <ClCompile Include="src\audio\MusicPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\haptics\HapticSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\audio\AudioPlayer.cpp">
@@ -102,7 +108,7 @@
     <ClCompile Include="src\core\StateMachine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\RecordsScreen.cpp">
+    <ClCompile Include="src\ui\screens\RecordsScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\settings\SettingsManager.cpp">
@@ -112,12 +118,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\display\DisplayManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\Slider.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\Element.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\CarouselMenu.cpp">
@@ -147,7 +147,7 @@
     <ClCompile Include="src\ui\MenuButtonColumn.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\PixelDust.cpp">
+    <ClCompile Include="src\primitives\PixelDust.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\MenuSparks.cpp">
@@ -168,10 +168,10 @@
     <ClCompile Include="src\rendering\EffectsController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\NeonGlow.cpp">
+    <ClCompile Include="src\primitives\NeonGlow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\GameplayHud.cpp">
+    <ClCompile Include="src\rendering\GameplayHUD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\SceneMotion.cpp">
@@ -180,7 +180,7 @@
     <ClCompile Include="src\input\InputBinding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\input\GamepadManager.cpp">
+    <ClCompile Include="src\input\gamepad\GamepadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\input\gamepad\GamepadHaptics.cpp">
@@ -216,6 +216,9 @@
     <ClCompile Include="src\states\GameplayState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\states\GameplayInputController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\utils\Random.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -231,16 +234,13 @@
     <ClCompile Include="src\states\PauseState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\PauseMenuScreen.cpp">
+    <ClCompile Include="src\ui\screens\PauseMenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\states\PlayTransition.cpp">
+    <ClCompile Include="src\states\PlayTransitionState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\states\GameOverState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\resources\ShaderManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -248,7 +248,7 @@
     <ClInclude Include="src\app\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\NineSliceFrame.h">
+    <ClInclude Include="src\primitives\NineSliceFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\TextLayout.h">
@@ -260,6 +260,9 @@
     <ClInclude Include="src\states\CompanySplashState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\states\LanguagePickerState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\states\LoadingState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -269,55 +272,55 @@
     <ClInclude Include="src\loading\LoadingProgress.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\MenuShell.h">
+    <ClInclude Include="src\states\MenuShellState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\ScreenHost.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\MenuScreen.h">
+    <ClInclude Include="src\ui\screens\MenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\MainMenuScreen.h">
+    <ClInclude Include="src\ui\screens\MainMenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\CreditsScreen.h">
+    <ClInclude Include="src\ui\screens\CreditsScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\OptionsScreen.h">
+    <ClInclude Include="src\ui\screens\OptionsScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\OptionsCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\OptionsCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\AudioCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\AudioCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\OptionsSfx.h">
+    <ClInclude Include="src\ui\panels\OptionsSfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\SettingsCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\SettingsCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\KeyboardCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\KeyboardCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\GamepadCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\GamepadCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\GameplayCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\GameplayCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\HudCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\HUDCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\ControlsPanelMetrics.h">
+    <ClInclude Include="src\ui\panels\ControlsPanelMetrics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\input\KeyName.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\GraphicsCategoryPanel.h">
+    <ClInclude Include="src\ui\panels\GraphicsCategoryPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\OptionRow.h">
@@ -341,6 +344,9 @@
     <ClInclude Include="src\audio\AudioBalance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\audio\MusicPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\audio\AudioPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -356,7 +362,7 @@
     <ClInclude Include="src\core\StateMachine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\RecordsScreen.h">
+    <ClInclude Include="src\ui\screens\RecordsScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\settings\GameSettings.h">
@@ -368,19 +374,16 @@
     <ClInclude Include="src\display\DisplayManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\display\DisplayMode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\Element.h">
+    <ClInclude Include="src\display\DisplaySettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\CarouselMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\ColourUtils.h">
+    <ClInclude Include="src\ui\ColorUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\Easing.h">
+    <ClInclude Include="src\utils\Easing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\DropInTitle.h">
@@ -413,16 +416,13 @@
     <ClInclude Include="src\ui\MenuButtonColumn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\PixelDust.h">
+    <ClInclude Include="src\primitives\PixelDust.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\MenuSparks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\Celebration.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\Slider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gameplay\Tetromino.h">
@@ -440,10 +440,10 @@
     <ClInclude Include="src\rendering\EffectsController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\NeonGlow.h">
+    <ClInclude Include="src\primitives\NeonGlow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\GameplayHud.h">
+    <ClInclude Include="src\rendering\GameplayHUD.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\SceneMotion.h">
@@ -458,7 +458,7 @@
     <ClInclude Include="src\input\InputHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\input\GamepadManager.h">
+    <ClInclude Include="src\input\gamepad\GamepadManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\input\gamepad\GamepadHaptics.h">
@@ -467,7 +467,7 @@
     <ClInclude Include="src\input\gamepad\HapticPulse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\config\HapticSettings.h">
+    <ClInclude Include="src\haptics\HapticSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="libs\DualSenseWindows\include\DualSenseWindows\Device.h">
@@ -500,6 +500,12 @@
     <ClInclude Include="src\input\MenuInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\localization\Language.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\localization\LanguageColors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\localization\LocalizationManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -513,6 +519,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GameplayState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\states\GameplayInputController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\Random.h">
@@ -533,23 +542,19 @@
     <ClInclude Include="src\states\PauseState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\PauseMenuScreen.h">
+    <ClInclude Include="src\ui\screens\PauseMenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\states\PlayTransition.h">
+    <ClInclude Include="src\states\PlayTransitionState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\states\GameOverState.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\resources\ShaderManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\ghost_tetromino.frag" />
     <None Include="assets\shaders\crt.frag" />
-    <None Include="assets\shaders\blur.frag" />
     <None Include="assets\shaders\neon_dilate.frag" />
     <None Include="assets\shaders\neon_blur.frag" />
     <None Include="assets\shaders\menu_aurora.frag" />
@@ -557,7 +562,17 @@
     <None Include="README.md" />
     <None Include="BACKLOG.md" />
     <None Include="assets\data\localization\en.txt" />
+    <None Include="assets\data\localization\es.txt" />
+    <None Include="assets\data\localization\de.txt" />
+    <None Include="assets\data\localization\ru.txt" />
+    <None Include="assets\data\localization\uk.txt" />
+    <None Include="assets\data\localization\language_picker_prompt.txt" />
     <None Include="assets\data\audio_balance.json" />
     <None Include="assets\data\haptics.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\Tessera.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

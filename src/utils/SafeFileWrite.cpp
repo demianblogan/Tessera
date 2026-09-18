@@ -28,9 +28,7 @@ namespace SafeFileWrite
 
 		std::filesystem::rename(targetPath, backupPath, error);
 		if (HasFailed(error))
-		{
 			return false;
-		}
 
 		std::filesystem::rename(temporaryPath, targetPath, error);
 		if (HasFailed(error))
@@ -60,9 +58,7 @@ namespace SafeFileWrite
 		}
 
 		if (HasFailed(error))
-		{
 			return false;
-		}
 
 		std::filesystem::rename(path, corruptPath, error);
 
