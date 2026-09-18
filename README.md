@@ -21,10 +21,6 @@
   <a href="https://www.youtube.com/watch?v=gs816D4Nyzo">Full playthrough</a>
 </p>
 
-<p align="center">
-  <img src="docs/media/cover.jpg" alt="Tessera" width="900">
-</p>
-
 ---
 
 ## What it is
@@ -38,12 +34,12 @@ doubles whatever you clear with it. Chase a spot on the local top-10 board.
 
 <table align="center">
   <tr>
-    <td align="center"><img src="docs/media/menu.webp" width="380"><br><sub>Main menu</sub></td>
-    <td align="center"><img src="docs/media/language-picker.webp" width="380"><br><sub>First-run language picker</sub></td>
+    <td align="center"><img src="docs/media/menu.gif" width="380"><br><sub>Main menu</sub></td>
+    <td align="center"><img src="docs/media/gameplay1.gif" width="380"><br><sub>Gameplay</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/media/gameplay1.webp" width="380"><br><sub>Gameplay</sub></td>
-    <td align="center"><img src="docs/media/gameplay2.webp" width="380"><br><sub>A fresh drop</sub></td>
+    <td align="center"><img src="docs/media/options.gif" width="380"><br><sub>Options</sub></td>
+    <td align="center"><img src="docs/media/pause.gif" width="380"><br><sub>Pause menu</sub></td>
   </tr>
 </table>
 
