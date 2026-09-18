@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><b>▶ Play on itch.io</b></a> <sub>(coming soon)</sub>
+  <a href="https://demianblogan.itch.io/tessera"><b>▶ Play on itch.io</b></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/demianblogan/Tessera/releases/latest">Latest release</a>
   &nbsp;·&nbsp;
@@ -59,7 +59,7 @@ doubles whatever you clear with it. Chase a spot on the local top-10 board.
 
 ## Download & play
 
-- **Play on itch.io** — coming soon
+- **[Play on itch.io](https://demianblogan.itch.io/tessera)** — store page with screenshots
 - **[Download the latest release from GitHub](https://github.com/demianblogan/Tessera/releases/latest)**
 
 1. Download `Tessera-vX.Y.Z-win64.zip`
