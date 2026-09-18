@@ -34,16 +34,17 @@ bool StateMachine::HasPendingChanges() const noexcept
 void StateMachine::ApplyPendingChanges()
 {
 	if (pendingTransitions.empty())
-	{
 		return;
-	}
 
-	std::vector<State*> before;
-	before.reserve(states.size());
+	// Snapshot of every state already on the stack, taken before this batch of
+	// transitions runs. Used below to tell a state that was already on the
+	// stack and is merely revealed by a Pop (which should get OnResume()) apart
+	// from a state freshly Pushed in this same batch (which shouldn't -- it
+	// just ran its own constructor and has nothing to "resume").
+	std::vector<State*> statesBeforeTransitions;
+	statesBeforeTransitions.reserve(states.size());
 	for (const std::unique_ptr<State>& state : states)
-	{
-		before.push_back(state.get());
-	}
+		statesBeforeTransitions.push_back(state.get());
 
 	for (PendingTransition& transition : pendingTransitions)
 	{
@@ -73,22 +74,20 @@ void StateMachine::ApplyPendingChanges()
 	if (!states.empty())
 	{
 		State* top = states.back().get();
-		const bool revealed = !before.empty() && before.back() != top
-			&& std::find(before.begin(), before.end(), top) != before.end();
+		const bool isStateRevealed =
+			!statesBeforeTransitions.empty() &&
+			statesBeforeTransitions.back() != top &&
+			std::find(statesBeforeTransitions.begin(), statesBeforeTransitions.end(), top) != statesBeforeTransitions.end();
 
-		if (revealed)
-		{
+		if (isStateRevealed)
 			top->OnResume();
-		}
 	}
 }
 
 State* StateMachine::GetCurrentState()
 {
 	if (states.empty())
-	{
 		return nullptr;
-	}
 
 	return states.back().get();
 }
@@ -96,8 +95,5 @@ State* StateMachine::GetCurrentState()
 void StateMachine::RenderStates(sf::RenderTarget& target)
 {
 	for (const std::unique_ptr<State>& state : states)
-	{
 		state->Render(target);
-	}
 }
-

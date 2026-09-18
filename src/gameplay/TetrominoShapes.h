@@ -17,12 +17,12 @@
 
 namespace TetrominoShapes
 {
-	inline constexpr int BLOCK_COUNT = 4;
-	inline constexpr int MATRIX_SIZE = 4;
-	inline constexpr int ROTATION_COUNT = 4;
+	inline constexpr int BlockCount = 4;
+	inline constexpr int MatrixSize = 4;
+	inline constexpr int RotationCount = 4;
 
-	using ShapeMatrix = std::array<std::string_view, MATRIX_SIZE>;
-	using RotationSet = std::array<ShapeMatrix, ROTATION_COUNT>;
+	using ShapeMatrix = std::array<std::string_view, MatrixSize>;
+	using RotationSet = std::array<ShapeMatrix, RotationCount>;
 
 	inline constexpr RotationSet I
 	{

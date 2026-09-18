@@ -4,17 +4,16 @@
 
 #include "../utils/Random.h"
 
-TetrominoBag::TetrominoBag(bool sevenBagEnabled)
-    : sevenBagEnabled(sevenBagEnabled)
-{
-    // No code
-}
+TetrominoBag::TetrominoBag(bool isSevenBagEnabled)
+    : isSevenBagEnabled(isSevenBagEnabled)
+{}
 
 Tetromino::Type TetrominoBag::Next()
 {
-    if (!sevenBagEnabled)
+    if (!isSevenBagEnabled)
     {
-        return static_cast<Tetromino::Type>(Random::Int(0, 6));
+        constexpr int LastTypeIndex = static_cast<int>(Tetromino::Type::Count) - 1;
+        return static_cast<Tetromino::Type>(Random::Int(0, LastTypeIndex));
     }
 
     if (bag.empty())

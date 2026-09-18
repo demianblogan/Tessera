@@ -2,7 +2,6 @@
 
 #include <array>
 #include <fstream>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -18,7 +17,11 @@ namespace
 {
 	using Json = nlohmann::json;
 
-	constexpr std::array<std::pair<std::string_view, Tetromino::Type>, 7> Pieces = { {
+	using PieceEntry = std::pair<std::string_view, Tetromino::Type>;
+	constexpr std::size_t PieceTypeCount = static_cast<std::size_t>(Tetromino::Type::Count);
+
+	constexpr std::array<PieceEntry, PieceTypeCount> Pieces =
+	{ {
 		{ "I", Tetromino::Type::I },
 		{ "O", Tetromino::Type::O },
 		{ "T", Tetromino::Type::T },
@@ -32,110 +35,85 @@ namespace
 	// TetrominoShapes / PieceData parse. The views point into `storage`.
 	struct StateRows
 	{
-		std::array<std::string, TetrominoShapes::MATRIX_SIZE> storage;
+		std::array<std::string, TetrominoShapes::MatrixSize> storage;
+
 		TetrominoShapes::ShapeMatrix Views() const
 		{
 			TetrominoShapes::ShapeMatrix views{};
-			for (std::size_t i = 0; i < storage.size(); ++i)
-			{
+			for (std::size_t i = 0; i < storage.size(); i++)
 				views[i] = storage[i];
-			}
 			return views;
 		}
 	};
 
 	[[nodiscard]] std::optional<PieceData::Rotations> ReadRotations(const Json& rotations)
 	{
-		if (!rotations.is_array() || rotations.size() != TetrominoShapes::ROTATION_COUNT)
-		{
+		if (!rotations.is_array() || rotations.size() != TetrominoShapes::RotationCount)
 			return std::nullopt;
-		}
 
-		std::array<StateRows, TetrominoShapes::ROTATION_COUNT> owned{};
+		std::array<StateRows, TetrominoShapes::RotationCount> owned{};
 
-		for (std::size_t state = 0; state < TetrominoShapes::ROTATION_COUNT; ++state)
+		for (std::size_t state = 0; state < TetrominoShapes::RotationCount; state++)
 		{
 			const Json& grid = rotations[state];
-			if (!grid.is_array() || grid.size() != TetrominoShapes::MATRIX_SIZE)
-			{
+			if (!grid.is_array() || grid.size() != TetrominoShapes::MatrixSize)
 				return std::nullopt;
-			}
 
-			for (std::size_t row = 0; row < TetrominoShapes::MATRIX_SIZE; ++row)
+			for (std::size_t row = 0; row < TetrominoShapes::MatrixSize; row++)
 			{
 				if (!grid[row].is_string())
-				{
 					return std::nullopt;
-				}
+
 				owned[state].storage[row] = grid[row].get<std::string>();
 			}
 		}
 
 		TetrominoShapes::RotationSet views{};
-		for (std::size_t state = 0; state < TetrominoShapes::ROTATION_COUNT; ++state)
-		{
+		for (std::size_t state = 0; state < TetrominoShapes::RotationCount; state++)
 			views[state] = owned[state].Views();
-		}
 
 		return PieceData::ParseShape(views);
 	}
 }
 
+// A missing/invalid file, a missing "pieces" object, or any one piece being
+// malformed just leaves that piece (or all of them) at its built-in SRS
+// shape -- pieces.json is an optional authoring override, not a requirement.
 void PieceDataFile::Load(const std::filesystem::path& path)
 {
 	std::ifstream file(path);
 	if (!file.is_open())
-	{
-		std::cerr << "WARNING: piece data file not found at \"" << path.string()
-			<< "\" -- using the built-in SRS shapes.\n";
 		return;
-	}
 
 	Json data;
+
 	try
 	{
 		data = Json::parse(file);
 	}
-	catch (const Json::exception& exception)
+	catch (const Json::exception&)
 	{
-		std::cerr << "WARNING: piece data file \"" << path.string()
-			<< "\" is invalid (" << exception.what() << ") -- using the built-in SRS shapes.\n";
 		return;
 	}
 
 	const auto pieces = data.find("pieces");
 	if (pieces == data.end() || !pieces->is_object())
-	{
-		std::cerr << "WARNING: piece data file \"" << path.string()
-			<< "\" has no \"pieces\" object -- using the built-in SRS shapes.\n";
 		return;
-	}
 
 	for (const auto& [name, type] : Pieces)
 	{
 		const auto piece = pieces->find(name);
 		if (piece == pieces->end())
-		{
 			continue;
-		}
 
 		const auto rotations = piece->find("rotations");
 		if (rotations == piece->end())
-		{
-			std::cerr << "WARNING: piece \"" << name << "\" in \"" << path.string()
-				<< "\" has no \"rotations\" -- keeping its built-in shape.\n";
 			continue;
-		}
 
-		const std::optional<PieceData::Rotations> parsed = ReadRotations(*rotations);
-		if (!parsed)
-		{
-			std::cerr << "WARNING: piece \"" << name << "\" in \"" << path.string()
-				<< "\" is malformed (need 4 states of 4 rows with 4 blocks each)"
-				<< " -- keeping its built-in shape.\n";
+		const std::optional<PieceData::Rotations> parsedRotations = ReadRotations(*rotations);
+		if (!parsedRotations.has_value())
 			continue;
-		}
 
-		PieceData::SetRotations(type, *parsed);
+		PieceData::SetRotations(type, *parsedRotations);
 	}
 }

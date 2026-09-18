@@ -44,41 +44,41 @@ public:
 	// SoftDropStep / HardDrop / Update call, accumulated until ConsumeEvents().
 	struct Events
 	{
-		bool landed = false;
-		std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> landedBlocks{};
+		bool hasLanded = false;
+		std::array<sf::Vector2i, TetrominoShapes::BlockCount> landedBlocks{};
 
-		bool rowsDetected = false;
+		bool hasDetectedRows = false;
 		std::vector<int> detectedRows;
 
-		bool rowsCleared = false;
+		bool hasClearedRows = false;
 		int clearedRowCount = 0;
 
 		// 0 on an isolated clear; increments with each clear that directly
 		// follows another (no non-clearing lock in between). Meaningless unless
-		// rowsCleared is true.
+		// hasClearedRows is true.
 		int comboCount = 0;
 		// True if this clear's line-clear score got the back-to-back bonus (a
 		// Tetris or a T-spin clear directly following another one).
-		bool backToBack = false;
+		bool hasBackToBack = false;
 		// True if this clear left the board completely empty.
-		bool perfectClear = false;
+		bool isPerfectClear = false;
 
 		// This lock was recognised as a T-spin (the three-corner rule, and the
 		// last thing done to the piece was a rotation) -- set whether or not it
-		// cleared any lines. tSpinMini distinguishes Mini from full.
-		bool tSpin = false;
-		bool tSpinMini = false;
+		// cleared any lines. isTSpinMini distinguishes Mini from full.
+		bool isTSpin = false;
+		bool isTSpinMini = false;
 
-		bool leveledUp = false;
+		bool hasLeveledUp = false;
 
 		// Escalation (see EscalationDirector): a Speed Surge starting/ending, and
 		// whether this clear included a golden lock (its score was doubled).
-		bool speedSurgeStarted = false;
-		bool speedSurgeEnded = false;
-		bool goldenLineBonus = false;
-		bool garbagePushed = false;
+		bool hasSpeedSurgeStarted = false;
+		bool hasSpeedSurgeEnded = false;
+		bool hasGoldenLineBonus = false;
+		bool hasGarbagePushed = false;
 
-		bool gameOver = false;
+		bool isGameOver = false;
 		GameOverReason gameOverReason = GameOverReason::None;
 	};
 
@@ -88,7 +88,7 @@ public:
 	struct Config
 	{
 		int nextQueueLength = 5;   // clamped to [1, 6]
-		bool sevenBagEnabled = true;
+		bool isSevenBagEnabled = true;
 	};
 
 	explicit GameplaySession(Config config = {});
@@ -96,61 +96,61 @@ public:
 	// Input intents. The horizontal / rotate calls return whether the piece
 	// actually moved so the caller can drive its own move / wall-contact
 	// feedback; landing-related consequences arrive through ConsumeEvents().
-	bool MoveHorizontal(int direction);
-	bool Rotate(bool clockwise);
-	void SoftDropStep();
-	void HardDrop();
+	bool MoveTetrominoHorizontal(int direction);
+	bool RotateTetromino(bool isClockwise);
+	void SoftDropTetrominoStep();
+	void HardDropTetromino();
 
 	// Swap the active piece into the hold slot: the first time, it stashes the
 	// active piece and draws the next queued one; after that, it swaps with
 	// whatever is already held. Once per piece in play -- false if hold was
 	// already used this piece, or nothing is falling.
-	bool Hold();
+	bool HoldTetromino();
 
 	// Gravity plus the row-clear delay countdown.
 	void Update(float deltaTime);
 
 	[[nodiscard]] Events ConsumeEvents();
 
-	[[nodiscard]] Phase GetPhase() const { return phase; }
-	[[nodiscard]] bool IsFalling() const { return phase == Phase::Falling; }
-	[[nodiscard]] GameOverReason GetGameOverReason() const { return gameOverReason; }
+	[[nodiscard]] Phase GetPhase() const;
+	[[nodiscard]] bool IsFalling() const;
+	[[nodiscard]] GameOverReason GetGameOverReason() const;
 
-	[[nodiscard]] const Board& GetBoard() const { return board; }
-	[[nodiscard]] const Tetromino& GetCurrentTetromino() const { return currentTetromino; }
+	[[nodiscard]] const Board& GetBoard() const;
+	[[nodiscard]] const Tetromino& GetCurrentTetromino() const;
 	[[nodiscard]] Tetromino GetGhostTetromino() const;
 
 	// The upcoming pieces, in order (index 0 is the piece that spawns next).
-	[[nodiscard]] int GetNextCount() const { return static_cast<int>(nextQueue.size()); }
+	[[nodiscard]] int GetNextCount() const;
 	[[nodiscard]] Tetromino GetNextPiece(int index) const;
 
 	// How many times a piece has spawned so far. Purely a change signal for the
 	// renderer (e.g. to animate the next-queue sliding up) -- nothing here reads
 	// the count itself.
-	[[nodiscard]] int GetSpawnCount() const { return spawnCount; }
+	[[nodiscard]] int GetSpawnCount() const;
 
-	[[nodiscard]] bool HasHeldPiece() const { return heldType.has_value(); }
-	[[nodiscard]] bool CanHold() const { return !holdUsedThisTurn; }
+	[[nodiscard]] bool HasHeldPiece() const;
+	[[nodiscard]] bool CanHold() const;
 	// Only meaningful when HasHeldPiece() is true.
 	[[nodiscard]] Tetromino GetHeldPiece() const;
 
-	[[nodiscard]] const std::vector<int>& GetClearingRows() const { return clearingRows; }
+	[[nodiscard]] const std::vector<int>& GetClearingRows() const;
 
-	[[nodiscard]] int GetScore() const { return score; }
-	[[nodiscard]] int GetLevel() const { return level; }
-	[[nodiscard]] int GetLinesCleared() const { return totalLinesCleared; }
-	[[nodiscard]] float GetElapsedSeconds() const { return elapsedSeconds; }
+	[[nodiscard]] int GetScore() const;
+	[[nodiscard]] int GetLevel() const;
+	[[nodiscard]] int GetLinesCleared() const;
+	[[nodiscard]] float GetElapsedSeconds() const;
 
 	// True while the active piece is an escalation bonus piece (Chaos tier) --
 	// lost if it goes into Hold, since Hold swaps rather than spawns.
-	[[nodiscard]] bool IsCurrentPieceGolden() const { return currentPieceIsGolden; }
-	[[nodiscard]] EscalationDirector::Tier GetEscalationTier() const { return escalation.CurrentTier(); }
+	[[nodiscard]] bool IsCurrentPieceGolden() const;
+	[[nodiscard]] EscalationDirector::Tier GetEscalationTier() const;
 
 private:
 	// Guideline scoring: points per line clear (Single/Double/Triple/Tetris, by
 	// row count 1..4), multiplied by the level the clear happened at. Soft/hard
 	// drop award a small bonus per cell dropped, win or lose the race to lock.
-	static constexpr std::array<int, 4> LineClearScores = { 100, 300, 500, 800 };
+	static constexpr std::array LineClearScores = { 100, 300, 500, 800 };
 	static constexpr int SoftDropScorePerCell = 1;
 	static constexpr int HardDropScorePerCell = 2;
 
@@ -160,8 +160,8 @@ private:
 	// lock time, since ClearingRows is never entered for it.
 	static constexpr int TSpinNoClearScore = 400;
 	static constexpr int TSpinMiniNoClearScore = 100;
-	static constexpr std::array<int, 3> TSpinClearScores = { 800, 1200, 1600 };
-	static constexpr std::array<int, 2> TSpinMiniClearScores = { 200, 400 };
+	static constexpr std::array TSpinClearScores = { 800, 1200, 1600 };
+	static constexpr std::array TSpinMiniClearScores = { 200, 400 };
 
 	// Combo: 50 * comboCount * level, on top of the line-clear score, for every
 	// clear beyond the first in an unbroken chain of clears.
@@ -172,9 +172,13 @@ private:
 	// multiplier. A T-spin that clears nothing neither breaks nor extends this.
 	static constexpr float BackToBackMultiplier = 1.5f;
 
+	// Escalation's Chaos-tier bonus: a clear that took a golden lock doubles
+	// the line-clear score, on top of any back-to-back multiplier.
+	static constexpr int GoldenBonusMultiplier = 2;
+
 	// Perfect Clear: the board is completely empty after the clear. Indexed the
 	// same way as LineClearScores (by row count 1..4), added on top of it.
-	static constexpr std::array<int, 4> PerfectClearScores = { 800, 1200, 1800, 2000 };
+	static constexpr std::array PerfectClearScores = { 800, 1200, 1800, 2000 };
 
 	// A new level every this many total lines cleared.
 	static constexpr int LinesPerLevel = 10;
@@ -234,7 +238,7 @@ private:
 	int spawnCount = 0;
 
 	std::optional<Tetromino::Type> heldType;
-	bool holdUsedThisTurn = false;
+	bool wasHoldUsedThisTurn = false;
 
 	std::vector<int> clearingRows;
 	float clearTimer = 0.f;
@@ -245,19 +249,19 @@ private:
 	float elapsedSeconds = 0.f;
 
 	int comboCount = -1;         // -1 = not currently chaining clears
-	bool backToBackActive = false;
+	bool isBackToBackActive = false;
 
 	// True if the last thing done to the active piece was a successful
 	// rotation (cleared by any move, including gravity) -- required for a
 	// T-spin. Carries a lock's T-spin classification through the row-clear
 	// delay, since Update() resolves the actual clear later than LockAndScan().
-	bool lastActionWasRotation = false;
+	bool wasLastActionRotation = false;
 	TSpinRule::Result pendingTSpinResult = TSpinRule::Result::None;
 
 	GameOverReason gameOverReason = GameOverReason::None;
 
 	EscalationDirector escalation;
-	bool currentPieceIsGolden = false;
+	bool isCurrentPieceGolden = false;
 
 	Events pendingEvents;
 };

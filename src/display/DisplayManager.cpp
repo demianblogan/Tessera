@@ -12,8 +12,8 @@ namespace
 	constexpr const char* WindowTitle = "Tessera";
 
 	// Below this the UI (fixed 1920x1080, letterboxed) would be unreadably small.
-	constexpr unsigned int MinWidth = 1280u;
-	constexpr unsigned int MinHeight = 720u;
+	constexpr unsigned int MinDisplayWidth = 1280u;
+	constexpr unsigned int MinDisplayHeight = 720u;
 }
 
 namespace Display
@@ -22,13 +22,19 @@ namespace Display
 	{
 		desktop = sf::VideoMode::getDesktopMode().size;
 
-		std::vector<std::pair<unsigned int, unsigned int>> seen;
-		const auto add = [&](sf::Vector2u size)
+		// getFullscreenModes() can list the same resolution more than once (at
+		// different refresh rates / bit depths), and `desktop` can duplicate one
+		// of those entries -- this tracks which resolutions already made it into
+		// `resolutions` so each one is offered only once.
+		std::vector<std::pair<unsigned int, unsigned int>> addedResolutionKeys;
+
+		const auto addResolutionIfNew = [this, &addedResolutionKeys](sf::Vector2u size)
 		{
-			const std::pair<unsigned int, unsigned int> key{ size.x, size.y };
-			if (std::find(seen.begin(), seen.end(), key) == seen.end())
+			const std::pair<unsigned int, unsigned int> resolutionKey{ size.x, size.y };
+
+			if (std::find(addedResolutionKeys.begin(), addedResolutionKeys.end(), resolutionKey) == addedResolutionKeys.end())
 			{
-				seen.push_back(key);
+				addedResolutionKeys.push_back(resolutionKey);
 				resolutions.push_back(size);
 			}
 		};
@@ -36,13 +42,15 @@ namespace Display
 		for (const sf::VideoMode& videoMode : sf::VideoMode::getFullscreenModes())
 		{
 			const sf::Vector2u size = videoMode.size;
-			if (size.x >= MinWidth && size.y >= MinHeight && size.x <= desktop.x && size.y <= desktop.y)
+
+			if (size.x >= MinDisplayWidth && size.y >= MinDisplayHeight &&
+				size.x <= desktop.x && size.y <= desktop.y)
 			{
-				add(size);
+				addResolutionIfNew(size);
 			}
 		}
 
-		add(desktop);   // always offer the native resolution
+		addResolutionIfNew(desktop); // always offer the native resolution
 
 		std::sort(resolutions.begin(), resolutions.end(),
 			[](sf::Vector2u lhs, sf::Vector2u rhs)
@@ -51,59 +59,67 @@ namespace Display
 			});
 	}
 
-	sf::View DisplayManager::LetterboxView(sf::Vector2u windowSize)
+	const std::vector<sf::Vector2u>& DisplayManager::GetAvailableResolutions() const
+	{
+		return resolutions;
+	}
+
+	sf::Vector2u DisplayManager::GetDesktopResolution() const
+	{
+		return desktop;
+	}
+
+	void DisplayManager::RequestApply(const Settings& mode)
+	{
+		pendingModeForApply = mode;
+	}
+
+	sf::View DisplayManager::GetLetterboxView(sf::Vector2u windowSize)
 	{
 		sf::View view;
 		view.setCenter(VirtualSize / 2.f);
 		view.setSize(VirtualSize);
 
 		if (windowSize.x == 0u || windowSize.y == 0u)
-		{
 			return view;
-		}
 
-		const float windowAspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
-		const float virtualAspect = VirtualSize.x / VirtualSize.y;
+		const float windowAspectRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+		const float virtualAspectRatio = VirtualSize.x / VirtualSize.y;
 
 		sf::Vector2f viewport{ 1.f, 1.f };
-		if (windowAspect > virtualAspect)
-		{
-			viewport.x = virtualAspect / windowAspect;
-		}
+		if (windowAspectRatio > virtualAspectRatio)
+			viewport.x = virtualAspectRatio / windowAspectRatio;
 		else
-		{
-			viewport.y = windowAspect / virtualAspect;
-		}
+			viewport.y = windowAspectRatio / virtualAspectRatio;
 
-		view.setViewport(sf::FloatRect(
-			{ (1.f - viewport.x) * 0.5f, (1.f - viewport.y) * 0.5f }, viewport));
+		const sf::FloatRect letterboxRect({ (1.f - viewport.x) * 0.5f, (1.f - viewport.y) * 0.5f }, viewport);
+		view.setViewport(letterboxRect);
+
 		return view;
 	}
 
 	void DisplayManager::FitView(sf::RenderWindow& window) const
 	{
-		window.setView(LetterboxView(window.getSize()));
+		window.setView(GetLetterboxView(window.getSize()));
 	}
 
-	bool DisplayManager::ApplyPending(sf::RenderWindow& window)
+	bool DisplayManager::ApplyPendingMode(sf::RenderWindow& window)
 	{
-		if (!pendingApply)
-		{
+		if (!pendingModeForApply.has_value())
 			return false;
-		}
 
-		Apply(window, *pendingApply);
-		pendingApply.reset();
+		Apply(window, *pendingModeForApply);
+		pendingModeForApply.reset();
+
 		return true;
 	}
 
-	void DisplayManager::Apply(sf::RenderWindow& window, const Mode& mode) const
+	void DisplayManager::Apply(sf::RenderWindow& window, const Settings& mode) const
 	{
 		sf::Vector2u resolution = mode.resolution;
+
 		if (resolution.x == 0u || resolution.y == 0u)
-		{
 			resolution = desktop;
-		}
 
 		switch (mode.windowMode)
 		{
@@ -111,9 +127,8 @@ namespace Display
 		{
 			sf::VideoMode videoMode(resolution);
 			if (!videoMode.isValid())
-			{
 				videoMode = sf::VideoMode::getDesktopMode();
-			}
+
 			window.create(videoMode, WindowTitle, sf::Style::Default, sf::State::Fullscreen);
 			break;
 		}
@@ -127,7 +142,11 @@ namespace Display
 			break;
 		}
 
+		// window.create() above always resets the OS cursor to visible, so it has
+		// to be hidden again here every time -- the game draws its own cursor
+		// (UI::GlowingCursor) and the system one must stay off.
 		window.setMouseCursorVisible(false);
+
 		FitView(window);
 	}
 }

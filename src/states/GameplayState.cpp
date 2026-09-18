@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <optional>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -20,9 +20,7 @@
 #include "../resources/Assets.h"
 #include "../core/Context.h"
 #include "../core/StateMachine.h"
-#include "../input/GamepadManager.h"
-#include "../input/InputBinding.h"
-#include "../config/HapticSettings.h"
+#include "../haptics/HapticSettings.h"
 #include "../input/gamepad/GamepadHaptics.h"
 #include "../input/gamepad/HapticPulse.h"
 #include "../localization/LocalizationManager.h"
@@ -35,43 +33,82 @@
 
 namespace
 {
-	constexpr float SoftDropInterval = 0.03f;
-	constexpr float Pi = 3.14159265f;
+	constexpr float Pi = std::numbers::pi_v<float>;
 	constexpr float BackgroundScale = 1.07f;
 
-	// Parallax impulses handed to SceneMotion. The backdrop lags the action, so
-	// each shove points the way the "camera" would drift.
-	constexpr float MoveNudge = 3.f;
-	constexpr float RotateNudge = 3.f;
-	constexpr float SoftDropNudge = 1.f;
-	constexpr float HardDropNudge = 16.f;
-	constexpr float HoldNudge = 6.f;
+	// Parallax impulses handed to SceneMotion, for events GameplayState itself
+	// reacts to (see GameplayInputController.cpp for the input-driven ones).
 	constexpr float LandNudge = 5.f;
 	constexpr float RowClearNudge = 12.f;
 	constexpr float TetrisNudge = 26.f;
 
-	// On-board callout look: colour by what earned it; text grows with the
+	// On-board callout look: color by what earned it; text grows with the
 	// event's rank (0 = least special), one fixed smaller size for the combo
 	// count underneath it.
 	constexpr unsigned int CalloutBaseSize = 66;
 	constexpr unsigned int CalloutSizePerRank = 8;
 	constexpr unsigned int CalloutComboSize = 48;
 
-	const sf::Color DefaultClearColour{ 235, 240, 248 };
-	const sf::Color TetrisColour{ 120, 230, 255 };
-	const sf::Color TSpinColour{ 220, 130, 255 };
-	const sf::Color BackToBackColour{ 255, 190, 80 };
-	const sf::Color PerfectClearColour{ 255, 215, 60 };
-	const sf::Color ComboColour{ 160, 220, 255 };
+	const sf::Color DefaultClearColor{ 235, 240, 248 };
+	const sf::Color TetrisColor{ 120, 230, 255 };
+	const sf::Color TSpinColor{ 220, 130, 255 };
+	const sf::Color BackToBackColor{ 255, 190, 80 };
+	const sf::Color PerfectClearColor{ 255, 215, 60 };
+	const sf::Color ComboColor{ 160, 220, 255 };
 
 	// Escalation (see EscalationDirector).
-	const sf::Color SpeedSurgeColour{ 255, 90, 70 };
-	const sf::Color GoldenColour{ 255, 205, 40 };
+	const sf::Color SpeedSurgeColor{ 255, 90, 70 };
+	const sf::Color GoldenColor{ 255, 205, 40 };
 
-	// Screen-space centre of a board grid cell -- the same placement
+	// The backdrop is desaturated toward this grey before SceneMotion's parallax
+	// and the death-beat overlays darken it further.
+	const sf::Color BackdropTint{ 150, 150, 150 };
+
+	// Update() -- how long the lightbar throbs green per frame while rows are
+	// clearing (re-flashed every frame the phase holds, so this only needs to
+	// outlast one frame).
+	constexpr float RowClearLightbarDuration = 0.2f;
+
+	// ReactToEvents() -- row-clear shake: base duration/amplitude, plus a
+	// per-rank increment so a Tetris hits harder than a Single.
+	constexpr float RowClearShakeDurationBase = 0.08f;
+	constexpr float RowClearShakeDurationPerRank = 0.09f;
+	constexpr float RowClearShakeAmplitudeBase = 3.f;
+	constexpr float RowClearShakeAmplitudePerRank = 9.f;
+
+	constexpr float PerfectClearShakeDuration = 0.3f;
+	constexpr float PerfectClearShakeAmplitude = 14.f;
+	constexpr float PerfectClearLightbarDuration = 0.6f;
+	constexpr int PerfectClearLightbarFlashes = 2;
+
+	constexpr sf::Vector2f LevelUpNudge{ 16.f, -12.f };
+
+	constexpr float GameOverShakeDuration = 0.5f;
+	constexpr float GameOverShakeAmplitude = 26.f;
+	constexpr float GameOverLightbarDuration = 0.9f;
+	constexpr int GameOverLightbarFlashes = 3;
+
+	constexpr float SpeedSurgeShakeDuration = 0.25f;
+	constexpr float SpeedSurgeShakeAmplitude = 10.f;
+
+	constexpr float GarbagePushedShakeDuration = 0.15f;
+	constexpr float GarbagePushedShakeAmplitude = 7.f;
+
+	// Render()'s death beat: the red slam fires over the first fraction of
+	// DeathDuration and fades; the black overlay ramps up a little faster than
+	// linear so it's fully dark before the game-over screen (which dims to the
+	// same alpha) cuts in.
+	constexpr float DeathVisibleFraction = 0.75f;
+	constexpr float DeathFlashSpan = 0.28f;
+	constexpr std::uint8_t DeathFlashAlpha = 95;
+	constexpr float DeathDimRampScale = 1.15f;
+	constexpr std::uint8_t DeathDimAlpha = 140;
+	const sf::Color DeathFlashColor{ 200, 32, 32 };
+
+	// Screen-space center of a board grid cell -- the same placement
 	// BoardRenderer draws locked cells at, used to spawn row-clear shards and
-	// to centre the T-spin burst on the piece that just locked.
-	[[nodiscard]] sf::Vector2f CellCentre(int gridX, int gridY)
+	// to center the T-spin burst on the piece that just locked.
+	[[nodiscard]] sf::Vector2f CellCenter(int gridX, int gridY)
 	{
 		return
 		{
@@ -82,31 +119,29 @@ namespace
 	}
 }
 
-GameplayState::GameplayState(Context& context, bool playIntro)
+GameplayState::GameplayState(Context& context, bool isIntroPlayed)
 	: State(context.stateMachine)
 	, context(context)
 	, session(GameplaySession::Config{
 		static_cast<int>(context.settings.GetSettings().nextQueueLength),
-		context.settings.GetSettings().sevenBagEnabled })
+		context.settings.GetSettings().isSevenBagEnabled })
 	, boardRenderer(context)
 	, neonGlow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-	, hud(context)
+	, HUD(context)
 	, boardCallouts(context)
-	, gameplayInput(gameplayActions)
-	, horizontalRepeater({ context.hapticSettings.delayedAutoShift, context.hapticSettings.autoRepeatRate })
+	, inputController(context, session, effects, sceneMotion, boardRenderer, HUD, [this] { OpenPause(); })
 	, backgroundSprite(context.textures.Get(Assets::TextureID::GameplayBackground))
-	, seenLocalizationRevision(context.localization.Revision())
+	, seenLocalizationRevision(context.localization.GetRevision())
 {
-	introActive = playIntro;
+	isIntroActive = isIntroPlayed;
 
-	// The backdrop is drawn slightly oversized and centred so SceneMotion can
+	// The backdrop is drawn slightly oversized and centered so SceneMotion can
 	// slide it a little without exposing an edge.
-	backgroundSprite.setColor(sf::Color(150, 150, 150));
+	backgroundSprite.setColor(BackdropTint);
 	const sf::Vector2f backgroundSize(context.textures.Get(Assets::TextureID::GameplayBackground).getSize());
 	backgroundSprite.setOrigin(backgroundSize * 0.5f);
 	backgroundSprite.setScale({ BackgroundScale, BackgroundScale });
 
-	SetUpInputBindings();
 	ApplyGameplaySettings();
 
 	// Switches MusicPlayer to the shuffled gameplay playlist, stopping
@@ -116,69 +151,35 @@ GameplayState::GameplayState(Context& context, bool playIntro)
 
 void GameplayState::ApplyGameplaySettings()
 {
-	if (seenLocalizationRevision != context.localization.Revision())
+	if (seenLocalizationRevision != context.localization.GetRevision())
 	{
-		seenLocalizationRevision = context.localization.Revision();
-		hud.RefreshText();
+		seenLocalizationRevision = context.localization.GetRevision();
+		HUD.RefreshText();
 	}
 
 	const GameSettings& settings = context.settings.GetSettings();
 
-	hud.SetVisible(GameplayHud::Element::Hold, settings.hudHold && settings.holdEnabled);
-	hud.SetVisible(GameplayHud::Element::Next, settings.hudNext);
-	hud.SetVisible(GameplayHud::Element::Score, settings.hudScore);
-	hud.SetVisible(GameplayHud::Element::Lines, settings.hudLines);
-	hud.SetVisible(GameplayHud::Element::Level, settings.hudLevel);
-	hud.SetVisible(GameplayHud::Element::Time, settings.hudTime);
-	hud.SetVisible(GameplayHud::Element::ControlsLegend, settings.hudControlsLegend);
-	hud.RefreshControlsLegend(settings.controls, settings.holdEnabled);
+	HUD.SetVisible(GameplayHUD::Element::Hold, settings.isHoldTetrominoPanelVisible && settings.isHoldTetrominoEnabled);
+	HUD.SetVisible(GameplayHUD::Element::Next, settings.isNextTetrominoPanelVisible);
+	HUD.SetVisible(GameplayHUD::Element::Score, settings.isScorePanelVisible);
+	HUD.SetVisible(GameplayHUD::Element::Lines, settings.isLinesPanelVisible);
+	HUD.SetVisible(GameplayHUD::Element::Level, settings.isLevelPanelVisible);
+	HUD.SetVisible(GameplayHUD::Element::Time, settings.isTimePanelVisible);
+	HUD.SetVisible(GameplayHUD::Element::ControlsLegend, settings.isControlsLegendPanelVisible);
+	HUD.RefreshControlsLegend(settings.controls, settings.isHoldTetrominoEnabled);
 
-	effects.SetShakeEnabled(settings.screenShakeEnabled);
-	boardRenderer.SetGhostEnabled(settings.ghostPieceEnabled);
-}
-
-void GameplayState::SetUpInputBindings()
-{
-	using Trigger = InputBinding::TriggerType;
-	const ControlSettings& controls = context.settings.GetSettings().controls;
-
-	gameplayActions.AddBinding(GameplayAction::MoveLeft, InputBinding(controls.moveLeft, Trigger::WhileHeld));
-	gameplayActions.AddBinding(GameplayAction::MoveRight, InputBinding(controls.moveRight, Trigger::WhileHeld));
-	gameplayActions.AddBinding(GameplayAction::SoftDrop, InputBinding(controls.softDrop, Trigger::WhileHeld));
-	gameplayActions.AddBinding(GameplayAction::HardDrop, InputBinding(controls.hardDrop, Trigger::OnPress));
-	gameplayActions.AddBinding(GameplayAction::RotateClockwise, InputBinding(controls.rotateClockwise, Trigger::OnPress));
-	gameplayActions.AddBinding(GameplayAction::RotateCounterClockwise, InputBinding(controls.rotateCounterClockwise, Trigger::OnPress));
-	gameplayActions.AddBinding(GameplayAction::Hold, InputBinding(controls.hold, Trigger::OnPress));
-	gameplayActions.AddBinding(GameplayAction::Pause, InputBinding(controls.pause, Trigger::OnPress));
-
-	gameplayInput.Subscribe(GameplayAction::MoveLeft, [this] { heldHorizontal -= 1; });
-	gameplayInput.Subscribe(GameplayAction::MoveRight, [this] { heldHorizontal += 1; });
-	gameplayInput.Subscribe(GameplayAction::SoftDrop, [this] { softDropHeld = true; });
-
-	gameplayInput.Subscribe(GameplayAction::HardDrop, [this] { PerformHardDrop(); });
-	gameplayInput.Subscribe(GameplayAction::RotateClockwise, [this] { TryRotate(true); });
-	gameplayInput.Subscribe(GameplayAction::RotateCounterClockwise, [this] { TryRotate(false); });
-	gameplayInput.Subscribe(GameplayAction::Hold, [this] { TryHold(); });
-
-	gameplayInput.Subscribe(GameplayAction::Pause, [this] { OpenPause(); });
+	effects.SetShakeEnabled(settings.isScreenShakeEnabled);
+	boardRenderer.SetGhostEnabled(settings.isGhostPieceEnabled);
 }
 
 void GameplayState::HandleEvent(const sf::Event& event)
 {
-	if (introActive)
+	if (isIntroActive)
 	{
 		return;
 	}
 
-	// Keyboard OnPress actions (hard drop, rotate, pause).
-	gameplayInput.HandleEvent(event);
-
-	// Gamepad pause (a button, so an event is fine). Its d-pad / stick / trigger
-	// actions are polled in Update via ApplyGamepadActions.
-	if (context.gamepad.IsPausePressed(event))
-	{
-		OpenPause();
-	}
+	inputController.HandleEvent(event);
 }
 
 void GameplayState::Update(float deltaTime)
@@ -192,21 +193,21 @@ void GameplayState::Update(float deltaTime)
 
 	effects.Update(deltaTime);
 	neonGlow.Update(deltaTime);
-	hud.Update(deltaTime);
+	HUD.Update(deltaTime);
 	sceneMotion.Update(deltaTime);
 	boardCallouts.Update(deltaTime);
 
-	if (introActive)
+	if (isIntroActive)
 	{
 		introTimer += deltaTime;
 		if (introTimer >= IntroDuration)
 		{
-			introActive = false;
+			isIntroActive = false;
 		}
 		return;
 	}
 
-	if (dying)
+	if (isDying)
 	{
 		deathTimer += deltaTime;
 		if (deathTimer >= DeathDuration)
@@ -217,257 +218,20 @@ void GameplayState::Update(float deltaTime)
 		return;
 	}
 
-	PollHeldInput();
-	ApplyGamepadActions();
-	ApplyHorizontalRepeat(deltaTime);
-	ApplySoftDrop(deltaTime);
-	previousHeldHorizontal = heldHorizontal;
+	inputController.Update(deltaTime);
 
 	session.Update(deltaTime);
 	boardRenderer.Update(deltaTime, session);
 
-	hud.Set(session.GetScore(), session.GetLevel(), session.GetLinesCleared(), session.GetElapsedSeconds());
+	HUD.Set(session.GetScore(), session.GetLevel(), session.GetLinesCleared(), session.GetElapsedSeconds());
 
 	// Hold a green throb on the lightbar for as long as rows are clearing.
 	if (session.GetPhase() == GameplaySession::Phase::ClearingRows)
 	{
-		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.rowClearLightbar, 0.2f);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.rowClearLightbar, RowClearLightbarDuration);
 	}
 
 	ReactToEvents(session.ConsumeEvents());
-}
-
-void GameplayState::PollHeldInput()
-{
-	heldHorizontal = 0;
-	softDropHeld = false;
-
-	// Keyboard WhileHeld bindings fire their callbacks, setting the members above.
-	gameplayInput.Update();
-
-	heldHorizontal = std::clamp(heldHorizontal + context.gamepad.GetHorizontalDirection(), -1, 1);
-
-	if (context.gamepad.IsSoftDropHeld())
-	{
-		softDropHeld = true;
-	}
-}
-
-void GameplayState::ApplyGamepadActions()
-{
-	if (!session.IsFalling())
-	{
-		return;
-	}
-
-	if (context.gamepad.WasHardDropPressed())
-	{
-		PerformHardDrop();
-	}
-
-	if (context.gamepad.WasRotateClockwisePressed())
-	{
-		TryRotate(true);
-	}
-
-	if (context.gamepad.WasRotateCounterClockwisePressed())
-	{
-		TryRotate(false);
-	}
-
-	if (context.gamepad.WasHoldPressed())
-	{
-		TryHold();
-	}
-}
-
-void GameplayState::ApplyHorizontalRepeat(float deltaTime)
-{
-	if (!session.IsFalling())
-	{
-		horizontalRepeater.Reset();
-		horizontalWasBlocked = false;
-		return;
-	}
-
-	const int requestedSteps = horizontalRepeater.Update(heldHorizontal, deltaTime);
-
-	if (heldHorizontal == 0)
-	{
-		horizontalWasBlocked = false;
-		return;
-	}
-
-	if (requestedSteps == 0)
-	{
-		return;
-	}
-
-	const int direction = requestedSteps > 0 ? 1 : -1;
-	bool movedAny = false;
-
-	for (int step = 0; step < std::abs(requestedSteps); step++)
-	{
-		if (!session.MoveHorizontal(direction))
-		{
-			break;
-		}
-
-		movedAny = true;
-	}
-
-	const bool isFreshPress = heldHorizontal != previousHeldHorizontal;
-
-	if (movedAny)
-	{
-		sceneMotion.Nudge({ -static_cast<float>(direction) * MoveNudge, 0.f });
-		horizontalWasBlocked = false;
-
-		// Move sound on the initial step only, not on every auto-repeat step.
-		if (isFreshPress)
-		{
-			context.audioPlayer.Play(Assets::SoundID::MovePiece);
-		}
-	}
-	else if (isFreshPress || !horizontalWasBlocked)
-	{
-		// Wall contact: fire once when it happens (a fresh press into a wall, or
-		// the piece reaching the wall at the end of an auto-repeat slide), then
-		// stay quiet while it's held there.
-		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
-		effects.TriggerShake(0.06f, 4.f);
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.wallHit);
-		horizontalWasBlocked = true;
-
-		// Dust only where a cell actually touches whatever blocked it -- the
-		// board's side wall, or an already-locked cell immediately beside it in
-		// the direction it was pushed -- mirroring the hard-drop dust's
-		// bottom-contact check, just rotated 90 degrees.
-		const auto blocks = session.GetCurrentTetromino().GetBlockPositions();
-		const Board::Grid& grid = session.GetBoard().GetGrid();
-		std::vector<sf::Vector2f> impactPoints;
-		for (const sf::Vector2i& block : blocks)
-		{
-			const int besideX = block.x + direction;
-			const bool isOwnCellBeside = std::any_of(blocks.begin(), blocks.end(),
-				[&](const sf::Vector2i& other) { return other.y == block.y && other.x == besideX; });
-
-			if (isOwnCellBeside)
-			{
-				continue;
-			}
-
-			const bool hitsWall = besideX < 0 || besideX >= Board::WIDTH;
-			const bool hitsStack = !hitsWall
-				&& grid[static_cast<std::size_t>(block.y)][static_cast<std::size_t>(besideX)].occupied;
-
-			if (!hitsWall && !hitsStack)
-			{
-				continue;
-			}
-
-			// The cell's own edge facing the wall, not its centre.
-			impactPoints.push_back(
-				{
-					BoardRenderer::BoardPosition.x
-						+ static_cast<float>(block.x + (direction > 0 ? 1 : 0)) * BoardRenderer::BlockSize,
-					BoardRenderer::BoardPosition.y
-						+ (static_cast<float>(block.y - Board::BufferHeight) + 0.5f) * BoardRenderer::BlockSize
-				});
-		}
-
-		effects.TriggerWallDust(impactPoints, direction);
-	}
-}
-
-void GameplayState::ApplySoftDrop(float deltaTime)
-{
-	if (!softDropHeld)
-	{
-		softDropTimer = 0.f;
-		return;
-	}
-
-	softDropTimer += deltaTime;
-
-	while (softDropTimer >= SoftDropInterval && session.IsFalling())
-	{
-		softDropTimer -= SoftDropInterval;
-		session.SoftDropStep();
-		sceneMotion.Nudge({ 0.f, SoftDropNudge });
-	}
-}
-
-void GameplayState::TryRotate(bool clockwise)
-{
-	if (!session.IsFalling())
-	{
-		return;
-	}
-
-	if (session.Rotate(clockwise))
-	{
-		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
-		sceneMotion.Nudge({ clockwise ? RotateNudge : -RotateNudge, -2.f });
-	}
-	else
-	{
-		context.audioPlayer.Play(Assets::SoundID::PieceHitWall);
-	}
-}
-
-void GameplayState::TryHold()
-{
-	if (!session.IsFalling() || !context.settings.GetSettings().holdEnabled)
-	{
-		return;
-	}
-
-	const Tetromino outgoingPiece = session.GetCurrentTetromino();
-	const bool hadHeldPiece = session.HasHeldPiece();
-
-	if (session.Hold())
-	{
-		// Borrowed from rotate -- no dedicated hold sound exists yet. The
-		// rumble is its own, though (see HapticSettings::hold).
-		context.audioPlayer.Play(Assets::SoundID::RotatePiece);
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.hold);
-		sceneMotion.Nudge({ 0.f, -HoldNudge });
-
-		// Fly the outgoing piece to the HOLD box; if one was already held, fly
-		// it back out to the board position Hold() just gave it.
-		const std::optional<Tetromino> incomingPiece = hadHeldPiece
-			? std::optional<Tetromino>(session.GetCurrentTetromino())
-			: std::nullopt;
-		boardRenderer.TriggerHoldSwap(outgoingPiece, incomingPiece, hud.HoldPreviewArea());
-	}
-}
-
-void GameplayState::PerformHardDrop()
-{
-	if (!session.IsFalling())
-	{
-		return;
-	}
-
-	// HardDrop() locks the piece instantly -- capture its pre-drop row (the
-	// topmost cell of its current shape) here, before that happens, so the
-	// purely cosmetic slide/dust triggered off the resulting `landed` event
-	// know how far it actually fell.
-	hardDropStartRow = Board::HEIGHT;
-	for (const sf::Vector2i& block : session.GetCurrentTetromino().GetBlockPositions())
-	{
-		hardDropStartRow = std::min(hardDropStartRow, block.y);
-	}
-	hardDropType = session.GetCurrentTetromino().GetType();
-	pendingHardDropAnimation = true;
-
-	session.HardDrop();
-
-	context.audioPlayer.Play(Assets::SoundID::DropPiece);
-	effects.TriggerShake(0.12f, 12.f);
-	sceneMotion.Nudge({ 0.f, HardDropNudge });
-	Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.hardDrop);
 }
 
 void GameplayState::ReactToEvents(const GameplaySession::Events& events)
@@ -476,27 +240,27 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	// frame rather than off a tier-changed event, so the border glow just eases
 	// toward wherever the current tier points it.
 	const sf::FloatRect boardArea{ BoardRenderer::BoardPosition,
-		{ Board::WIDTH * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } };
+		{ Board::Width * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } };
 	effects.SetEscalationTier(static_cast<int>(session.GetEscalationTier()), boardArea);
 
-	if (events.landed)
+	if (events.hasLanded)
 	{
 		effects.TriggerLandingFlash(events.landedBlocks);
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.pieceLanded);
 		sceneMotion.Nudge({ 0.f, LandNudge });
 
-		if (pendingHardDropAnimation)
+		if (inputController.IsHardDropAnimationPending())
 		{
-			pendingHardDropAnimation = false;
+			inputController.ClearHardDropAnimationPending();
 
-			int landedTopRow = Board::HEIGHT;
+			int landedTopRow = Board::Height;
 			for (const sf::Vector2i& block : events.landedBlocks)
 			{
 				landedTopRow = std::min(landedTopRow, block.y);
 			}
 
-			const int droppedRows = landedTopRow - hardDropStartRow;
-			boardRenderer.TriggerHardDropFlight(hardDropType, events.landedBlocks, droppedRows);
+			const int droppedRows = landedTopRow - inputController.GetHardDropStartRow();
+			boardRenderer.TriggerHardDropFlight(inputController.GetHardDropType(), events.landedBlocks, droppedRows);
 
 			// Dust only where a cell actually rests on something -- an already-
 			// locked cell, or the floor -- never at a cell of this same piece
@@ -515,16 +279,16 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 					continue;
 				}
 
-				const bool restsOnFloor = belowRow >= Board::HEIGHT;
+				const bool restsOnFloor = belowRow >= Board::Height;
 				const bool restsOnStack = !restsOnFloor
-					&& grid[static_cast<std::size_t>(belowRow)][static_cast<std::size_t>(block.x)].occupied;
+					&& grid[static_cast<std::size_t>(belowRow)][static_cast<std::size_t>(block.x)].isOccupied;
 
 				if (!restsOnFloor && !restsOnStack)
 				{
 					continue;
 				}
 
-				// Bottom edge of the cell, not its centre -- dust kicks up from
+				// Bottom edge of the cell, not its center -- dust kicks up from
 				// where it actually touches down.
 				impactPoints.push_back(
 					{
@@ -540,26 +304,26 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		// A lock that starts no clear breaks any combo chain in progress --
 		// fade the glow out. One that does clear leaves the combo level alone
 		// here; rowsCleared sets its real value once the delay resolves.
-		if (!events.rowsDetected)
+		if (!events.hasDetectedRows)
 		{
 			effects.SetCombo(0);
 		}
 
 		// A T-spin's own tell, independent of whether it cleared any lines --
 		// decided at lock time, same batch as landed.
-		if (events.tSpin)
+		if (events.isTSpin)
 		{
-			sf::Vector2f centre{ 0.f, 0.f };
+			sf::Vector2f center{ 0.f, 0.f };
 			for (const sf::Vector2i& block : events.landedBlocks)
 			{
-				centre += CellCentre(block.x, block.y);
+				center += CellCenter(block.x, block.y);
 			}
-			centre /= static_cast<float>(events.landedBlocks.size());
-			effects.TriggerTSpinBurst(centre);
+			center /= static_cast<float>(events.landedBlocks.size());
+			effects.TriggerTSpinBurst(center);
 		}
 	}
 
-	if (events.rowsDetected)
+	if (events.hasDetectedRows)
 	{
 		context.audioPlayer.Play(Assets::SoundID::RowCleared);
 
@@ -572,10 +336,10 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 		const Board::Grid& grid = session.GetBoard().GetGrid();
 		for (int row : events.detectedRows)
 		{
-			for (int x = 0; x < Board::WIDTH; ++x)
+			for (int x = 0; x < Board::Width; ++x)
 			{
 				const Cell& cell = grid[static_cast<std::size_t>(row)][static_cast<std::size_t>(x)];
-				if (!cell.occupied)
+				if (!cell.isOccupied)
 				{
 					continue;
 				}
@@ -583,28 +347,29 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 				const int textureIndex = cell.kind == Cell::Kind::Garbage
 					? BoardRenderer::WallTextureIndex
 					: static_cast<int>(cell.tetrominoType);
-				clearedCells.push_back({ CellCentre(x, row), textureIndex });
+				clearedCells.push_back({ CellCenter(x, row), textureIndex });
 			}
 		}
 
 		effects.TriggerRowClear(events.detectedRows, rank, clearedCells);
 
 		const bool isTetris = rank >= 3;
-		effects.TriggerShake(0.08f + 0.09f * static_cast<float>(rank), 3.f + 9.f * static_cast<float>(rank));
-		Haptics::Pulse(context.gamepadHaptics, isTetris ? context.hapticSettings.tetris : context.hapticSettings.rowCleared);
+		effects.TriggerShake(RowClearShakeDurationBase + RowClearShakeDurationPerRank * static_cast<float>(rank),
+			RowClearShakeAmplitudeBase + RowClearShakeAmplitudePerRank * static_cast<float>(rank));
+		Haptics::TriggerPulse(context.gamepadHaptics, isTetris ? context.hapticSettings.tetris : context.hapticSettings.rowCleared);
 		sceneMotion.Nudge({ 0.f, -(isTetris ? TetrisNudge : RowClearNudge) });
 	}
 
-	if (events.rowsCleared)
+	if (events.hasClearedRows)
 	{
-		hud.OnRowsCleared(std::clamp(events.clearedRowCount - 1, 0, 3));
+		HUD.OnRowsCleared(std::clamp(events.clearedRowCount - 1, 0, 3));
 		effects.SetCombo(events.comboCount);
 
-		if (events.perfectClear)
+		if (events.isPerfectClear)
 		{
 			effects.TriggerPerfectClearBurst(
-				{ BoardRenderer::BoardPosition, { Board::WIDTH * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } });
-			effects.TriggerShake(0.3f, 14.f);
+				{ BoardRenderer::BoardPosition, { Board::Width * BoardRenderer::BlockSize, Board::VisibleHeight * BoardRenderer::BlockSize } });
+			effects.TriggerShake(PerfectClearShakeDuration, PerfectClearShakeAmplitude);
 		}
 	}
 
@@ -613,27 +378,28 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	// from the landed/rowsDetected one at lock time -- landed is long since
 	// false again by then. A T-spin that cleared nothing is the one case that
 	// arrives together with landed, since it's decided at lock time.
-	if (events.rowsCleared || events.tSpin)
+	if (events.hasClearedRows || events.isTSpin)
 	{
 		ShowClearCallout(events);
 		FireClearHaptics(events);
 	}
 
-	if (events.leveledUp)
+	if (events.hasLeveledUp)
 	{
 		context.audioPlayer.Play(Assets::SoundID::NextLevel);
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.levelUp);
-		hud.OnLevelUp();
-		sceneMotion.Nudge({ 16.f, -12.f });
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.levelUp);
+		HUD.OnLevelUp();
+		sceneMotion.Nudge(LevelUpNudge);
 	}
 
-	if (events.gameOver)
+	if (events.isGameOver)
 	{
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.gameOver);
-		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.gameOverLightbar, 0.9f, 3);
-		effects.TriggerShake(0.5f, 26.f);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.gameOver);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.gameOverLightbar,
+			GameOverLightbarDuration, GameOverLightbarFlashes);
+		effects.TriggerShake(GameOverShakeDuration, GameOverShakeAmplitude);
 
-		dying = true;
+		isDying = true;
 		deathTimer = 0.f;
 	}
 
@@ -641,21 +407,21 @@ void GameplayState::ReactToEvents(const GameplaySession::Events& events)
 	// callout, a shake and a rumble, so a sudden gravity spike reads as a fair
 	// warning rather than a glitch. A garbage row is deliberately quiet -- just
 	// a dull thud -- since it happens often once unlocked.
-	if (events.speedSurgeStarted)
+	if (events.hasSpeedSurgeStarted)
 	{
 		boardCallouts.Show(
-			{ { context.localization.GetText(TextKey::Callout::SpeedSurge), SpeedSurgeColour, CalloutBaseSize } },
-			1, SpeedSurgeColour);
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.speedSurge);
-		effects.TriggerShake(0.25f, 10.f);
+			{ { context.localization.GetText(TextKey::Callout::SpeedSurge), SpeedSurgeColor, CalloutBaseSize } },
+			1, SpeedSurgeColor);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.speedSurge);
+		effects.TriggerShake(SpeedSurgeShakeDuration, SpeedSurgeShakeAmplitude);
 		effects.TriggerSpeedSurgeGlow(EscalationDirector::SurgeDuration);
 	}
 
-	if (events.garbagePushed)
+	if (events.hasGarbagePushed)
 	{
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.garbageRow);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.garbageRow);
 		effects.TriggerGarbageWave();
-		effects.TriggerShake(0.15f, 7.f);
+		effects.TriggerShake(GarbagePushedShakeDuration, GarbagePushedShakeAmplitude);
 	}
 }
 
@@ -684,40 +450,40 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 	int rank = 0;
 	if (events.clearedRowCount == 3) { rank = 1; }
 	if (events.clearedRowCount == 4) { rank = 3; }
-	if (events.tSpin) { rank = std::max(rank, events.tSpinMini ? 2 : 4); }
-	if (events.tSpin && events.clearedRowCount >= 2) { rank += 1; }
-	if (events.backToBack) { rank += 1; }
-	if (events.goldenLineBonus) { rank += 1; }
-	if (events.perfectClear) { rank = std::max(rank, 5) + 1; }
+	if (events.isTSpin) { rank = std::max(rank, events.isTSpinMini ? 2 : 4); }
+	if (events.isTSpin && events.clearedRowCount >= 2) { rank += 1; }
+	if (events.hasBackToBack) { rank += 1; }
+	if (events.hasGoldenLineBonus) { rank += 1; }
+	if (events.isPerfectClear) { rank = std::max(rank, 5) + 1; }
 
 	const unsigned int mainSize = CalloutBaseSize + static_cast<unsigned int>(rank) * CalloutSizePerRank;
 
 	std::vector<BoardCallouts::Line> lines;
-	sf::Color accent = DefaultClearColour;
+	sf::Color accent = DefaultClearColor;
 
-	if (events.perfectClear)
+	if (events.isPerfectClear)
 	{
-		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColour, mainSize });
-		accent = PerfectClearColour;
+		lines.push_back({ text.GetText(TextKey::Callout::PerfectClear), PerfectClearColor, mainSize });
+		accent = PerfectClearColor;
 	}
 
-	if (events.goldenLineBonus)
+	if (events.hasGoldenLineBonus)
 	{
-		lines.push_back({ text.GetText(TextKey::Callout::Golden), GoldenColour, mainSize });
-		if (!events.perfectClear)
+		lines.push_back({ text.GetText(TextKey::Callout::Golden), GoldenColor, mainSize });
+		if (!events.isPerfectClear)
 		{
-			accent = GoldenColour;
+			accent = GoldenColor;
 		}
 	}
 
 	sf::String main;
-	if (events.backToBack)
+	if (events.hasBackToBack)
 	{
 		main += text.GetText(TextKey::Callout::BackToBack) + sf::String(" ");
 	}
-	if (events.tSpin)
+	if (events.isTSpin)
 	{
-		main += text.GetText(events.tSpinMini ? TextKey::Callout::TSpinMini : TextKey::Callout::TSpin);
+		main += text.GetText(events.isTSpinMini ? TextKey::Callout::TSpinMini : TextKey::Callout::TSpin);
 		if (events.clearedRowCount > 0)
 		{
 			main += sf::String(" ") + rowSuffix(events.clearedRowCount);
@@ -730,23 +496,23 @@ void GameplayState::ShowClearCallout(const GameplaySession::Events& events)
 
 	if (!main.isEmpty())
 	{
-		const sf::Color mainColour = events.backToBack ? BackToBackColour
-			: events.tSpin ? TSpinColour
-			: events.clearedRowCount == 4 ? TetrisColour
-			: DefaultClearColour;
-		lines.push_back({ main, mainColour, mainSize });
+		const sf::Color mainColor = events.hasBackToBack ? BackToBackColor
+			: events.isTSpin ? TSpinColor
+			: events.clearedRowCount == 4 ? TetrisColor
+			: DefaultClearColor;
+		lines.push_back({ main, mainColor, mainSize });
 
-		if (!events.perfectClear)
+		if (!events.isPerfectClear)
 		{
-			accent = mainColour;
+			accent = mainColor;
 		}
 	}
 
-	if (events.rowsCleared && events.comboCount > 0)
+	if (events.hasClearedRows && events.comboCount > 0)
 	{
 		sf::String comboText = sf::String("x") + sf::String(std::to_string(events.comboCount + 1)) + sf::String(" ")
 			+ text.GetText(TextKey::Callout::Combo);
-		lines.push_back({ std::move(comboText), ComboColour, CalloutComboSize });
+		lines.push_back({ std::move(comboText), ComboColor, CalloutComboSize });
 	}
 
 	if (!lines.empty())
@@ -760,19 +526,25 @@ void GameplayState::FireClearHaptics(const GameplaySession::Events& events)
 	// One pulse for whichever is the headline reason this clear stands out --
 	// the row-count pulse (row_cleared / tetris) already fired separately, at
 	// lock time, before this verdict was even decided.
-	if (events.perfectClear)
+	if (events.isPerfectClear)
 	{
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.perfectClear);
-		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.perfectClearLightbar, 0.6f, 2);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.perfectClear);
+		Haptics::FlashLightbar(context.gamepadHaptics, context.hapticSettings.perfectClearLightbar,
+			PerfectClearLightbarDuration, PerfectClearLightbarFlashes);
 	}
-	else if (events.backToBack)
+	else if (events.hasBackToBack)
 	{
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.backToBack);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.backToBack);
 	}
-	else if (events.tSpin)
+	else if (events.isTSpin)
 	{
-		Haptics::Pulse(context.gamepadHaptics, context.hapticSettings.tSpin);
+		Haptics::TriggerPulse(context.gamepadHaptics, context.hapticSettings.tSpin);
 	}
+}
+
+bool GameplayState::IsCursorVisible() const
+{
+	return false;
 }
 
 void GameplayState::OpenPause()
@@ -783,9 +555,9 @@ void GameplayState::OpenPause()
 
 	auto frame = std::make_unique<sf::RenderTexture>();
 
-	if (frame->resize(sf::Vector2u(Display::DisplayManager::VirtualSize)))
+	if (frame->resize(sf::Vector2u(Display::VirtualSize)))
 	{
-		frame->setView(sf::View(sf::FloatRect({ 0.f, 0.f }, Display::DisplayManager::VirtualSize)));
+		frame->setView(sf::View(sf::FloatRect({ 0.f, 0.f }, Display::VirtualSize)));
 		frame->clear(sf::Color::Black);
 		Render(*frame);
 		frame->display();
@@ -806,41 +578,43 @@ void GameplayState::Render(sf::RenderTarget& target)
 	shakenView.move(effects.GetViewOffset());
 	target.setView(shakenView);
 
-	backgroundSprite.setPosition(Display::DisplayManager::VirtualSize * 0.5f + sceneMotion.Offset());
+	backgroundSprite.setPosition(Display::VirtualSize * 0.5f + sceneMotion.GetOffset());
 	target.draw(backgroundSprite);
 
-	const float deathProgress = dying
-		? std::clamp(deathTimer / (DeathDuration * 0.75f), 0.f, 1.f)
+	const float deathProgress = isDying
+		? std::clamp(deathTimer / (DeathDuration * DeathVisibleFraction), 0.f, 1.f)
 		: 0.f;
 
 	boardRenderer.Render(target, session, effects, neonGlow, deathProgress);
 
-	if (!dying)
+	if (!isDying)
 	{
-		hud.Render(target);
-		if (hud.HoldVisible())
+		HUD.Render(target);
+		if (HUD.HoldVisible())
 		{
-			boardRenderer.RenderHoldPreview(target, session, hud.HoldPreviewArea());
+			boardRenderer.RenderHoldPreview(target, session, HUD.HoldPreviewArea());
 		}
-		if (hud.NextVisible())
+		if (HUD.NextVisible())
 		{
-			boardRenderer.RenderNextPreview(target, session, hud.NextPreviewArea());
+			boardRenderer.RenderNextPreview(target, session, HUD.NextPreviewArea());
 		}
 		boardRenderer.RenderHoldFlight(target);
 		boardCallouts.Render(target);
 	}
 	else
 	{
-		const float d = deathTimer / DeathDuration;
+		const float deathFraction = deathTimer / DeathDuration;
 
 		// A red slam, front-loaded, then a fade to near-black under the crumble.
-		const float flash = d < 0.28f ? std::sin(d / 0.28f * Pi) : 0.f;
-		sf::RectangleShape overlay(Display::DisplayManager::VirtualSize);
-		overlay.setFillColor(sf::Color(200, 32, 32, static_cast<std::uint8_t>(flash * 95.f)));
+		const float flash = deathFraction < DeathFlashSpan ? std::sin(deathFraction / DeathFlashSpan * Pi) : 0.f;
+		sf::RectangleShape overlay(Display::VirtualSize);
+		overlay.setFillColor(sf::Color(DeathFlashColor.r, DeathFlashColor.g, DeathFlashColor.b,
+			static_cast<std::uint8_t>(flash * static_cast<float>(DeathFlashAlpha))));
 		target.draw(overlay);
 
 		// Dims toward the game-over screen's SceneDim, no cut on the swap.
-		overlay.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(std::clamp(d * 1.15f, 0.f, 1.f) * 140.f)));
+		overlay.setFillColor(sf::Color(0, 0, 0,
+			static_cast<std::uint8_t>(std::clamp(deathFraction * DeathDimRampScale, 0.f, 1.f) * static_cast<float>(DeathDimAlpha))));
 		target.draw(overlay);
 	}
 

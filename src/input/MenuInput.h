@@ -1,6 +1,10 @@
 #pragma once
 
-namespace sf { class Event; }
+namespace sf
+{
+	class Event;
+}
+
 class GamepadManager;
 
 // Collapses a keyboard or gamepad event into a single menu-navigation intent,
@@ -20,5 +24,9 @@ namespace MenuInput
 		Back
 	};
 
-	[[nodiscard]] Action Resolve(const sf::Event& event, const GamepadManager& gamepad);
+	// Checks event against the fixed menu keys (arrows, Enter, Escape) first;
+	// if it isn't one of those, falls back to what gamepad.GetNavigationAction()
+	// makes of the same event. Returns Action::None if neither source maps it
+	// to a menu action.
+	[[nodiscard]] Action ResolveAction(const sf::Event& event, const GamepadManager& gamepad);
 }

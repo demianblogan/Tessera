@@ -29,7 +29,7 @@ public:
 		int row = 0;
 		float timer = 0.f;
 		// How special this clear is: 0 = Single .. 3 = Tetris (4+ rows). Scales
-		// the flash/sweep's colour, width and lifetime.
+		// the flash/sweep's color, width and lifetime.
 		int rank = 0;
 	};
 
@@ -58,15 +58,15 @@ public:
 		int textureIndex = -1;
 		sf::Color tint = sf::Color::White;
 		// Chaos-tier ambient motes drift instead of falling -- skip gravity.
-		bool floaty = false;
+		bool isFloaty = false;
 	};
 
 	// When false, TriggerShake() does nothing -- the "Screen Shake" gameplay
 	// setting, read once when a game starts.
-	void SetShakeEnabled(bool enabled) { shakeEnabled = enabled; }
+	void SetShakeEnabled(bool isEnabled);
 
 	void TriggerShake(float duration, float intensity);
-	void TriggerLandingFlash(const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& blocks);
+	void TriggerLandingFlash(const std::array<sf::Vector2i, TetrominoShapes::BlockCount>& blocks);
 
 	// A generic impact puff: a few grey dust shards per point, shot mostly
 	// along `burstDirection` (needn't be normalised) with a slight random
@@ -89,7 +89,7 @@ public:
 
 	// A T-spin's own tell, independent of whether it cleared any lines: a
 	// small purple swirl around the piece that just locked.
-	void TriggerTSpinBurst(sf::Vector2f centre);
+	void TriggerTSpinBurst(sf::Vector2f center);
 
 	// The board just went completely empty. `boardArea` is shattered into a
 	// wide golden burst and the whole area gets a slow-fading flash.
@@ -119,38 +119,38 @@ public:
 
 	void Update(float deltaTime);
 
-	[[nodiscard]] sf::Vector2f GetViewOffset() const { return shakeOffset; }
+	[[nodiscard]] sf::Vector2f GetViewOffset() const;
 
-	[[nodiscard]] bool HasLandingFlash() const { return landingFlashTimer > 0.f; }
+	[[nodiscard]] bool HasLandingFlash() const;
 	[[nodiscard]] float GetLandingFlashProgress() const;
-	[[nodiscard]] const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& GetLandingFlashBlocks() const { return landingFlashBlocks; }
+	[[nodiscard]] const std::array<sf::Vector2i, TetrominoShapes::BlockCount>& GetLandingFlashBlocks() const;
 
-	[[nodiscard]] const std::vector<RowClearEffect>& GetRowClearEffects() const { return rowClearEffects; }
-	[[nodiscard]] const std::vector<Shard>& GetShards() const { return shards; }
+	[[nodiscard]] const std::vector<RowClearEffect>& GetRowClearEffects() const;
+	[[nodiscard]] const std::vector<Shard>& GetShards() const;
 
-	[[nodiscard]] bool HasPerfectClearFlash() const { return perfectClearFlashTimer > 0.f; }
+	[[nodiscard]] bool HasPerfectClearFlash() const;
 	[[nodiscard]] float GetPerfectClearFlashProgress() const;
 
 	// Eased combo level, roughly in [0, comboTarget]; >0 while a chain of
 	// clears is holding or fading out. Drives the well's border glow.
-	[[nodiscard]] float GetComboGlowLevel() const { return comboGlowLevel; }
+	[[nodiscard]] float GetComboGlowLevel() const;
 
-	[[nodiscard]] bool HasSpeedSurgeGlow() const { return surgeGlowTimer > 0.f; }
+	[[nodiscard]] bool HasSpeedSurgeGlow() const;
 	[[nodiscard]] float GetSpeedSurgeGlowProgress() const;
 
 	// 0 the instant TriggerGarbageWave() fires (band at the bottom of the
 	// well) rising to 1 as it reaches the top.
-	[[nodiscard]] bool HasGarbageWave() const { return garbageWaveTimer > 0.f; }
+	[[nodiscard]] bool HasGarbageWave() const;
 	[[nodiscard]] float GetGarbageWaveProgress() const;
 
 private:
-	bool shakeEnabled = true;
+	bool isShakeEnabled = true;
 	float shakeTimer = 0.f;
 	float shakeDuration = 0.f;
 	float shakeIntensity = 0.f;
 	sf::Vector2f shakeOffset{ 0.f, 0.f };
 
-	std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> landingFlashBlocks{};
+	std::array<sf::Vector2i, TetrominoShapes::BlockCount> landingFlashBlocks{};
 	float landingFlashTimer = 0.f;
 
 	std::vector<RowClearEffect> rowClearEffects;

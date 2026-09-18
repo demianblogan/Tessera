@@ -17,20 +17,20 @@
 #include "../audio/AudioPlayer.h"
 #include "../core/Context.h"
 #include "../input/MenuInput.h"
-#include "../localization/LanguageAccent.h"
+#include "../localization/LanguageColors.h"
 #include "../localization/LocalizationManager.h"
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "../settings/SettingsManager.h"
-#include "../ui/ColourUtils.h"
-#include "../ui/Easing.h"
+#include "../ui/ColorUtils.h"
+#include "../utils/Easing.h"
 #include "../ui/TextLayout.h"
-#include "MenuShell.h"
+#include "MenuShellState.h"
 
 namespace
 {
 	constexpr unsigned int PromptSize = 46;
-	constexpr sf::Vector2f PromptCentre{ 960.f, 190.f };
+	constexpr sf::Vector2f PromptCenter{ 960.f, 190.f };
 	constexpr float PromptDropHeight = 220.f;
 	constexpr float PromptFallSpread = 0.9f;   // total stagger across every letter
 
@@ -43,20 +43,25 @@ namespace
 	constexpr float RestDesaturate = 0.35f;
 	constexpr float RestDarken = 0.55f;
 
-	const sf::Color DividerColour(150, 156, 168);
+	// Navigation ticks: higher when moving forward / down, lower backward / up --
+	// mirrors MainMenuScreen's NavPitchLow / NavPitchHigh.
+	constexpr float NavPitchLow = 0.9f;
+	constexpr float NavPitchHigh = 1.14f;
 
-	[[nodiscard]] sf::Color LerpColour(sf::Color a, sf::Color b, float t)
+	const sf::Color DividerColor(150, 156, 168);
+
+	[[nodiscard]] sf::Color LerpColor(sf::Color from, sf::Color to, float mixFactor)
 	{
 		return {
-			UI::ToByte(static_cast<float>(a.r) + (static_cast<float>(b.r) - a.r) * t),
-			UI::ToByte(static_cast<float>(a.g) + (static_cast<float>(b.g) - a.g) * t),
-			UI::ToByte(static_cast<float>(a.b) + (static_cast<float>(b.b) - a.b) * t),
-			UI::ToByte(static_cast<float>(a.a) + (static_cast<float>(b.a) - a.a) * t) };
+			UI::ToByte(static_cast<float>(from.r) + (static_cast<float>(to.r) - from.r) * mixFactor),
+			UI::ToByte(static_cast<float>(from.g) + (static_cast<float>(to.g) - from.g) * mixFactor),
+			UI::ToByte(static_cast<float>(from.b) + (static_cast<float>(to.b) - from.b) * mixFactor),
+			UI::ToByte(static_cast<float>(from.a) + (static_cast<float>(to.a) - from.a) * mixFactor) };
 	}
 
-	[[nodiscard]] sf::Color RestColourFor(Language language)
+	[[nodiscard]] sf::Color RestColorFor(Language language)
 	{
-		return UI::Darken(UI::Desaturate(LanguageAccent(language), RestDesaturate), RestDarken);
+		return UI::Darken(UI::Desaturate(LanguageColor(language), RestDesaturate), RestDarken);
 	}
 
 	[[nodiscard]] std::string_view LanguageNameKey(Language language)
@@ -113,7 +118,7 @@ LanguagePickerState::LanguagePickerState(Context& context)
 	, aurora(context.shaders.Get(Assets::ShaderID::MenuAurora))
 	, backdrop(context.textures.Get(Assets::TextureID::BlockSpritesheetWithOutline))
 	// Placeholder text -- BuildPrompt() below fully rebuilds string, layout
-	// and colour for every entry; this only exists to give sf::Text (which
+	// and color for every entry; this only exists to give sf::Text (which
 	// has no default constructor) something to hold until then.
 	, segments{ {
 		{ Language::English, sf::Text(context.fonts.Get(Assets::FontID::Main), "", PromptSize), 0.f },
@@ -129,13 +134,13 @@ LanguagePickerState::LanguagePickerState(Context& context)
 	for (const Language language : AllLanguages)
 	{
 		column.AddButton(context.localization.GetText(LanguageNameKey(language)),
-			[this, language] { Choose(language); }, true, LanguageAccent(language));
+			[this, language] { Choose(language); }, true, LanguageColor(language));
 	}
 
 	column.SetLayout(ColumnTopLeft, RowGap);
 	column.SetSelectionChangedCallback([this](std::size_t index, int direction)
 		{
-			this->context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, direction >= 0 ? 1.14f : 0.9f);
+			this->context.audioPlayer.Play(Assets::SoundID::MenuItemSelected, direction >= 0 ? NavPitchHigh : NavPitchLow);
 			if (index < AllLanguages.size())
 			{
 				SetHovered(AllLanguages[index]);
@@ -179,7 +184,7 @@ void LanguagePickerState::BuildPrompt()
 			single += codepoint;
 
 			introGlyphs.push_back(
-				IntroGlyph{ sf::Text(font, single, PromptSize), i, charX, PromptCentre.y, 0.f });
+				IntroGlyph{ sf::Text(font, single, PromptSize), i, charX, PromptCenter.y, 0.f });
 			charX += font.getGlyph(codepoint, PromptSize, false).advance;
 		}
 
@@ -193,18 +198,18 @@ void LanguagePickerState::BuildPrompt()
 		}
 	}
 
-	const float startXShift = PromptCentre.x - x * 0.5f;
+	const float startXShift = PromptCenter.x - x * 0.5f;
 
 	// Now that the row's total width is known, place the steady-state phrases
-	// (origin at their own centre, so a later setScale grows them in place)
+	// (origin at their own center, so a later setScale grows them in place)
 	// and the dividers between them.
 	float cursor = 0.f;
 	std::size_t dividerIndex = 0;
 	for (std::size_t i = 0; i < LanguageCount; ++i)
 	{
 		// The intro glyphs are drawn with the default (top-left) origin at
-		// {cursor + startXShift, PromptCentre.y}; setting origin to the ink
-		// centre (so scale grows the phrase in place) shifts what "position"
+		// {cursor + startXShift, PromptCenter.y}; setting origin to the ink
+		// center (so scale grows the phrase in place) shifts what "position"
 		// means, so the *position* has to move by that same origin offset to
 		// keep the rendered top-left exactly where the intro left it -- with
 		// origin O, world(bounds.position) = position - size*0.5 = position -
@@ -212,7 +217,7 @@ void LanguagePickerState::BuildPrompt()
 		// origin-(0,0) placement exactly at scale 1.
 		const sf::FloatRect bounds = segments[i].text.getLocalBounds();
 		const sf::Vector2f origin{ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f };
-		const sf::Vector2f topLeft{ cursor + startXShift, PromptCentre.y };
+		const sf::Vector2f topLeft{ cursor + startXShift, PromptCenter.y };
 
 		segments[i].text.setOrigin(origin);
 		segments[i].text.setPosition(topLeft + origin);
@@ -222,9 +227,9 @@ void LanguagePickerState::BuildPrompt()
 		{
 			sf::Text& divider = dividers[dividerIndex++];
 			const sf::FloatRect divBounds = divider.getLocalBounds();
-			UI::TextLayout::CentreOrigin(divider);
-			divider.setFillColor(DividerColour);
-			divider.setPosition({ cursor + divBounds.size.x * 0.5f + startXShift, PromptCentre.y });
+			UI::TextLayout::CenterOrigin(divider);
+			divider.setFillColor(DividerColor);
+			divider.setPosition({ cursor + divBounds.size.x * 0.5f + startXShift, PromptCenter.y });
 			cursor += divBounds.size.x;
 		}
 	}
@@ -238,10 +243,10 @@ void LanguagePickerState::BuildPrompt()
 
 	introTotalDuration = introGlyphs.empty()
 		? 0.f
-		: static_cast<float>(introGlyphs.size() - 1) * fallStagger + fallDuration;
+		: static_cast<float>(introGlyphs.size() - 1) * fallStagger + FallDuration;
 }
 
-bool LanguagePickerState::IntroDone() const
+bool LanguagePickerState::IsIntroDone() const
 {
 	return introElapsed >= introTotalDuration;
 }
@@ -253,34 +258,34 @@ void LanguagePickerState::SetHovered(Language language)
 
 void LanguagePickerState::Choose(Language language)
 {
-	if (leaving)
+	if (isLeaving)
 	{
 		return;
 	}
 
 	context.localization.SetLanguage(language);
 	context.settings.GetSettings().language = language;
-	context.settings.GetSettings().languageChosen = true;
+	context.settings.GetSettings().isLanguageChosen = true;
 	context.settings.Save();
 
 	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed);
-	leaving = true;
+	isLeaving = true;
 	column.PlayExit();
 }
 
 void LanguagePickerState::Finish()
 {
-	RequestChange(std::make_unique<MenuShell>(context));
+	RequestChange(std::make_unique<MenuShellState>(context));
 }
 
 void LanguagePickerState::HandleEvent(const sf::Event& event)
 {
-	if (leaving)
+	if (isLeaving)
 	{
 		return;
 	}
 
-	switch (MenuInput::Resolve(event, context.gamepad))
+	switch (MenuInput::ResolveAction(event, context.gamepad))
 	{
 	case MenuInput::Action::Up:      column.SelectPrevious(); return;
 	case MenuInput::Action::Down:    column.SelectNext();     return;
@@ -308,7 +313,7 @@ void LanguagePickerState::Update(float deltaTime)
 	for (PromptSegment& segment : segments)
 	{
 		const float target = segment.language == hoveredLanguage ? 1.f : 0.f;
-		segment.highlight = UI::Easing::Lerp(segment.highlight, target, std::min(1.f, deltaTime * HighlightSpeed));
+		segment.highlight = Easing::Lerp(segment.highlight, target, std::min(1.f, deltaTime * HighlightSpeed));
 	}
 
 	aurora.Update(deltaTime);
@@ -316,7 +321,7 @@ void LanguagePickerState::Update(float deltaTime)
 	sparks.Update(deltaTime);
 	column.Update(deltaTime);
 
-	if (leaving)
+	if (isLeaving)
 	{
 		fade = std::min(1.f, fade + deltaTime / FadeDuration);
 		if (fade >= 1.f)
@@ -338,7 +343,7 @@ void LanguagePickerState::Render(sf::RenderTarget& target)
 	backdrop.Render(target);
 	sparks.Render(target);
 
-	if (!IntroDone())
+	if (!IsIntroDone())
 	{
 		for (IntroGlyph& glyph : introGlyphs)
 		{
@@ -347,10 +352,10 @@ void LanguagePickerState::Render(sf::RenderTarget& target)
 				continue;   // hasn't started falling yet -- not drawn at all
 			}
 
-			const float rawT = (introElapsed - glyph.startDelay) / fallDuration;
-			const float eased = UI::Easing::EaseInCubic(rawT);
+			const float fallFraction = (introElapsed - glyph.startDelay) / FallDuration;
+			const float eased = Easing::EaseInCubic(fallFraction);
 
-			glyph.text.setFillColor(RestColourFor(segments[glyph.segmentIndex].language));
+			glyph.text.setFillColor(RestColorFor(segments[glyph.segmentIndex].language));
 			glyph.text.setPosition({ glyph.restX, glyph.restY - PromptDropHeight * (1.f - eased) });
 			target.draw(glyph.text);
 		}
@@ -359,10 +364,10 @@ void LanguagePickerState::Render(sf::RenderTarget& target)
 	{
 		for (PromptSegment& segment : segments)
 		{
-			const sf::Color accent = LanguageAccent(segment.language);
-			const float scale = UI::Easing::Lerp(1.f, HighlightScale, segment.highlight);
+			const sf::Color accent = LanguageColor(segment.language);
+			const float scale = Easing::Lerp(1.f, HighlightScale, segment.highlight);
 
-			segment.text.setFillColor(LerpColour(RestColourFor(segment.language), accent, segment.highlight));
+			segment.text.setFillColor(LerpColor(RestColorFor(segment.language), accent, segment.highlight));
 			segment.text.setScale({ scale, scale });
 			target.draw(segment.text);
 		}

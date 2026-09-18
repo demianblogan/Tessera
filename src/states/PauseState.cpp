@@ -23,9 +23,9 @@
 #include "../localization/TextKeys.h"
 #include "../resources/Assets.h"
 #include "GameplayState.h"
-#include "MenuShell.h"
-#include "OptionsScreen.h"
-#include "PauseMenuScreen.h"
+#include "MenuShellState.h"
+#include "../ui/screens/OptionsScreen.h"
+#include "../ui/screens/PauseMenuScreen.h"
 
 namespace
 {
@@ -44,6 +44,14 @@ namespace
 	// Where the "PAUSE" header flies in from / out to: just above the top edge.
 	constexpr sf::Vector2f HeaderFrom{ 960.f, -150.f };
 	constexpr float HeaderFromHeight = 72.f;
+
+	// RequestResume()'s confirm pitch, and RequestRestart()/RequestQuitToMainMenu()'s
+	// (a touch lower, since a confirm dialog follows).
+	constexpr float ResumeConfirmPitch = 0.9f;
+	constexpr float DialogOpenPitch = 0.85f;
+
+	// RenderBackground()'s fallback dim overlay when the frame capture failed.
+	constexpr float FallbackOverlayAlpha = 190.f;
 }
 
 PauseState::PauseState(Context& context, std::unique_ptr<sf::RenderTexture> frozenFrame)
@@ -61,16 +69,16 @@ PauseState::~PauseState() = default;
 
 void PauseState::RequestResume()
 {
-	if (resuming)
+	if (isResuming)
 	{
 		return;
 	}
 
-	resuming = true;
-	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.9f);
+	isResuming = true;
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, ResumeConfirmPitch);
 	context.musicPlayer.SetDucked(false);
-	Header().SinkTo(HeaderFrom, HeaderFromHeight);
-	if (MenuScreen* screen = CurrentScreen())
+	GetHeader().SinkTo(HeaderFrom, HeaderFromHeight);
+	if (MenuScreen* screen = GetCurrentScreen())
 	{
 		screen->StartExit();
 	}
@@ -82,7 +90,7 @@ void PauseState::RequestRestart()
 	confirmDialog.Show(context.localization.GetText(TextKey::Pause::ConfirmRestart),
 		context.localization.GetText(TextKey::Common::Yes),
 		context.localization.GetText(TextKey::Common::No));
-	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, DialogOpenPitch);
 }
 
 void PauseState::RequestQuitToMainMenu()
@@ -91,23 +99,28 @@ void PauseState::RequestQuitToMainMenu()
 	confirmDialog.Show(context.localization.GetText(TextKey::Pause::ConfirmQuit),
 		context.localization.GetText(TextKey::Common::Yes),
 		context.localization.GetText(TextKey::Common::No));
-	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, 0.85f);
+	context.audioPlayer.Play(Assets::SoundID::MenuItemPressed, DialogOpenPitch);
 }
 
 void PauseState::OpenOptions(sf::Vector2f from, float fromHeight)
 {
 	BeginForward(std::make_unique<OptionsScreen>(*this, OptionsAccent),
 		context.localization.GetText(TextKey::Options::Title), OptionsAccent,
-		from, fromHeight, PauseMenuScreen::OptionsRow());
+		from, fromHeight, PauseMenuScreen::GetOptionsRow());
+}
+
+bool PauseState::HasPersistentHeader() const
+{
+	return true;
 }
 
 void PauseState::OnHomeRebuilt()
 {
 	// Back from Options: bring "PAUSE" down from the top again and slide the
 	// pause column back in.
-	Header().RiseFrom(HeaderFrom, HeaderFromHeight,
+	GetHeader().RiseFrom(HeaderFrom, HeaderFromHeight,
 		context.localization.GetText(TextKey::Pause::Title), Accent);
-	if (MenuScreen* screen = CurrentScreen())
+	if (MenuScreen* screen = GetCurrentScreen())
 	{
 		screen->PlayIntro();
 	}
@@ -126,7 +139,7 @@ void PauseState::PerformPendingAction()
 		break;
 	case PendingAction::QuitToMainMenu:
 		// Fade to black first; the swap happens in Update when the fade is done.
-		quitting = true;
+		isQuitting = true;
 		quitFade = 0.f;
 		break;
 	case PendingAction::None:
@@ -138,14 +151,14 @@ void PauseState::HandleEvent(const sf::Event& event)
 {
 	// Ignore input until the frame has finished solidifying, and once Resume or
 	// a quit-to-menu fade is under way.
-	if (resuming || quitting || reveal < 1.f)
+	if (isResuming || isQuitting || reveal < 1.f)
 	{
 		return;
 	}
 
 	if (confirmDialog.IsOpen())
 	{
-		confirmDialog.Navigate(MenuInput::Resolve(event, context.gamepad));
+		confirmDialog.Navigate(MenuInput::ResolveAction(event, context.gamepad));
 
 		if (const auto* moved = event.getIf<sf::Event::MouseMoved>())
 		{
@@ -168,7 +181,7 @@ void PauseState::HandleEvent(const sf::Event& event)
 void PauseState::Update(float deltaTime)
 {
 	confirmDialog.Update(deltaTime);
-	if (const std::optional<bool> answer = confirmDialog.TakeResult())
+	if (const std::optional<bool> answer = confirmDialog.TakeResult(); answer.has_value())
 	{
 		if (*answer)
 		{
@@ -182,14 +195,14 @@ void PauseState::Update(float deltaTime)
 
 	ScreenHost::Update(deltaTime);
 
-	if (quitting)
+	if (isQuitting)
 	{
 		quitFade = std::min(1.f, quitFade + deltaTime / QuitFadeDuration);
 		if (quitFade >= 1.f)
 		{
-			quitting = false;
+			isQuitting = false;
 			RequestClear();
-			RequestPush(std::make_unique<MenuShell>(context));
+			RequestPush(std::make_unique<MenuShellState>(context));
 		}
 	}
 }
@@ -211,7 +224,7 @@ void PauseState::UpdateBackground(float deltaTime)
 {
 	const float step = deltaTime / SolidifyDuration;
 
-	if (resuming)
+	if (isResuming)
 	{
 		reveal -= step;
 		if (reveal <= 0.f)
@@ -224,12 +237,12 @@ void PauseState::UpdateBackground(float deltaTime)
 
 	reveal = std::min(1.f, reveal + step);
 
-	if (reveal >= 1.f && !introRaised)
+	if (reveal >= 1.f && !hasRaisedIntro)
 	{
-		introRaised = true;
-		Header().RiseFrom(HeaderFrom, HeaderFromHeight,
+		hasRaisedIntro = true;
+		GetHeader().RiseFrom(HeaderFrom, HeaderFromHeight,
 			context.localization.GetText(TextKey::Pause::Title), Accent);
-		if (MenuScreen* screen = CurrentScreen())
+		if (MenuScreen* screen = GetCurrentScreen())
 		{
 			screen->PlayIntro();
 		}
@@ -241,14 +254,14 @@ void PauseState::RenderBackground(sf::RenderTarget& target)
 	if (!frozenFrame)
 	{
 		sf::RectangleShape overlay(target.getView().getSize());
-		overlay.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(190.f * reveal)));
+		overlay.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(FallbackOverlayAlpha * reveal)));
 		target.draw(overlay);
 		return;
 	}
 
 	sf::Shader& mosaic = context.shaders.Get(Assets::ShaderID::Mosaic);
 	mosaic.setUniform("texture", sf::Shader::CurrentTexture);
-	mosaic.setUniform("resolution", sf::Glsl::Vec2(Display::DisplayManager::VirtualSize));
+	mosaic.setUniform("resolution", sf::Glsl::Vec2(Display::VirtualSize));
 	mosaic.setUniform("cellPx", MosaicCellPx);
 	mosaic.setUniform("blurPx", MosaicBlurPx);
 	mosaic.setUniform("darken", MosaicDarken);

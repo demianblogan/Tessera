@@ -16,17 +16,17 @@ TEST_CASE("the tier advances at each of its time thresholds, reported once as an
 
 	director.Update(EscalationDirector::SpeedSurgeTierStart - 1.f);
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::Base);
-	CHECK_FALSE(director.ConsumeEvents().tierChanged);
+	CHECK_FALSE(director.ConsumeEvents().hasTierChanged);
 
 	director.Update(2.f);   // crosses into SpeedSurge
 	const EscalationDirector::Events afterSurge = director.ConsumeEvents();
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::SpeedSurge);
-	CHECK(afterSurge.tierChanged);
+	CHECK(afterSurge.hasTierChanged);
 	CHECK(afterSurge.tier == EscalationDirector::Tier::SpeedSurge);
 
 	// No further change mid-tier.
 	director.Update(1.f);
-	CHECK_FALSE(director.ConsumeEvents().tierChanged);
+	CHECK_FALSE(director.ConsumeEvents().hasTierChanged);
 
 	director.Update(EscalationDirector::GarbageTierStart - EscalationDirector::SpeedSurgeTierStart - 2.f);
 	CHECK(director.CurrentTier() == EscalationDirector::Tier::Garbage);
@@ -61,25 +61,25 @@ TEST_CASE("Speed Surge fires periodically once unlocked, doubles fall speed whil
 
 	// Just short of the first (shorter) delay: not yet.
 	director.Update(EscalationDirector::FirstSurgeDelay - 0.1f);
-	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
+	CHECK_FALSE(director.ConsumeEvents().hasSurgeStarted);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
 
 	// Crossing it starts the surge.
 	director.Update(0.2f);
-	CHECK(director.ConsumeEvents().surgeStarted);
+	CHECK(director.ConsumeEvents().hasSurgeStarted);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(EscalationDirector::SurgeFallMultiplier));
 
 	// It ends after SurgeDuration.
 	director.Update(EscalationDirector::SurgeDuration + 0.1f);
-	CHECK(director.ConsumeEvents().surgeEnded);
+	CHECK(director.ConsumeEvents().hasSurgeEnded);
 	CHECK(director.FallSpeedMultiplier() == doctest::Approx(1.f));
 
 	// The next one waits a full SurgeInterval, not the shorter first delay.
 	director.Update(EscalationDirector::SurgeInterval - 0.1f);
-	CHECK_FALSE(director.ConsumeEvents().surgeStarted);
+	CHECK_FALSE(director.ConsumeEvents().hasSurgeStarted);
 
 	director.Update(0.2f);
-	CHECK(director.ConsumeEvents().surgeStarted);
+	CHECK(director.ConsumeEvents().hasSurgeStarted);
 }
 
 TEST_CASE("no garbage row is queued before the Garbage tier, however long the run goes")

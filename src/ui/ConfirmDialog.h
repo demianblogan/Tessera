@@ -7,9 +7,9 @@
 #include <SFML/System/Vector2.hpp>
 
 #include "../input/MenuInput.h"
-#include "../rendering/NeonGlow.h"
+#include "../primitives/NeonGlow.h"
 #include "MenuLabel.h"
-#include "NineSliceFrame.h"
+#include "../primitives/NineSliceFrame.h"
 
 class AudioPlayer;
 
@@ -37,7 +37,7 @@ namespace UI
 
 		void Show(const sf::String& message, const sf::String& yesLabel, const sf::String& noLabel);
 
-		[[nodiscard]] bool IsOpen() const { return phase != Phase::Closed; }
+		[[nodiscard]] bool IsOpen() const;
 		[[nodiscard]] std::optional<bool> TakeResult();
 
 		void Navigate(MenuInput::Action action);
@@ -52,9 +52,9 @@ namespace UI
 	private:
 		enum class Phase { Closed, Open, Resolving };
 
-		void Choose(bool answer);
-		void DrawButton(sf::RenderTarget& target, MenuLabel& label, sf::Vector2f centre,
-			sf::Color hue, bool selected, float contentAlpha);
+		void Choose(bool isYesAnswer);
+		void DrawButton(sf::RenderTarget& target, MenuLabel& label, sf::Vector2f center,
+			sf::Color hue, bool isSelected, float contentAlpha);
 
 		sf::Text messageText;
 		NineSliceFrame frame;
@@ -64,8 +64,8 @@ namespace UI
 		AudioPlayer& audio;
 
 		Phase phase = Phase::Closed;
-		bool yesSelected = false;
-		bool chosenAnswer = false;
+		bool isYesSelected = false;
+		bool isYesChosen = false;
 		std::optional<bool> result;
 
 		float appear = 0.f;        // 0..1 fade-in

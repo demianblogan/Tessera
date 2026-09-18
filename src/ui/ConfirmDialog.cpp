@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <cstdint>
 
 #include <SFML/Graphics/Font.hpp>
@@ -11,27 +12,28 @@
 #include <SFML/Graphics/Transform.hpp>
 
 #include "../audio/AudioPlayer.h"
+#include "../display/DisplaySettings.h"
 #include "../resources/Assets.h"
-#include "Easing.h"
+#include "../utils/Easing.h"
 #include "TextLayout.h"
 
 namespace
 {
-	constexpr sf::Vector2f Centre{ 960.f, 540.f };
+	constexpr sf::Vector2f Center{ 960.f, 540.f };
 	constexpr sf::Vector2f BoxSize{ 880.f, 380.f };
 	constexpr sf::FloatRect BoxBounds{
-		{ Centre.x - BoxSize.x * 0.5f, Centre.y - BoxSize.y * 0.5f }, BoxSize };
+		{ Center.x - BoxSize.x * 0.5f, Center.y - BoxSize.y * 0.5f }, BoxSize };
 	constexpr sf::Vector2f FrameTargetBorder{ 40.f, 40.f };
 
 	constexpr unsigned int MessageSize = 40;
 	constexpr unsigned int ButtonSize = 40;
 
-	constexpr float MessageY = Centre.y - 62.f;
-	constexpr float ButtonY = Centre.y + 100.f;
+	constexpr float MessageY = Center.y - 62.f;
+	constexpr float ButtonY = Center.y + 100.f;
 	constexpr float ButtonSpacing = 196.f;
 
-	constexpr sf::Vector2f NoCentre{ Centre.x - ButtonSpacing, ButtonY };
-	constexpr sf::Vector2f YesCentre{ Centre.x + ButtonSpacing, ButtonY };
+	constexpr sf::Vector2f NoCenter{ Center.x - ButtonSpacing, ButtonY };
+	constexpr sf::Vector2f YesCenter{ Center.x + ButtonSpacing, ButtonY };
 
 	// The box slides in from above: fully off the top at appear 0, home at 1.
 	constexpr float EntryDrop = 780.f;
@@ -46,16 +48,17 @@ namespace
 	constexpr float SelectedScale = 1.06f;
 	constexpr float UnselectedAlpha = 0.5f;
 	constexpr float DimAlpha = 175.f;
-	constexpr float Pi = 3.14159265f;
+	constexpr float Pi = std::numbers::pi_v<float>;
 
-	const sf::Color MessageColour{ 244, 234, 210 };
+	const sf::Color BoxFillColor{ 12, 11, 16, 225 };
+	const sf::Color MessageColor{ 244, 234, 210 };
 	const sf::Color YesHue{ 70, 200, 110 };   // matches the Options "Apply" green
 	const sf::Color NoHue{ 240, 70, 78 };     // the menu red
 
-	using UI::Easing::EaseInCubic;
-	using UI::Easing::EaseOutCubic;
-	using UI::Easing::Lerp;
-	using UI::Easing::SmoothStep;
+	using Easing::EaseInCubic;
+	using Easing::EaseOutCubic;
+	using Easing::Lerp;
+	using Easing::SmoothStep;
 
 	[[nodiscard]] std::uint8_t ToAlpha(float value)
 	{
@@ -68,28 +71,33 @@ namespace UI
 	ConfirmDialog::ConfirmDialog(const sf::Font& messageFont, const sf::Font& buttonFont,
 		const sf::Texture& frameTexture, sf::Shader& neonDilate, sf::Shader& neonBlur, AudioPlayer& audio)
 		: messageText(messageFont, "", MessageSize)
-		, frame(frameTexture, BoxBounds, UI::MenuFrameSourceBorder, FrameTargetBorder)
+		, frame(frameTexture, BoxBounds, MenuFrameSourceBorder, FrameTargetBorder)
 		, yesLabel(buttonFont, ButtonSize)
 		, noLabel(buttonFont, ButtonSize)
 		, glow(neonDilate, neonBlur)
 		, audio(audio)
 	{
-		messageText.setFillColor(MessageColour);
+		messageText.setFillColor(MessageColor);
 	}
 
 	void ConfirmDialog::Show(const sf::String& message, const sf::String& yesText, const sf::String& noText)
 	{
 		messageText.setString(message);
-		UI::TextLayout::CentreOrigin(messageText);
+		UI::TextLayout::CenterOrigin(messageText);
 
 		yesLabel.SetText(yesText);
 		noLabel.SetText(noText);
 
 		phase = Phase::Open;
-		yesSelected = false;   // default to "No" -- the safe answer
+		isYesSelected = false;   // default to "No" -- the safe answer
 		result.reset();
 		appear = 0.f;
 		resolveTime = 0.f;
+	}
+
+	bool ConfirmDialog::IsOpen() const
+	{
+		return phase != Phase::Closed;
 	}
 
 	std::optional<bool> ConfirmDialog::TakeResult()
@@ -99,10 +107,10 @@ namespace UI
 		return value;
 	}
 
-	void ConfirmDialog::Choose(bool answer)
+	void ConfirmDialog::Choose(bool isYesAnswer)
 	{
-		chosenAnswer = answer;
-		yesSelected = answer;   // show the chosen button as selected while it flashes
+		isYesChosen = isYesAnswer;
+		isYesSelected = isYesAnswer;   // show the chosen button as selected while it flashes
 		phase = Phase::Resolving;
 		resolveTime = 0.f;
 		audio.Play(Assets::SoundID::MenuItemPressed);
@@ -119,11 +127,11 @@ namespace UI
 		{
 		case MenuInput::Action::Left:
 		case MenuInput::Action::Right:
-			yesSelected = !yesSelected;
+			isYesSelected = !isYesSelected;
 			audio.Restart(Assets::SoundID::MenuItemSelected);
 			break;
 		case MenuInput::Action::Confirm:
-			Choose(yesSelected);
+			Choose(isYesSelected);
 			break;
 		case MenuInput::Action::Back:
 			Choose(false);
@@ -140,17 +148,17 @@ namespace UI
 			return;
 		}
 
-		const bool overYes = yesLabel.Bounds(YesCentre, 1.f).contains(point);
-		const bool overNo = noLabel.Bounds(NoCentre, 1.f).contains(point);
+		const bool overYes = yesLabel.GetBounds(YesCenter, 1.f).contains(point);
+		const bool overNo = noLabel.GetBounds(NoCenter, 1.f).contains(point);
 
-		if (overYes && !yesSelected)
+		if (overYes && !isYesSelected)
 		{
-			yesSelected = true;
+			isYesSelected = true;
 			audio.Restart(Assets::SoundID::MenuItemSelected);
 		}
-		else if (overNo && yesSelected)
+		else if (overNo && isYesSelected)
 		{
-			yesSelected = false;
+			isYesSelected = false;
 			audio.Restart(Assets::SoundID::MenuItemSelected);
 		}
 	}
@@ -162,11 +170,11 @@ namespace UI
 			return;
 		}
 
-		if (yesLabel.Bounds(YesCentre, 1.f).contains(point))
+		if (yesLabel.GetBounds(YesCenter, 1.f).contains(point))
 		{
 			Choose(true);
 		}
-		else if (noLabel.Bounds(NoCentre, 1.f).contains(point))
+		else if (noLabel.GetBounds(NoCenter, 1.f).contains(point))
 		{
 			Choose(false);
 		}
@@ -181,8 +189,8 @@ namespace UI
 
 		appear = std::min(1.f, appear + deltaTime * AppearSpeed);
 
-		yesLabel.SetWaveEnabled(yesSelected);
-		noLabel.SetWaveEnabled(!yesSelected);
+		yesLabel.SetWaveEnabled(isYesSelected);
+		noLabel.SetWaveEnabled(!isYesSelected);
 		yesLabel.Update(deltaTime);
 		noLabel.Update(deltaTime);
 		glow.Update(deltaTime);
@@ -192,29 +200,29 @@ namespace UI
 			resolveTime += deltaTime;
 			if (resolveTime >= PressHold + HideDuration)
 			{
-				result = chosenAnswer;
+				result = isYesChosen;
 				phase = Phase::Closed;
 			}
 		}
 	}
 
-	void ConfirmDialog::DrawButton(sf::RenderTarget& target, MenuLabel& label, sf::Vector2f centre,
-		sf::Color hue, bool selected, float contentAlpha)
+	void ConfirmDialog::DrawButton(sf::RenderTarget& target, MenuLabel& label, sf::Vector2f center,
+		sf::Color hue, bool isSelected, float contentAlpha)
 	{
-		const float press = (phase == Phase::Resolving && selected)
+		const float press = (phase == Phase::Resolving && isSelected)
 			? std::sin(std::clamp(resolveTime / PressHold, 0.f, 1.f) * Pi)
 			: 0.f;
 
-		const float scale = (selected ? SelectedScale : 1.f) + PressPunch * press;
-		const float alpha = contentAlpha * (selected ? 1.f : UnselectedAlpha);
+		const float scale = (isSelected ? SelectedScale : 1.f) + PressPunch * press;
+		const float alpha = contentAlpha * (isSelected ? 1.f : UnselectedAlpha);
 
-		if (selected)
+		if (isSelected)
 		{
 			const sf::Color glowTint(hue.r, hue.g, hue.b, ToAlpha(contentAlpha));
-			label.DrawGlow(target, glow, centre, scale, glowTint);
+			label.DrawGlow(target, glow, center, scale, glowTint);
 		}
 
-		label.Draw(target, centre, scale, hue, alpha, PressFlash * press);
+		label.Draw(target, center, scale, hue, alpha, PressFlash * press);
 	}
 
 	void ConfirmDialog::Render(sf::RenderTarget& target)
@@ -233,17 +241,17 @@ namespace UI
 			? Lerp(0.f, -EntryDrop, leaving)
 			: Lerp(-EntryDrop, 0.f, EaseOutCubic(appear));
 
-		sf::RectangleShape dim({ 1920.f, 1080.f });
+		sf::RectangleShape dim(Display::VirtualSize);
 		dim.setFillColor(sf::Color(0, 0, 0,
 			static_cast<std::uint8_t>(SmoothStep(appear) * (1.f - leaving) * DimAlpha)));
 		target.draw(dim);
 
 		// A dark fill behind the frame so the message stays legible whatever the
-		// frame texture's centre does.
+		// frame texture's center does.
 		sf::RectangleShape fill(BoxSize);
 		fill.setOrigin(BoxSize * 0.5f);
-		fill.setPosition({ Centre.x, Centre.y + slideY });
-		fill.setFillColor(sf::Color(12, 11, 16, 225));
+		fill.setPosition({ Center.x, Center.y + slideY });
+		fill.setFillColor(BoxFillColor);
 		target.draw(fill);
 
 		sf::Transform slide;
@@ -251,10 +259,10 @@ namespace UI
 		frame.SetColor(sf::Color::White);
 		frame.Draw(target, sf::RenderStates(slide));
 
-		messageText.setPosition({ Centre.x, MessageY + slideY });
+		messageText.setPosition({ Center.x, MessageY + slideY });
 		target.draw(messageText);
 
-		DrawButton(target, noLabel, { NoCentre.x, NoCentre.y + slideY }, NoHue, !yesSelected, 1.f);
-		DrawButton(target, yesLabel, { YesCentre.x, YesCentre.y + slideY }, YesHue, yesSelected, 1.f);
+		DrawButton(target, noLabel, { NoCenter.x, NoCenter.y + slideY }, NoHue, !isYesSelected, 1.f);
+		DrawButton(target, yesLabel, { YesCenter.x, YesCenter.y + slideY }, YesHue, isYesSelected, 1.f);
 	}
 }

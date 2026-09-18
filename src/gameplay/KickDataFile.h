@@ -4,8 +4,8 @@
 
 // Loads assets/data/srs_kicks.json into KickData, overriding any wall-kick
 // transition the file defines. A missing file, table, or malformed transition
-// leaves that slot on its built-in SRS value (with a warning to stderr). Call
-// once at startup, before the first piece is in play.
+// leaves that slot on its built-in SRS value. Call once at startup, before
+// the first piece is in play.
 //
 // File shape (offsets are [x, y], +y down, exactly 5 per transition):
 //   {

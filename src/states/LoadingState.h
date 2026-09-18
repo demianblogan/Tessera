@@ -55,5 +55,5 @@ private:
 	// the bar reaches it.
 	std::vector<float> cellAppearTime = std::vector<float>(CellCount, -1.f);
 
-	bool handedOff = false;
+	bool hasHandedOff = false;
 };

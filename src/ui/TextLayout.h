@@ -20,9 +20,7 @@ namespace UI::TextLayout
 		const float naturalWidth = text.getLocalBounds().size.x;
 
 		if (characterSize <= 0.f || naturalWidth <= 0.f || maximumWidth <= 0.f)
-		{
 			return;
-		}
 
 		const float minimumScale = static_cast<float>(minimumSize) / characterSize;
 		const float fitScale = std::clamp(maximumWidth / naturalWidth, minimumScale, 1.f);
@@ -30,9 +28,9 @@ namespace UI::TextLayout
 		text.setScale({ fitScale, fitScale });
 	}
 
-	// Moves `text`'s origin to the centre of its own visual bounds, so a
-	// following setPosition() centres it regardless of the string's length.
-	inline void CentreOrigin(sf::Text& text)
+	// Moves `text`'s origin to the center of its own visual bounds, so a
+	// following setPosition() centers it regardless of the string's length.
+	inline void CenterOrigin(sf::Text& text)
 	{
 		const sf::FloatRect bounds = text.getLocalBounds();
 

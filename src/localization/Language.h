@@ -35,12 +35,18 @@ inline constexpr std::array<Language, LanguageCount> AllLanguages =
 {
 	switch (language)
 	{
-	case Language::English:   return "en";
-	case Language::Spanish:   return "es";
-	case Language::German:    return "de";
-	case Language::Russian:   return "ru";
-	case Language::Ukrainian: return "uk";
-	}
+	case Language::English:
+		return "en";
+	case Language::Spanish:
+		return "es";
+	case Language::German:
+		return "de";
+	case Language::Russian:
+		return "ru";
+	case Language::Ukrainian:
+		return "uk";
 
-	return "en";
+	default:
+		return "en";
+	}
 }

@@ -15,8 +15,12 @@ namespace Assets
 		MainMenu,
 		Gameplay1,
 		Gameplay2,
-		Gameplay3
+		Gameplay3,
+
+		Count
 	};
+
+	inline constexpr int MusicIDCount = static_cast<int>(MusicID::Count);
 
 	enum class SoundID
 	{
@@ -33,8 +37,12 @@ namespace Assets
 		RotatePiece,
 		RowCleared,
 
-		GameOver
+		GameOver,
+
+		Count
 	};
+
+	inline constexpr int SoundIDCount = static_cast<int>(SoundID::Count);
 
 	enum class TextureID
 	{
@@ -117,22 +125,22 @@ namespace Assets
 		namespace Textures
 		{
 			inline constexpr const char* BlockSpritesheetWithOutline = "assets/textures/block_spritesheet_with_outline.png";
-			inline constexpr const char* MenuBackground = "assets/textures/menu_background.png";          // main-menu backdrop
-			inline constexpr const char* GameplayBackground = "assets/textures/gameplay_background.jpg";  // in-game backdrop
+			inline constexpr const char* MenuBackground = "assets/textures/menu_background.png";
+			inline constexpr const char* GameplayBackground = "assets/textures/gameplay_background.jpg";
 			inline constexpr const char* CompanyLogo = "assets/other/alone_bull_splash_logo.jpg";
 			inline constexpr const char* Cursor = "assets/textures/cursor.png";
 			inline constexpr const char* UiArrow = "assets/textures/ui/arrow.png";
 
 			// Per-menu 9-slice frames (62x62 source, decorative border
-			// ~UI::MenuFrameSourceBorder px) -- one hue per Options category /
+			// ~MenuFrameSourceBorder px) -- one hue per Options category /
 			// screen, matching that screen's accent. Gold is the warning dialog.
-			inline constexpr const char* UiFrameCyan   = "assets/textures/ui/menu_background_cyan_frame.png";
-			inline constexpr const char* UiFrameBlue   = "assets/textures/ui/menu_background_blue_frame.png";
-			inline constexpr const char* UiFrameGreen  = "assets/textures/ui/menu_background_green_frame.png";
+			inline constexpr const char* UiFrameCyan = "assets/textures/ui/menu_background_cyan_frame.png";
+			inline constexpr const char* UiFrameBlue = "assets/textures/ui/menu_background_blue_frame.png";
+			inline constexpr const char* UiFrameGreen = "assets/textures/ui/menu_background_green_frame.png";
 			inline constexpr const char* UiFramePurple = "assets/textures/ui/menu_background_purple_frame.png";
-			inline constexpr const char* UiFrameBrown  = "assets/textures/ui/menu_background_brown_frame.png";
-			inline constexpr const char* UiFrameRed    = "assets/textures/ui/menu_background_red_frame.png";   // game over
-			inline constexpr const char* UiFrameWhiteRed = "assets/textures/ui/menu_background_white_red_frame.png";   // options: HUD
+			inline constexpr const char* UiFrameBrown = "assets/textures/ui/menu_background_brown_frame.png";
+			inline constexpr const char* UiFrameRed = "assets/textures/ui/menu_background_red_frame.png";
+			inline constexpr const char* UiFrameWhiteRed = "assets/textures/ui/menu_background_white_red_frame.png";
 			inline constexpr const char* UiFrameWarning = "assets/textures/ui/menu_background_gold_frame.png";
 
 			// Settings widgets.
@@ -177,6 +185,6 @@ namespace Assets
 // each into a full path under %LOCALAPPDATA%.
 namespace SaveFile
 {
-	inline constexpr const char* Settings = "settings.txt";
-	inline constexpr const char* Scores = "scores.txt";
+	inline constexpr const char* Settings = "settings.json";
+	inline constexpr const char* Scores = "scores.json";
 }

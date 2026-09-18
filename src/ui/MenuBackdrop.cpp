@@ -10,9 +10,12 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Angle.hpp>
 
+#include "../display/DisplaySettings.h"
+
 namespace
 {
-	constexpr sf::Vector2f VirtualSize{ 1920.f, 1080.f };
+	using Display::VirtualSize;
+
 	constexpr int BlockSpriteSize = 16;
 
 	constexpr int PieceCount = 18;
@@ -32,6 +35,22 @@ namespace
 
 	constexpr float WrapMargin = 140.f;
 
+	// Respawn() -- horizontal spawn span (a different tunable from WrapMargin,
+	// which governs the wrap-around while a piece is alive).
+	constexpr float SpawnMarginX = 120.f;
+
+	// Respawn() -- vertical spawn span: pieces seeded at startup are scattered
+	// across (and a little above/below) the whole screen; pieces respawning
+	// after falling off the bottom start a bit above the top edge instead.
+	constexpr float InitialSpawnYPad = 200.f;
+	constexpr float InitialSpawnYOffset = 100.f;
+	constexpr float RespawnAboveScreenMin = 160.f;
+	constexpr float RespawnAboveScreenRange = 260.f;
+
+	// Update() -- a piece despawns once it has fully fallen past the bottom
+	// edge, measured in multiples of its own cell size.
+	constexpr float DespawnCellSizeMultiple = 4.f;
+
 	// Cell coordinates of each shape's four blocks (spawn orientation).
 	constexpr std::array<std::array<sf::Vector2i, 4>, 7> ShapeCells{ {
 		{ { { 0, 1 }, { 1, 1 }, { 2, 1 }, { 3, 1 } } },   // I
@@ -48,7 +67,7 @@ namespace UI
 {
 	MenuBackdrop::MenuBackdrop(const sf::Texture& blockSheet)
 		: sheet(blockSheet)
-		, rng(std::random_device{}())
+		, randomEngine(std::random_device{}())
 	{
 		for (std::size_t type = 0; type < ShapeCells.size(); ++type)
 		{
@@ -72,24 +91,24 @@ namespace UI
 		}
 	}
 
-	void MenuBackdrop::Respawn(Piece& piece, bool initial)
+	void MenuBackdrop::Respawn(Piece& piece, bool isInitial)
 	{
 		std::uniform_real_distribution<float> unit(0.f, 1.f);
-		std::uniform_int_distribution<int> typePick(0, 6);
+		std::uniform_int_distribution<int> typePick(0, static_cast<int>(ShapeCells.size()) - 1);
 
-		piece.type = typePick(rng);
-		piece.cellSize = MinCellSize + unit(rng) * (MaxCellSize - MinCellSize);
+		piece.type = typePick(randomEngine);
+		piece.cellSize = MinCellSize + unit(randomEngine) * (MaxCellSize - MinCellSize);
 
 		const float depth = (piece.cellSize - MinCellSize) / (MaxCellSize - MinCellSize);   // 0 far .. 1 near
 		piece.fallSpeed = MinFallSpeed + depth * FallSpeedByDepth;
 		piece.alpha = MinAlpha + depth * (MaxAlpha - MinAlpha);
-		piece.angularVelocity = (unit(rng) * 2.f - 1.f) * MaxSpin;
-		piece.angleDegrees = unit(rng) * 360.f;
+		piece.angularVelocity = (unit(randomEngine) * 2.f - 1.f) * MaxSpin;
+		piece.angleDegrees = unit(randomEngine) * 360.f;
 
-		const float x = -120.f + unit(rng) * (VirtualSize.x + 240.f);
-		const float y = initial
-			? unit(rng) * (VirtualSize.y + 200.f) - 100.f
-			: -160.f - unit(rng) * 260.f;
+		const float x = -SpawnMarginX + unit(randomEngine) * (VirtualSize.x + 2.f * SpawnMarginX);
+		const float y = isInitial
+			? unit(randomEngine) * (VirtualSize.y + InitialSpawnYPad) - InitialSpawnYOffset
+			: -RespawnAboveScreenMin - unit(randomEngine) * RespawnAboveScreenRange;
 		piece.position = { x, y };
 	}
 
@@ -122,7 +141,7 @@ namespace UI
 				piece.position.x -= VirtualSize.x + 2.f * WrapMargin;
 			}
 
-			if (piece.position.y - 4.f * piece.cellSize > VirtualSize.y)
+			if (piece.position.y - DespawnCellSizeMultiple * piece.cellSize > VirtualSize.y)
 			{
 				Respawn(piece, false);
 			}

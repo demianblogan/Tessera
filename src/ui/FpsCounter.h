@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Text.hpp>
 
 namespace sf
@@ -26,6 +27,9 @@ namespace UI
 	private:
 		static constexpr float RefreshInterval = 0.5f;
 		static constexpr float Margin = 24.f;
+		static constexpr unsigned int CharacterSize = 34;
+		static constexpr float OutlineThickness = 3.f;
+		static constexpr sf::Color TextColor{ 255, 245, 170 };
 
 		sf::Text text;
 		float windowedTime = 0.f;

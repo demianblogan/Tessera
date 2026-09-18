@@ -10,9 +10,13 @@ namespace
 	{
 		using Tier = EscalationDirector::Tier;
 
-		if (elapsedSeconds >= EscalationDirector::ChaosTierStart) { return Tier::Chaos; }
-		if (elapsedSeconds >= EscalationDirector::GarbageTierStart) { return Tier::Garbage; }
-		if (elapsedSeconds >= EscalationDirector::SpeedSurgeTierStart) { return Tier::SpeedSurge; }
+		if (elapsedSeconds >= EscalationDirector::ChaosTierStart)
+			return Tier::Chaos;
+		if (elapsedSeconds >= EscalationDirector::GarbageTierStart)
+			return Tier::Garbage;
+		if (elapsedSeconds >= EscalationDirector::SpeedSurgeTierStart)
+			return Tier::SpeedSurge;
+
 		return Tier::Base;
 	}
 }
@@ -32,30 +36,29 @@ void EscalationDirector::UpdateTier()
 	if (newTier != tier)
 	{
 		tier = newTier;
-		pendingEvents.tierChanged = true;
+		pendingEvents.hasTierChanged = true;
 		pendingEvents.tier = tier;
 
-		if (tier == Tier::Chaos) { chaosTierEnteredAt = elapsedSeconds; }
+		if (tier == Tier::Chaos)
+			chaosTierEnteredAt = elapsedSeconds;
 	}
 }
 
 void EscalationDirector::UpdateSurge(float deltaTime)
 {
 	if (tier < Tier::SpeedSurge)
-	{
 		return;
-	}
 
-	if (surgeActive)
+	if (isSurgeActive)
 	{
 		surgeTimer += deltaTime;
 
 		if (surgeTimer >= SurgeDuration)
 		{
-			surgeActive = false;
+			isSurgeActive = false;
 			surgeTimer = 0.f;
 			surgeCooldown = SurgeInterval;
-			pendingEvents.surgeEnded = true;
+			pendingEvents.hasSurgeEnded = true;
 		}
 
 		return;
@@ -65,31 +68,27 @@ void EscalationDirector::UpdateSurge(float deltaTime)
 
 	if (surgeCooldown <= 0.f)
 	{
-		surgeActive = true;
+		isSurgeActive = true;
 		surgeTimer = 0.f;
-		pendingEvents.surgeStarted = true;
+		pendingEvents.hasSurgeStarted = true;
 	}
 }
 
 void EscalationDirector::UpdateGarbage(float deltaTime)
 {
 	if (tier < Tier::Garbage)
-	{
 		return;
-	}
 
 	// Negative means "not rolled yet" -- rolls the first interval the moment
 	// the tier starts, rather than waiting a full Update() for it.
 	if (garbageCooldown < 0.f)
-	{
 		garbageCooldown = Random::Float(GarbageMinInterval, GarbageMaxInterval);
-	}
 
 	garbageCooldown -= deltaTime;
 
 	if (garbageCooldown <= 0.f)
 	{
-		++pendingGarbageRows;
+		pendingGarbageRows++;
 		garbageCooldown = Random::Float(GarbageMinInterval, GarbageMaxInterval);
 	}
 }
@@ -97,11 +96,9 @@ void EscalationDirector::UpdateGarbage(float deltaTime)
 bool EscalationDirector::ConsumePendingGarbageRow()
 {
 	if (pendingGarbageRows <= 0)
-	{
 		return false;
-	}
 
-	--pendingGarbageRows;
+	pendingGarbageRows--;
 	return true;
 }
 
@@ -115,14 +112,14 @@ bool EscalationDirector::ShouldSpawnGoldenPiece()
 
 	// As with the first garbage row: don't leave the first golden piece to
 	// however many pieces the player happens to spawn in a given stretch.
-	if (!firstGoldenGranted && elapsedSeconds - chaosTierEnteredAt >= FirstGoldenDelay)
+	if (!hasGrantedFirstGolden && elapsedSeconds - chaosTierEnteredAt >= FirstGoldenDelay)
 	{
-		firstGoldenGranted = true;
+		hasGrantedFirstGolden = true;
 		piecesSinceGolden = 0;
 		return true;
 	}
 
-	++piecesSinceGolden;
+	piecesSinceGolden++;
 
 	if (piecesSinceGolden >= PiecesPerGoldenPiece)
 	{
@@ -138,4 +135,14 @@ EscalationDirector::Events EscalationDirector::ConsumeEvents()
 	Events consumed = std::move(pendingEvents);
 	pendingEvents = {};
 	return consumed;
+}
+
+EscalationDirector::Tier EscalationDirector::CurrentTier() const
+{
+	return tier;
+}
+
+float EscalationDirector::FallSpeedMultiplier() const
+{
+	return isSurgeActive ? SurgeFallMultiplier : 1.f;
 }

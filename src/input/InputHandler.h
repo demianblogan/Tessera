@@ -23,8 +23,7 @@ public:
 
 	explicit InputHandler(const ActionMap<Action>& map)
 		: actionMap(map)
-	{
-	}
+	{}
 
 	void Subscribe(Action action, Callback callback)
 	{
@@ -34,29 +33,17 @@ public:
 	void HandleEvent(const sf::Event& event)
 	{
 		for (const auto& [action, bindings] : actionMap.GetBindingsMap())
-		{
 			for (const InputBinding& binding : bindings)
-			{
 				if (MatchesEvent(binding, event))
-				{
 					Invoke(action);
-				}
-			}
-		}
 	}
 
 	void Update()
 	{
 		for (const auto& [action, bindings] : actionMap.GetBindingsMap())
-		{
 			for (const InputBinding& binding : bindings)
-			{
 				if (IsHeld(binding))
-				{
 					Invoke(action);
-				}
-			}
-		}
 	}
 
 private:
@@ -64,14 +51,10 @@ private:
 	{
 		const auto iterator = callbacks.find(action);
 		if (iterator == callbacks.end())
-		{
 			return;
-		}
 
 		for (const Callback& callback : iterator->second)
-		{
 			callback();
-		}
 	}
 
 	[[nodiscard]] static bool MatchesEvent(const InputBinding& binding, const sf::Event& event)
@@ -80,9 +63,7 @@ private:
 
 		const Trigger trigger = binding.GetTriggerType();
 		if (trigger == Trigger::WhileHeld)
-		{
 			return false;
-		}
 
 		const auto visitor = [trigger, &event](auto value) -> bool
 			{
@@ -118,22 +99,16 @@ private:
 	[[nodiscard]] static bool IsHeld(const InputBinding& binding)
 	{
 		if (binding.GetTriggerType() != InputBinding::TriggerType::WhileHeld)
-		{
 			return false;
-		}
 
 		const auto visitor = [](auto value) -> bool
 			{
 				using Value = decltype(value);
 
 				if constexpr (std::is_same_v<Value, sf::Keyboard::Scancode>)
-				{
 					return sf::Keyboard::isKeyPressed(value);
-				}
 				else
-				{
 					return sf::Mouse::isButtonPressed(value);
-				}
 			};
 
 		return std::visit(visitor, binding.GetInputValue());

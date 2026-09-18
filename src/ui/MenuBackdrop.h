@@ -35,7 +35,7 @@ namespace UI
 		struct Piece
 		{
 			int type = 0;
-			sf::Vector2f position;   // centre, virtual coordinates
+			sf::Vector2f position;   // center, virtual coordinates
 			float angleDegrees = 0.f;
 			float angularVelocity = 0.f;
 			float fallSpeed = 0.f;
@@ -43,12 +43,12 @@ namespace UI
 			float alpha = 0.f;
 		};
 
-		void Respawn(Piece& piece, bool initial);
+		void Respawn(Piece& piece, bool isInitial);
 
 		const sf::Texture& sheet;
 		std::array<std::array<sf::Vector2f, 4>, 7> relativeCells{};   // cell offsets from each shape's centroid
 		std::vector<Piece> pieces;
-		std::mt19937 rng;
+		std::mt19937 randomEngine;
 
 		float driftVelocity = 0.f;   // shared sideways velocity from Push(), decaying
 	};

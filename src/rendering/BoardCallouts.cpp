@@ -13,39 +13,38 @@
 #include "../core/Context.h"
 #include "../gameplay/Board.h"
 #include "../resources/Assets.h"
-#include "../ui/Easing.h"
+#include "../utils/Easing.h"
 
 namespace
 {
-	// Centred over the well -- clear of the HOLD/NEXT panels either side.
-	constexpr sf::Vector2f Anchor{
-		BoardRenderer::BoardPosition.x + static_cast<float>(Board::WIDTH) * BoardRenderer::BlockSize * 0.5f,
+	// Centered over the well -- clear of the HOLD/NEXT panels either side.
+	constexpr sf::Vector2f Anchor
+	{
+		BoardRenderer::BoardPosition.x + static_cast<float>(Board::Width) * BoardRenderer::BlockSize * 0.5f,
 		BoardRenderer::BoardPosition.y + static_cast<float>(Board::VisibleHeight) * BoardRenderer::BlockSize * 0.5f
 	};
 
-	void CentreText(sf::Text& text, sf::Vector2f centre)
+	void CenterText(sf::Text& text, sf::Vector2f center)
 	{
 		const sf::FloatRect bounds = text.getLocalBounds();
 		text.setOrigin({ bounds.position.x + bounds.size.x * 0.5f, bounds.position.y + bounds.size.y * 0.5f });
-		text.setPosition(centre);
+		text.setPosition(center);
 	}
 
-	[[nodiscard]] sf::Color Brighten(sf::Color colour, float amount)
+	[[nodiscard]] sf::Color Brighten(sf::Color color, float amount)
 	{
 		return sf::Color(
-			static_cast<std::uint8_t>(UI::Easing::Lerp(static_cast<float>(colour.r), 255.f, amount)),
-			static_cast<std::uint8_t>(UI::Easing::Lerp(static_cast<float>(colour.g), 255.f, amount)),
-			static_cast<std::uint8_t>(UI::Easing::Lerp(static_cast<float>(colour.b), 255.f, amount)),
-			colour.a);
+			static_cast<std::uint8_t>(Easing::Lerp(static_cast<float>(color.r), 255.f, amount)),
+			static_cast<std::uint8_t>(Easing::Lerp(static_cast<float>(color.g), 255.f, amount)),
+			static_cast<std::uint8_t>(Easing::Lerp(static_cast<float>(color.b), 255.f, amount)),
+			color.a);
 	}
 }
 
 BoardCallouts::BoardCallouts(Context& context)
 	: context(context)
 	, glow(context.shaders.Get(Assets::ShaderID::NeonDilate), context.shaders.Get(Assets::ShaderID::NeonBlur))
-{
-	// No code
-}
+{}
 
 void BoardCallouts::Show(std::vector<Line> lines, int rank, sf::Color accent)
 {
@@ -59,41 +58,39 @@ void BoardCallouts::Show(std::vector<Line> lines, int rank, sf::Color accent)
 	for (const Line& line : lines)
 	{
 		sf::Text text(font, line.text, line.size);
-		text.setFillColor(line.colour);
-		text.setLetterSpacing(1.2f);
+		text.setFillColor(line.color);
+		text.setLetterSpacing(TextLetterSpacing);
 		text.setOutlineColor(sf::Color::Black);
-		text.setOutlineThickness(3.f);
-		activeLines.push_back({ std::move(text), line.colour });
+		text.setOutlineThickness(TextOutlineThickness);
+		activeLines.push_back({ std::move(text), line.color });
 	}
 
-	showing = true;
+	isShowing = true;
 	timer = 0.f;
 	duration = BaseDuration + static_cast<float>(clampedRank) * DurationPerRank;
-	chromatic = clampedRank >= ChromaticRankThreshold;
+	isChromatic = clampedRank >= ChromaticRankThreshold;
 
-	accentColour = accent;
+	accentColor = accent;
 	flashTimer = 0.f;
-	flashRadius = 70.f + static_cast<float>(clampedRank) * 16.f;
+	flashRadius = FlashBaseRadius + static_cast<float>(clampedRank) * FlashRadiusPerRank;
 
-	dust.Emit(Anchor, { flashRadius, flashRadius }, accent, 20 + clampedRank * 7);
+	dust.Emit(Anchor, { flashRadius, flashRadius }, accent, DustBaseCount + clampedRank * DustCountPerRank);
 }
 
 void BoardCallouts::Update(float deltaTime)
 {
-	if (showing)
+	if (isShowing)
 	{
 		timer += deltaTime;
 		if (timer >= duration)
 		{
-			showing = false;
+			isShowing = false;
 			activeLines.clear();
 		}
 	}
 
 	if (flashTimer < FlashDuration)
-	{
 		flashTimer += deltaTime;
-	}
 
 	dust.Update(deltaTime);
 	glow.Update(deltaTime);
@@ -105,39 +102,37 @@ void BoardCallouts::Render(sf::RenderTarget& target)
 	// text or the particles do.
 	if (flashTimer < FlashDuration)
 	{
-		const float ease = UI::Easing::EaseOutCubic(flashTimer / FlashDuration);
-		const float radius = flashRadius * (0.7f + 0.5f * ease);
-		const auto alpha = static_cast<std::uint8_t>((1.f - ease) * 150.f);
+		const float ease = Easing::EaseOutCubic(flashTimer / FlashDuration);
+		const float radius = flashRadius * (FlashRadiusStartFraction + FlashRadiusGrowth * ease);
+		const auto alpha = static_cast<std::uint8_t>((1.f - ease) * FlashMaxAlpha);
 
 		sf::CircleShape burst(radius);
 		burst.setOrigin({ radius, radius });
 		burst.setPosition(Anchor);
-		burst.setFillColor(sf::Color(accentColour.r, accentColour.g, accentColour.b, alpha));
+		burst.setFillColor(sf::Color(accentColor.r, accentColor.g, accentColor.b, alpha));
+
 		target.draw(burst);
 	}
 
 	dust.Render(target);
 
-	if (!showing || activeLines.empty())
-	{
+	if (!isShowing || activeLines.empty())
 		return;
-	}
 
-	const float t = timer / duration;
-	const float yOffset = -RiseDistance * UI::Easing::EaseOutCubic(std::min(t, 1.f));
+	const float progress = timer / duration;
+	const float yOffset = -RiseDistance * Easing::EaseOutCubic(std::min(progress, 1.f));
 
 	float fadeAlpha = 1.f;
-	if (t > HoldFraction)
-	{
-		fadeAlpha = 1.f - (t - HoldFraction) / (1.f - HoldFraction);
-	}
-	fadeAlpha = UI::Easing::Clamp01(fadeAlpha);
+	if (progress > HoldFraction)
+		fadeAlpha = 1.f - (progress - HoldFraction) / (1.f - HoldFraction);
+
+	fadeAlpha = Easing::Clamp01(fadeAlpha);
 
 	// The punch-in: a springy overshoot down to full size (EaseOutBack pushes
 	// past 1 partway through, which -- interpolating *toward* 1 from above --
 	// reads as the text overshooting small and popping back up to size).
-	const float popT = UI::Easing::Clamp01(timer / PopDuration);
-	const float scale = UI::Easing::Lerp(PopStartScale, 1.f, UI::Easing::EaseOutBack(popT));
+	const float popT = Easing::Clamp01(timer / PopDuration);
+	const float scale = Easing::Lerp(PopStartScale, 1.f, Easing::EaseOutBack(popT));
 	const float punch = 1.f - popT;   // 1 at the moment of impact, 0 once settled
 
 	const float totalHeight = LineSpacing * static_cast<float>(activeLines.size() - 1);
@@ -147,28 +142,29 @@ void BoardCallouts::Render(sf::RenderTarget& target)
 	{
 		sf::Text drawn = line.text;
 
-		sf::Color fillColour = Brighten(line.baseColour, punch * 0.5f);
-		fillColour.a = static_cast<std::uint8_t>(fadeAlpha * 255.f);
-		drawn.setFillColor(fillColour);
+		sf::Color fillColor = Brighten(line.baseColor, punch * PunchBrightenAmount);
+		fillColor.a = static_cast<std::uint8_t>(fadeAlpha * 255.f);
+		drawn.setFillColor(fillColor);
 
-		sf::Color outlineColour = drawn.getOutlineColor();
-		outlineColour.a = fillColour.a;
-		drawn.setOutlineColor(outlineColour);
+		sf::Color outlineColor = drawn.getOutlineColor();
+		outlineColor.a = fillColor.a;
+		drawn.setOutlineColor(outlineColor);
 
 		drawn.setScale({ scale, scale });
-		CentreText(drawn, { Anchor.x, y });
+		CenterText(drawn, { Anchor.x, y });
 
-		const sf::FloatRect glowArea{
+		const sf::FloatRect glowArea
+		{
 			{ Anchor.x - GlowBoxSize.x * 0.5f, y - GlowBoxSize.y * 0.5f },
 			GlowBoxSize
 		};
 
 		glow.Draw(target, glowArea,
 			[&](sf::RenderTarget& buffer, const sf::RenderStates& states) { buffer.draw(drawn, states); },
-			accentColour, false);
+			accentColor, false);
 
 		// A brief chromatic split on the way in, for the rarest callouts only.
-		if (chromatic && punch > 0.02f)
+		if (isChromatic && punch > 0.02f)
 		{
 			const auto splitAlpha = static_cast<std::uint8_t>(punch * 140.f);
 

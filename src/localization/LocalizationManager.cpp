@@ -10,14 +10,10 @@ namespace
 		const auto isSpace = [](char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n'; };
 
 		while (!text.empty() && isSpace(text.front()))
-		{
 			text.remove_prefix(1);
-		}
 
 		while (!text.empty() && isSpace(text.back()))
-		{
 			text.remove_suffix(1);
-		}
 
 		return text;
 	}
@@ -50,9 +46,7 @@ bool LocalizationManager::LoadCatalogFile(const std::filesystem::path& path)
 	std::ifstream file(path);
 
 	if (!file.is_open())
-	{
 		return false;
-	}
 
 	std::string line;
 
@@ -61,23 +55,17 @@ bool LocalizationManager::LoadCatalogFile(const std::filesystem::path& path)
 		const std::string_view trimmed = Trim(line);
 
 		if (trimmed.empty() || trimmed.front() == '#')
-		{
 			continue;
-		}
 
 		const std::size_t separator = trimmed.find('=');
 
 		if (separator == std::string_view::npos)
-		{
 			continue;
-		}
 
 		const std::string_view key = Trim(trimmed.substr(0, separator));
 
 		if (key.empty())
-		{
 			continue;
-		}
 
 		const std::string value = Unescape(Trim(trimmed.substr(separator + 1)));
 		catalog[std::string(key)] = sf::String::fromUtf8(value.begin(), value.end());
@@ -88,15 +76,13 @@ bool LocalizationManager::LoadCatalogFile(const std::filesystem::path& path)
 
 bool LocalizationManager::Load(const std::filesystem::path& directory, Language language)
 {
-	this->directory = directory;
+	catalogDirectory = directory;
 	catalog.clear();
 
 	if (!LoadCatalogFile(directory / "en.txt"))
-	{
 		return false;
-	}
 
-	this->language = language;
+	currentLanguage = language;
 
 	if (language != Language::English)
 	{
@@ -110,13 +96,21 @@ bool LocalizationManager::Load(const std::filesystem::path& directory, Language 
 
 void LocalizationManager::SetLanguage(Language newLanguage)
 {
-	if (newLanguage == language)
-	{
+	if (newLanguage == currentLanguage)
 		return;
-	}
 
-	Load(directory, newLanguage);
+	Load(catalogDirectory, newLanguage);
 	revision++;
+}
+
+Language LocalizationManager::GetLanguage() const
+{
+	return currentLanguage;
+}
+
+unsigned int LocalizationManager::GetRevision() const
+{
+	return revision;
 }
 
 sf::String LocalizationManager::GetText(std::string_view key) const

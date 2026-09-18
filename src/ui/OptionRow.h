@@ -29,47 +29,44 @@ namespace UI
 		virtual ~OptionRow() = default;
 
 		void SetLayout(sf::Vector2f left, float width, float height);
-		void SetEnabled(bool enabled) { this->enabled = enabled; }
-		void SetSelected(bool selected) { this->selected = selected; }
-		void SetAccent(sf::Color colour) { accent = colour; }
+		void SetEnabled(bool isEnabled);
+		void SetSelected(bool isSelected);
+		void SetAccent(sf::Color color);
 
-		[[nodiscard]] bool IsEnabled() const { return enabled; }
-		[[nodiscard]] sf::FloatRect Bounds() const;
+		[[nodiscard]] bool IsEnabled() const;
+		[[nodiscard]] sf::FloatRect GetBounds() const;
 
 		// Keyboard / pad: left or right (-1 / +1). Confirm flips a toggle.
 		virtual void Adjust(int direction) = 0;
-		virtual void Activate() {}
+		virtual void Activate();
 
 		// Mouse. Returns true if the point landed on an interactive part.
-		virtual bool HandlePointer(sf::Vector2f point, bool clicked) = 0;
+		virtual bool HandlePointer(sf::Vector2f point, bool wasClicked) = 0;
 
 		void Update(float deltaTime);
 		void Render(sf::RenderTarget& target, float panelAlpha) const;
 
-	protected:
-		[[nodiscard]] sf::FloatRect ControlArea() const;
-		[[nodiscard]] std::uint8_t Alpha(float panelAlpha, float extra = 1.f) const;
-		[[nodiscard]] sf::Color LabelColour() const;
-
-		virtual void RenderControl(sf::RenderTarget& target, float panelAlpha) const = 0;
-		virtual void UpdateControl(float /*deltaTime*/) {}
-
-		// --- Left / right arrows (opt-in) ---
-		void UseArrows(const sf::Texture& texture) { arrowTexture = &texture; }
-		[[nodiscard]] sf::Vector2f ArrowCentre(int side) const;   // -1 left, +1 right
-		[[nodiscard]] sf::FloatRect ArrowBox(int side) const;
-		void PressArrow(int side);
-		// Updates the hover state and returns -1 / +1 for the arrow under `point`
-		// (0 for none). `leftLive` / `rightLive` gate the ends.
-		int PickArrow(sf::Vector2f point, bool leftLive, bool rightLive);
-		void DrawArrows(sf::RenderTarget& target, float panelAlpha, bool leftLive, bool rightLive) const;
-
-	public:
 		// The arrow side (-1 / +1) a click last landed on via PickArrow, or 0.
 		// Lets a panel's RowClicked() know which direction a mouse click meant.
-		[[nodiscard]] int HoveredArrow() const { return hoveredArrow; }
+		[[nodiscard]] int GetHoveredArrow() const;
 
 	protected:
+		[[nodiscard]] sf::FloatRect GetControlArea() const;
+		[[nodiscard]] std::uint8_t GetAlpha(float panelAlpha, float extra = 1.f) const;
+		[[nodiscard]] sf::Color GetLabelColor() const;
+
+		virtual void RenderControl(sf::RenderTarget& target, float panelAlpha) const = 0;
+		virtual void UpdateControl(float deltaTime);
+
+		// --- Left / right arrows (opt-in) ---
+		void UseArrows(const sf::Texture& texture);
+		[[nodiscard]] sf::Vector2f GetArrowCenter(int side) const;   // -1 left, +1 right
+		[[nodiscard]] sf::FloatRect GetArrowBox(int side) const;
+		void PressArrow(int side);
+		// Updates the hover state and returns -1 / +1 for the arrow under `point`
+		// (0 for none). `isLeftLive` / `isRightLive` gate the ends.
+		int PickArrow(sf::Vector2f point, bool isLeftLive, bool isRightLive);
+		void DrawArrows(sf::RenderTarget& target, float panelAlpha, bool isLeftLive, bool isRightLive) const;
 
 		const sf::Font& font;
 		mutable sf::Text labelText;
@@ -78,8 +75,8 @@ namespace UI
 		float width = 0.f;
 		float height = 0.f;
 
-		bool enabled = true;
-		bool selected = false;
+		bool isEnabled = true;
+		bool isSelected = false;
 		float highlight = 0.f;
 		sf::Color accent{ 120, 210, 255 };
 
@@ -98,10 +95,10 @@ namespace UI
 			const sf::Texture& arrowTexture, std::function<void(std::size_t)> onChange);
 
 		void Adjust(int direction) override;
-		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+		bool HandlePointer(sf::Vector2f point, bool wasClicked) override;
 
 		void SetCurrent(std::size_t index);
-		[[nodiscard]] std::size_t Current() const { return current; }
+		[[nodiscard]] std::size_t GetCurrent() const;
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
@@ -121,16 +118,16 @@ namespace UI
 			int steps, int current, std::function<void(int)> onChange);
 
 		void Adjust(int direction) override;
-		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+		bool HandlePointer(sf::Vector2f point, bool wasClicked) override;
 
 		void SetCurrent(int value);
-		[[nodiscard]] int Current() const { return current; }
+		[[nodiscard]] int GetCurrent() const;
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
 
 	private:
-		[[nodiscard]] sf::FloatRect BarRect() const;
+		[[nodiscard]] sf::FloatRect GetBarRect() const;
 		void Set(int value);
 
 		int steps = 10;
@@ -145,42 +142,42 @@ namespace UI
 	{
 	public:
 		ToggleRow(const sf::Font& font, const sf::String& label,
-			const sf::Texture& checkboxTexture, bool on, std::function<void(bool)> onChange);
+			const sf::Texture& checkboxTexture, bool isOn, std::function<void(bool)> onChange);
 
 		void Adjust(int direction) override;
 		void Activate() override;
-		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+		bool HandlePointer(sf::Vector2f point, bool wasClicked) override;
 
-		void SetOn(bool on);
-		[[nodiscard]] bool IsOn() const { return on; }
+		void SetOn(bool isOn);
+		[[nodiscard]] bool IsOn() const;
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
 
 	private:
-		void Set(bool value);
-		[[nodiscard]] sf::FloatRect CheckboxBounds() const;
+		void Set(bool newIsOn);
+		[[nodiscard]] sf::FloatRect GetCheckboxBounds() const;
 
-		bool on = false;
+		bool isOn = false;
 		const sf::Texture& checkboxTexture;
 		std::function<void(bool)> onChange;
 	};
 
 	// Label + a "keycap" box showing the bound key. No arrows: the panel drives
 	// it -- activating the row puts the keycap into a blinking capture state, and
-	// Flash() pulses the box a colour (green accepted, amber invalid, red clash).
+	// Flash() pulses the box a color (green accepted, amber invalid, red clash).
 	class KeyBindRow final : public OptionRow
 	{
 	public:
 		KeyBindRow(const sf::Font& font, const sf::String& label, const sf::String& keyLabel);
 
-		void Adjust(int /*direction*/) override {}
-		bool HandlePointer(sf::Vector2f point, bool clicked) override;
+		void Adjust(int direction) override;
+		bool HandlePointer(sf::Vector2f point, bool wasClicked) override;
 
 		void SetKeyLabel(const sf::String& text);
-		void SetCapturing(bool on);
-		void Flash(sf::Color colour);
-		[[nodiscard]] bool IsCapturing() const { return capturing; }
+		void SetCapturing(bool isCapturing);
+		void Flash(sf::Color color);
+		[[nodiscard]] bool IsCapturing() const;
 
 	protected:
 		void RenderControl(sf::RenderTarget& target, float panelAlpha) const override;
@@ -188,9 +185,9 @@ namespace UI
 
 	private:
 		mutable sf::Text keyText;
-		bool capturing = false;
+		bool isCapturing = false;
 		float blink = 0.f;
 		float flashTime = 1000.f;
-		sf::Color flashColour{ sf::Color::White };
+		sf::Color flashColor{ sf::Color::White };
 	};
 }

@@ -23,16 +23,16 @@ public:
 	void Update(float deltaTime) override;
 	void Render(sf::RenderTarget& target) override;
 
-	[[nodiscard]] bool ShowsCursor() const override { return false; }
+	[[nodiscard]] bool IsCursorVisible() const override;
 
 private:
-	static constexpr float FadeInDuration = 0.5f;
-	static constexpr float HoldDuration = 2.f;
-	static constexpr float FadeOutDuration = 0.5f;
-
 	[[nodiscard]] static bool IsSkipEvent(const sf::Event& event);
 	void Finish();
 	void UpdateOpacity();
+
+	static constexpr float FadeInDuration = 0.5f;
+	static constexpr float HoldDuration = 2.f;
+	static constexpr float FadeOutDuration = 0.5f;
 
 	Context& context;
 

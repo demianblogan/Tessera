@@ -10,7 +10,7 @@
 
 #include "../gameplay/Tetromino.h"
 #include "../resources/Assets.h"
-#include "NeonGlow.h"
+#include "../primitives/NeonGlow.h"
 
 namespace sf
 {
@@ -30,14 +30,6 @@ class EffectsController;
 class BoardRenderer
 {
 public:
-	static constexpr float BlockSize = 42.f;
-	static constexpr sf::Vector2f BoardPosition{ 720.f, 84.f };
-
-	// The block-spritesheet cell a garbage row (see EscalationDirector) draws
-	// from instead of a tetromino colour -- shared with GameplayState so it can
-	// build EffectsController::ClearedCell entries for the row-clear shatter.
-	static constexpr int WallTextureIndex = 10;
-
 	explicit BoardRenderer(Context& context);
 
 	// Advances the next-queue slide and any hold-swap flight: call once per
@@ -48,15 +40,18 @@ public:
 	// out for the game-over sequence.
 	void Render(sf::RenderTarget& target, const GameplaySession& session, const EffectsController& effects,
 		NeonGlow& glow, float deathProgress = 0.f) const;
+
 	// Draws the upcoming pieces stacked inside `area` (the NEXT HUD cell). The
 	// piece that spawns next is drawn larger and brighter than the rest; when
 	// the queue advances, everything slides smoothly into its new slot.
 	void RenderNextPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const;
-	// Draws the held piece centred inside `area` (the HOLD HUD cell), dimmed
+
+	// Draws the held piece centered inside `area` (the HOLD HUD cell), dimmed
 	// once hold has already been used on the piece currently in play. Draws
 	// nothing while no piece has been held yet, or while a hold-swap flight
 	// (see TriggerHoldSwap) is covering the same ground.
 	void RenderHoldPreview(sf::RenderTarget& target, const GameplaySession& session, sf::FloatRect area) const;
+
 	// Draws whatever hold-swap flight is in progress: the piece just sent to
 	// hold, and (if one was already held) the piece coming back out.
 	void RenderHoldFlight(sf::RenderTarget& target) const;
@@ -66,10 +61,9 @@ public:
 	// HOLD box; `incomingPiece`, if set, is the piece that was already held --
 	// it flies from the HOLD box out to its own (already-assigned) board
 	// position. Purely cosmetic: GameplaySession has already applied the swap.
-	void TriggerHoldSwap(const Tetromino& outgoingPiece, std::optional<Tetromino> incomingPiece,
-		sf::FloatRect holdBoxArea);
+	void TriggerHoldSwap(const Tetromino& outgoingPiece, std::optional<Tetromino> incomingPiece, sf::FloatRect holdBoxArea);
 
-	[[nodiscard]] bool IsHoldFlightActive() const { return outgoingFlight || incomingFlight; }
+	[[nodiscard]] bool IsHoldFlightActive() const;
 
 	// A hard drop already locked the piece instantly (GameplaySession never
 	// delays it -- lock timing has to stay exact); this is purely the cosmetic
@@ -78,13 +72,32 @@ public:
 	// `droppedRows` how far it fell -- both already known from the landed
 	// event, so this never needs to see the piece's pre-drop position itself.
 	void TriggerHardDropFlight(Tetromino::Type type,
-		const std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT>& cells, int droppedRows);
+		const std::array<sf::Vector2i, TetrominoShapes::BlockCount>& cells, int droppedRows);
 
 	// Whether the landing-preview ghost piece is drawn. A player preference,
 	// read from settings.
-	void SetGhostEnabled(bool enabled) { ghostEnabled = enabled; }
+	void SetGhostEnabled(bool isEnabled);
+
+	static constexpr float BlockSize = 42.f;
+	static constexpr sf::Vector2f BoardPosition{ 720.f, 84.f };
+
+	// The block-spritesheet cell a garbage row (see EscalationDirector) draws
+	// from instead of a tetromino color -- shared with GameplayState so it can
+	// build EffectsController::ClearedCell entries for the row-clear shatter.
+	static constexpr int WallTextureIndex = 10;
 
 private:
+	void DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece, float blockSize,
+		sf::Vector2f center, sf::Color tint = sf::Color::White) const;
+
+	[[nodiscard]] static float NextSlotCenterY(sf::FloatRect area, int slot);
+	[[nodiscard]] static float NextSlotBlockSize(int slot);
+	[[nodiscard]] static sf::Color NextSlotTint(int slot, int count);
+
+	// Center of a piece's bounding box, in board screen space -- the same point
+	// its normal on-board rendering is centered on.
+	[[nodiscard]] static sf::Vector2f BoardSpaceCenter(const Tetromino& piece);
+
 	static constexpr int SpriteSize = 16;
 
 	// Next-queue preview sizing: the piece that spawns next is the "hero" slot,
@@ -109,7 +122,7 @@ private:
 	struct HardDropFlight
 	{
 		Tetromino::Type type;
-		std::array<sf::Vector2i, TetrominoShapes::BLOCK_COUNT> cells;   // final, locked positions
+		std::array<sf::Vector2i, TetrominoShapes::BlockCount> cells;   // final, locked positions
 		int droppedRows = 0;
 		float timer = 0.f;
 	};
@@ -118,25 +131,12 @@ private:
 	struct PieceFlight
 	{
 		Tetromino::Type type;
-		sf::Vector2f fromCentre;
+		sf::Vector2f fromCenter;
 		float fromBlockSize;
-		sf::Vector2f toCentre;
+		sf::Vector2f toCenter;
 		float toBlockSize;
 		float timer = 0.f;
 	};
-
-	void DrawPiecePreview(sf::RenderTarget& target, const Tetromino& piece, float blockSize,
-		sf::Vector2f centre, sf::Color tint = sf::Color::White) const;
-
-	[[nodiscard]] static float NextSlotCentreY(sf::FloatRect area, int slot);
-	[[nodiscard]] static float NextSlotBlockSize(int slot);
-	[[nodiscard]] static sf::Color NextSlotTint(int slot, int count);
-
-	// Centre of a piece's bounding box, in board screen space -- the same point
-	// its normal on-board rendering is centred on.
-	[[nodiscard]] static sf::Vector2f BoardSpaceCentre(const Tetromino& piece);
-
-	[[nodiscard]] Assets::TextureID ResolveBlockTexture() const;
 
 	Context& context;
 
@@ -149,7 +149,7 @@ private:
 	std::optional<PieceFlight> incomingFlight;   // HOLD box -> board
 	std::optional<HardDropFlight> hardDropFlight;
 
-	bool ghostEnabled = true;
+	bool isGhostEnabled = true;
 
 	// A standing pulsing halo around every golden lock (see EscalationDirector),
 	// so a bonus piece stays visible after it lands, not just while falling.

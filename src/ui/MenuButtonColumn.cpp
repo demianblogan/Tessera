@@ -2,18 +2,19 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <utility>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 
-#include "ColourUtils.h"
-#include "Easing.h"
+#include "ColorUtils.h"
+#include "../utils/Easing.h"
 #include "TetrominoPalette.h"
 
 namespace
 {
-	// Fly-in: buttons start here (bottom centre, just off screen) and curve up
+	// Fly-in: buttons start here (bottom center, just off screen) and curve up
 	// to their resting left-column slots, one after another.
 	constexpr sf::Vector2f SpawnPoint{ 960.f, 1120.f };
 	constexpr float FlyDuration = 0.42f;
@@ -23,7 +24,7 @@ namespace
 	constexpr float ExitDuration = 0.26f;
 	constexpr float ExitDropY = 1180.f;
 
-	constexpr float Pi = 3.14159265f;
+	constexpr float Pi = std::numbers::pi_v<float>;
 	constexpr float PressDuration = 0.18f;
 	constexpr float PressPunch = 0.12f;
 	constexpr float PressFlash = 0.55f;
@@ -31,6 +32,16 @@ namespace
 	constexpr float SelectedScale = 1.05f;
 	constexpr float GlowIntensity = 0.55f;
 	constexpr float GlowBreathSpeed = 2.0f;
+	constexpr float GlowBreathBase = 0.85f;
+	constexpr float GlowBreathAmplitude = 0.15f;
+
+	// GetPose() -- during the fly-in, alpha ramps to full faster than the
+	// position eases in, so a button is already visible partway along its path.
+	constexpr float IntroAlphaRampScale = 1.8f;
+
+	// Update() -- a button's swoosh fires this far into its own staggered
+	// fly-in window (as a fraction of FlyDuration).
+	constexpr float SwooshTriggerFraction = 0.08f;
 
 	// SetCompact() target look for the non-active buttons.
 	constexpr float CompactScale = 0.72f;
@@ -39,14 +50,24 @@ namespace
 
 	constexpr float IdleDim = 0.6f;   // an unselected enabled button, vs the selected one
 
-	using UI::Easing::EaseInCubic;
-	using UI::Easing::EaseOutCubic;
-	using UI::Easing::Lerp;
+	// PoseOf() -- fly-in Bezier control point: pulled most of the way toward
+	// the resting slot horizontally, and dropped a bit below it vertically, so
+	// the path curves up and in rather than arriving in a straight line.
+	constexpr float FlyControlBlend = 0.25f;
+	constexpr float FlyControlYOffset = 100.f;
 
-	[[nodiscard]] sf::Vector2f QuadBezier(sf::Vector2f a, sf::Vector2f c, sf::Vector2f b, float t) noexcept
+	// Sentinel meaning "no intro animation": AppearInstantly() jumps introTime
+	// straight past the end so Update() never advances it further.
+	constexpr float NoIntroSentinel = 1e7f;
+
+	using Easing::EaseInCubic;
+	using Easing::EaseOutCubic;
+	using Easing::Lerp;
+
+	[[nodiscard]] sf::Vector2f QuadBezier(sf::Vector2f start, sf::Vector2f control, sf::Vector2f end, float progress) noexcept
 	{
-		const float inv = 1.f - t;
-		return inv * inv * a + 2.f * inv * t * c + t * t * b;
+		const float inv = 1.f - progress;
+		return inv * inv * start + 2.f * inv * progress * control + progress * progress * end;
 	}
 }
 
@@ -60,13 +81,13 @@ namespace UI
 	{
 	}
 
-	void MenuButtonColumn::AddButton(const sf::String& text, std::function<void()> onActivate, bool enabled,
-		std::optional<sf::Color> colour)
+	void MenuButtonColumn::AddButton(const sf::String& text, std::function<void()> onActivate, bool isEnabled,
+		std::optional<sf::Color> color)
 	{
 		MenuLabel label(font, characterSize);
 		label.SetText(text);
 		buttons.push_back(Button{
-			std::move(label), std::move(onActivate), enabled, colour.value_or(sf::Color::White), {} });
+			std::move(label), std::move(onActivate), isEnabled, color.value_or(sf::Color::White), {} });
 	}
 
 	void MenuButtonColumn::SetButtonText(std::size_t index, const sf::String& text)
@@ -75,11 +96,11 @@ namespace UI
 		{
 			buttons[index].label.SetText(text);
 
-			// The resting slot's left edge is topLeft.x; its draw *centre* is
+			// The resting slot's left edge is topLeft.x; its draw *center* is
 			// offset by half the ink width (see Begin()), so a new string with a
 			// different width needs that offset recomputed too, or every row
 			// drifts sideways by a different amount once translated.
-			buttons[index].restCentre.x = topLeft.x + buttons[index].label.InkSize().x * 0.5f;
+			buttons[index].restCenter.x = topLeft.x + buttons[index].label.GetInkSize().x * 0.5f;
 		}
 	}
 
@@ -99,28 +120,53 @@ namespace UI
 		onSwoosh = std::move(callback);
 	}
 
-	bool MenuButtonColumn::AnyEnabled() const
+	bool MenuButtonColumn::IsAnyEnabled() const
 	{
-		return std::any_of(buttons.begin(), buttons.end(), [](const Button& b) { return b.enabled; });
+		return std::any_of(buttons.begin(), buttons.end(), [](const Button& button) { return button.isEnabled; });
+	}
+
+	void MenuButtonColumn::SetRenderShift(sf::Vector2f shift)
+	{
+		renderShift = shift;
+	}
+
+	void MenuButtonColumn::SetRenderDim(float dim)
+	{
+		renderDim = dim;
+	}
+
+	void MenuButtonColumn::SetSelectionHighlight(bool isSelectionHighlightEnabled)
+	{
+		this->isSelectionHighlightEnabled = isSelectionHighlightEnabled;
+	}
+
+	std::size_t MenuButtonColumn::GetSelectedIndex() const
+	{
+		return selectedIndex;
+	}
+
+	std::size_t MenuButtonColumn::GetButtonCount() const
+	{
+		return buttons.size();
 	}
 
 	void MenuButtonColumn::Begin()
 	{
-		started = true;
+		hasStarted = true;
 		introTime = 0.f;
 		exitTime = -1.f;
 		swooshFired.assign(buttons.size(), 0);
 
-		// Resting slot: left edge at topLeft.x, so the draw centre is offset by
+		// Resting slot: left edge at topLeft.x, so the draw center is offset by
 		// half the (unscaled) text width.
 		sf::Vector2f maxGlowBox{ 0.f, 0.f };
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			buttons[i].restCentre = {
-				topLeft.x + buttons[i].label.InkSize().x * 0.5f,
+			buttons[i].restCenter = {
+				topLeft.x + buttons[i].label.GetInkSize().x * 0.5f,
 				topLeft.y + static_cast<float>(i) * rowGap };
-			maxGlowBox.x = std::max(maxGlowBox.x, buttons[i].label.GlowBox().x);
-			maxGlowBox.y = std::max(maxGlowBox.y, buttons[i].label.GlowBox().y);
+			maxGlowBox.x = std::max(maxGlowBox.x, buttons[i].label.GetGlowBox().x);
+			maxGlowBox.y = std::max(maxGlowBox.y, buttons[i].label.GetGlowBox().y);
 		}
 
 		// One glow box for the whole column, so NeonGlow never re-sizes when the
@@ -133,7 +179,7 @@ namespace UI
 		// Start focused on the first enabled button.
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			if (buttons[i].enabled)
+			if (buttons[i].isEnabled)
 			{
 				selectedIndex = i;
 				break;
@@ -144,26 +190,26 @@ namespace UI
 	void MenuButtonColumn::AppearInstantly()
 	{
 		Begin();
-		introTime = 1e7f;   // past the end of the fly-in: settled, no animation
+		introTime = NoIntroSentinel;   // past the end of the fly-in: settled, no animation
 		std::fill(swooshFired.begin(), swooshFired.end(), static_cast<char>(1));
 	}
 
-	sf::Vector2f MenuButtonColumn::EntryCentre(std::size_t index) const
+	sf::Vector2f MenuButtonColumn::GetEntryCenter(std::size_t index) const
 	{
 		if (index >= buttons.size())
 		{
 			return {};
 		}
-		return buttons[index].restCentre + renderShift;
+		return buttons[index].restCenter + renderShift;
 	}
 
-	float MenuButtonColumn::EntryHeight(std::size_t index) const
+	float MenuButtonColumn::GetEntryHeight(std::size_t index) const
 	{
 		if (index >= buttons.size())
 		{
 			return 0.f;
 		}
-		return buttons[index].label.InkSize().y;
+		return buttons[index].label.GetInkSize().y;
 	}
 
 	void MenuButtonColumn::PlayExit()
@@ -176,7 +222,7 @@ namespace UI
 
 	bool MenuButtonColumn::IsIntroDone() const
 	{
-		if (!started)
+		if (!hasStarted)
 		{
 			return false;
 		}
@@ -191,7 +237,7 @@ namespace UI
 
 	void MenuButtonColumn::MoveSelection(int direction)
 	{
-		if (!AnyEnabled() || buttons.empty())
+		if (!IsAnyEnabled() || buttons.empty())
 		{
 			return;
 		}
@@ -201,7 +247,7 @@ namespace UI
 		for (int step = 0; step < count; ++step)
 		{
 			index = (index + direction + count) % count;
-			if (buttons[static_cast<std::size_t>(index)].enabled)
+			if (buttons[static_cast<std::size_t>(index)].isEnabled)
 			{
 				break;
 			}
@@ -229,7 +275,7 @@ namespace UI
 		}
 
 		Button& button = buttons[selectedIndex];
-		if (button.enabled && button.activate)
+		if (button.isEnabled && button.activate)
 		{
 			pressTime = 0.f;
 			button.activate();
@@ -245,7 +291,7 @@ namespace UI
 
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre + renderShift, 1.f).contains(point))
+			if (buttons[i].isEnabled && buttons[i].label.GetBounds(buttons[i].restCenter + renderShift, 1.f).contains(point))
 			{
 				if (i != selectedIndex)
 				{
@@ -270,7 +316,7 @@ namespace UI
 
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
-			if (buttons[i].enabled && buttons[i].label.Bounds(buttons[i].restCentre + renderShift, 1.f).contains(point))
+			if (buttons[i].isEnabled && buttons[i].label.GetBounds(buttons[i].restCenter + renderShift, 1.f).contains(point))
 			{
 				selectedIndex = i;
 				Activate();
@@ -281,13 +327,13 @@ namespace UI
 		return PointerHit::None;
 	}
 
-	void MenuButtonColumn::SetCompact(bool nowCompact, std::size_t activeIndex)
+	void MenuButtonColumn::SetCompact(bool isCompact, std::size_t activeIndex)
 	{
-		compact = nowCompact;
+		this->isCompact = isCompact;
 		// Keep the active index while un-compacting, so the closing category
 		// stays full-size for the whole transition instead of another button
 		// jumping to full when the index is reset.
-		if (nowCompact)
+		if (isCompact)
 		{
 			compactActive = activeIndex;
 		}
@@ -304,10 +350,10 @@ namespace UI
 		{
 			buttons[i].label.Update(deltaTime);
 			// Only the selected, settled button carries the idle wave.
-			buttons[i].label.SetWaveEnabled(selectionHighlight && settled && buttons[i].enabled && i == selectedIndex);
+			buttons[i].label.SetWaveEnabled(isSelectionHighlightEnabled && settled && buttons[i].isEnabled && i == selectedIndex);
 		}
 
-		if (started && introTime < 1e6f)
+		if (hasStarted && introTime < NoIntroSentinel)
 		{
 			introTime += deltaTime;
 		}
@@ -317,12 +363,12 @@ namespace UI
 		}
 
 		// Fire the swoosh as each button launches into the fly-in.
-		if (started && !IsIntroDone() && onSwoosh)
+		if (hasStarted && !IsIntroDone() && onSwoosh)
 		{
 			for (std::size_t i = 0; i < buttons.size() && i < swooshFired.size(); ++i)
 			{
 				if (!swooshFired[i]
-					&& (introTime - static_cast<float>(i) * FlyStagger) / FlyDuration >= 0.08f)
+					&& (introTime - static_cast<float>(i) * FlyStagger) / FlyDuration >= SwooshTriggerFraction)
 				{
 					swooshFired[i] = 1;
 					onSwoosh(i);
@@ -330,32 +376,33 @@ namespace UI
 			}
 		}
 
-		const float target = compact ? 1.f : 0.f;
-		compactT = std::clamp(compactT + (target - compactT) * std::min(1.f, deltaTime * CompactSpeed), 0.f, 1.f);
+		const float target = isCompact ? 1.f : 0.f;
+		compactFraction = std::clamp(
+			compactFraction + (target - compactFraction) * std::min(1.f, deltaTime * CompactSpeed), 0.f, 1.f);
 	}
 
-	MenuButtonColumn::Pose MenuButtonColumn::PoseOf(std::size_t index) const
+	MenuButtonColumn::Pose MenuButtonColumn::GetPose(std::size_t index) const
 	{
 		const Button& button = buttons[index];
-		Pose pose{ button.restCentre, 1.f, 1.f };
+		Pose pose{ button.restCenter, 1.f, 1.f };
 
 		if (exitTime >= 0.f)
 		{
-			const float e = EaseInCubic(exitTime / ExitDuration);
-			pose.centre = Lerp(button.restCentre, { button.restCentre.x, ExitDropY }, e);
+			const float exitEase = EaseInCubic(exitTime / ExitDuration);
+			pose.center = Lerp(button.restCenter, { button.restCenter.x, ExitDropY }, exitEase);
 			pose.alpha = 1.f - std::clamp(exitTime / ExitDuration, 0.f, 1.f);
 			return pose;
 		}
 
-		if (started && !IsIntroDone())
+		if (hasStarted && !IsIntroDone())
 		{
-			const float local = std::clamp(
+			const float introLocal = std::clamp(
 				(introTime - static_cast<float>(index) * FlyStagger) / FlyDuration, 0.f, 1.f);
-			const float e = EaseOutCubic(local);
-			const sf::Vector2f control{ Lerp(SpawnPoint.x, button.restCentre.x, 0.25f), button.restCentre.y + 100.f };
-			pose.centre = QuadBezier(SpawnPoint, control, button.restCentre, e);
-			pose.alpha = std::clamp(local * 1.8f, 0.f, 1.f);
-			pose.scale = Lerp(FlyStartScale, 1.f, e);
+			const float introEase = EaseOutCubic(introLocal);
+			const sf::Vector2f control{ Lerp(SpawnPoint.x, button.restCenter.x, FlyControlBlend), button.restCenter.y + FlyControlYOffset };
+			pose.center = QuadBezier(SpawnPoint, control, button.restCenter, introEase);
+			pose.alpha = std::clamp(introLocal * IntroAlphaRampScale, 0.f, 1.f);
+			pose.scale = Lerp(FlyStartScale, 1.f, introEase);
 			return pose;
 		}
 
@@ -366,10 +413,10 @@ namespace UI
 			pose.scale = SelectedScale;
 		}
 
-		if (compactT > 0.f && index != compactActive)
+		if (compactFraction > 0.f && index != compactActive)
 		{
-			pose.scale *= Lerp(1.f, CompactScale, compactT);
-			pose.alpha *= Lerp(1.f, CompactAlpha, compactT);
+			pose.scale *= Lerp(1.f, CompactScale, compactFraction);
+			pose.alpha *= Lerp(1.f, CompactAlpha, compactFraction);
 		}
 
 		return pose;
@@ -377,7 +424,7 @@ namespace UI
 
 	void MenuButtonColumn::Render(sf::RenderTarget& target) const
 	{
-		if (!started)
+		if (!hasStarted)
 		{
 			return;
 		}
@@ -387,25 +434,25 @@ namespace UI
 		const float press = pressTime < PressDuration
 			? std::sin((1.f - pressTime / PressDuration) * Pi)
 			: 0.f;
-		const float breath = 0.85f + 0.15f * std::sin(animTime * GlowBreathSpeed);
+		const float breath = GlowBreathBase + GlowBreathAmplitude * std::sin(animTime * GlowBreathSpeed);
 
 		for (std::size_t i = 0; i < buttons.size(); ++i)
 		{
 			const Button& button = buttons[i];
-			Pose pose = PoseOf(i);
-			pose.centre += renderShift;
+			Pose pose = GetPose(i);
+			pose.center += renderShift;
 			pose.alpha *= renderDim;
 			if (pose.alpha <= 0.f)
 			{
 				continue;
 			}
 
-			const bool isSelected = selectionHighlight && settled && button.enabled && i == selectedIndex;
+			const bool isSelected = isSelectionHighlightEnabled && settled && button.isEnabled && i == selectedIndex;
 
-			sf::Color colour = UI::DisabledEntryColour;
-			if (button.enabled)
+			sf::Color color = UI::DisabledEntryColor;
+			if (button.isEnabled)
 			{
-				colour = isSelected ? button.colour : UI::ScaleRgb(button.colour, IdleDim);
+				color = isSelected ? button.color : UI::ScaleRgb(button.color, IdleDim);
 			}
 
 			float scale = pose.scale;
@@ -415,11 +462,11 @@ namespace UI
 				scale *= 1.f + PressPunch * press;
 				whiten = PressFlash * press;
 
-				const sf::Color tint = UI::ScaleRgb(button.colour, GlowIntensity * breath * pose.alpha);
-				button.label.DrawGlow(target, glow, pose.centre, scale, tint);
+				const sf::Color tint = UI::ScaleRgb(button.color, GlowIntensity * breath * pose.alpha);
+				button.label.DrawGlow(target, glow, pose.center, scale, tint);
 			}
 
-			button.label.Draw(target, pose.centre, scale, colour, pose.alpha, whiten);
+			button.label.Draw(target, pose.center, scale, color, pose.alpha, whiten);
 		}
 	}
 }

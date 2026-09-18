@@ -22,14 +22,14 @@ namespace sf
 }
 
 // Shown once, between the company splash and the main menu, on a fresh
-// install (GameSettings::languageChosen is false). The same ambient
-// background as MenuShell (aurora, drifting tetrominoes, sparks) sits behind
+// install (GameSettings::isLanguageChosen is false). The same ambient
+// background as MenuShellState (aurora, drifting tetrominoes, sparks) sits behind
 // a "choose your language" line -- one phrase per language, dropping in
 // letter by letter like the main-menu title -- and a vertical list of the 5
 // languages that flies in from below at the same time. Each language has its
-// own accent colour (LanguageAccent); hovering or selecting one brightens and
+// own accent color (LanguageColor); hovering or selecting one brightens and
 // grows the matching phrase so the connection is obvious. Picking one applies
-// it, persists the choice, and hands off to MenuShell; Options > Language is
+// it, persists the choice, and hands off to MenuShellState; Options > Language is
 // how a player changes their mind afterwards -- this screen never reappears
 // on its own.
 //
@@ -48,9 +48,7 @@ public:
 	void Render(sf::RenderTarget& target) override;
 
 private:
-	static constexpr float FadeDuration = 0.4f;
-
-	// One falling letter of the intro. Only used until introDone().
+	// One falling letter of the intro. Only used until IsIntroDone().
 	struct IntroGlyph
 	{
 		sf::Text text;
@@ -62,7 +60,7 @@ private:
 
 	// One phrase of the prompt line ("Choose your language", ...): the
 	// language it names, its steady-state combined text (origin at its own
-	// centre, so scaling grows it in place), and how brightly it is picked
+	// center, so scaling grows it in place), and how brightly it is picked
 	// out right now.
 	struct PromptSegment
 	{
@@ -72,22 +70,23 @@ private:
 	};
 
 	void BuildPrompt();
-	[[nodiscard]] bool IntroDone() const;
+	[[nodiscard]] bool IsIntroDone() const;
 	void SetHovered(Language language);
 	void Choose(Language language);
 	void Finish();
 
 	Context& context;
 
-	// Background -- identical ambient to MenuShell.
+	// Background -- identical ambient to MenuShellState.
 	sf::Sprite backgroundSprite;
 	UI::MenuAurora aurora;
 	UI::MenuBackdrop backdrop;
 	UI::MenuSparks sparks;
 
+	static constexpr float FallDuration = 0.35f;
+
 	std::vector<IntroGlyph> introGlyphs;
 	float introElapsed = 0.f;
-	float fallDuration = 0.35f;
 	float fallStagger = 0.01f;
 	float introTotalDuration = 0.f;
 
@@ -97,6 +96,7 @@ private:
 
 	UI::MenuButtonColumn column;
 
+	static constexpr float FadeDuration = 0.4f;
 	float fade = 1.f;   // 1 = fully black, 0 = clear
-	bool leaving = false;
+	bool isLeaving = false;
 };

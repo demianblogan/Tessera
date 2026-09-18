@@ -34,7 +34,7 @@ namespace Loading
 
 		void MarkDone() noexcept
 		{
-			finished.store(true, std::memory_order_release);
+			isFinished.store(true, std::memory_order_release);
 		}
 
 		[[nodiscard]] Stage GetStage() const noexcept
@@ -44,7 +44,7 @@ namespace Loading
 
 		[[nodiscard]] bool IsDone() const noexcept
 		{
-			return finished.load(std::memory_order_acquire);
+			return isFinished.load(std::memory_order_acquire);
 		}
 
 		// 0..1 -- how many stages are complete. Coarse (it steps once per
@@ -52,15 +52,13 @@ namespace Loading
 		[[nodiscard]] float Fraction() const noexcept
 		{
 			if (IsDone())
-			{
 				return 1.f;
-			}
 
-			return static_cast<float>(static_cast<int>(GetStage())) / static_cast<float>(StageCount);
+			return static_cast<float>(static_cast<int>(GetStage())) / StageCount;
 		}
 
 	private:
 		std::atomic<Stage> currentStage{ Stage::Audio };
-		std::atomic<bool> finished{ false };
+		std::atomic<bool> isFinished{ false };
 	};
 }

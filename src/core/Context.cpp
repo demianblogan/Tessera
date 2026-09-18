@@ -40,6 +40,4 @@ Context::Context(
     , gamepad(gamepad)
     , gamepadHaptics(gamepadHaptics)
     , localization(localization)
-{
-	// No code
-}
+{}

@@ -28,14 +28,11 @@ public:
     // Called when this state becomes the top of the stack again because the
     // state above it was popped (e.g. the pause screen closing). Lets a state
     // pick up settings changed while it was covered.
-    virtual void OnResume() {}
+    virtual void OnResume();
 
     // Whether the game's mouse cursor is drawn over this state. The company
     // splash hides it so nothing sits on top of the logo.
-    [[nodiscard]] virtual bool ShowsCursor() const
-    {
-        return true;
-    }
+    [[nodiscard]] virtual bool IsCursorVisible() const;
 
 protected:
     // Queue a stack transition. All four are applied together, after the

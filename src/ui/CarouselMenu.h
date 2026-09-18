@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <functional>
@@ -11,7 +11,7 @@
 #include <SFML/System/String.hpp>
 #include <SFML/System/Vector2.hpp>
 
-#include "PixelDust.h"
+#include "../primitives/PixelDust.h"
 
 class NeonGlow;
 
@@ -38,10 +38,10 @@ namespace UI
 		CarouselMenu(const sf::Font& font, unsigned int characterSize, const sf::Texture& arrowTexture);
 
 		// A disabled entry (enabled == false) is greyed, has no glow, and cannot
-		// be activated -- but the ring still rotates through it. `colour`
+		// be activated -- but the ring still rotates through it. `color`
 		// overrides the default per-slot tetromino hue.
-		void AddItem(const sf::String& text, std::function<void()> onActivate, bool enabled = true,
-			std::optional<sf::Color> colour = std::nullopt);
+		void AddItem(const sf::String& text, std::function<void()> onActivate, bool isEnabled = true,
+			std::optional<sf::Color> color = std::nullopt);
 		void SetCenter(sf::Vector2f center);
 
 		// Put `index` at the front with no rotation animation. For rebuilding the
@@ -50,7 +50,7 @@ namespace UI
 		void SetFrontImmediate(std::size_t index);
 
 		// The index of the entry currently at the front.
-		[[nodiscard]] std::size_t CurrentFrontIndex() const;
+		[[nodiscard]] std::size_t GetCurrentFrontIndex() const;
 
 		// Called with the entry index as that entry swishes in past the screen
 		// edge during the fly-in.
@@ -63,7 +63,7 @@ namespace UI
 		[[nodiscard]] bool IsReady() const;
 
 		// The front entry's hue (grey while the ring is empty).
-		[[nodiscard]] sf::Color FrontColour() const;
+		[[nodiscard]] sf::Color GetFrontColor() const;
 
 		void RotateLeft();
 		void RotateRight();
@@ -78,10 +78,10 @@ namespace UI
 		// into pixels.
 		void StartExit();
 
-		// The front entry's on-screen centre and ink height, for handing off to
+		// The front entry's on-screen center and ink height, for handing off to
 		// the header at the start of a transition.
-		[[nodiscard]] sf::Vector2f FrontEntryCentre() const;
-		[[nodiscard]] float FrontEntryHeight() const;
+		[[nodiscard]] sf::Vector2f GetFrontEntryCenter() const;
+		[[nodiscard]] float GetFrontEntryHeight() const;
 
 		// Mouse. The caller maps the pixel to view coordinates first.
 		enum class PointerHit { None, RotatedLeft, RotatedRight, Activated };
@@ -98,15 +98,15 @@ namespace UI
 			struct Glyph
 			{
 				char32_t codepoint = 0;
-				float penX = 0.f;   // pen origin, relative to the string centre
+				float penX = 0.f;   // pen origin, relative to the string center
 			};
 
 			sf::Text text;                 // kept for hit-testing / metrics
 			std::function<void()> activate;
 			std::vector<Glyph> glyphs;
-			float inkCentreY = 0.f;        // vertical ink centre of the string
-			sf::Color colour;              // this entry's hue (grey if disabled)
-			bool enabled = true;
+			float inkCenterY = 0.f;        // vertical ink center of the string
+			sf::Color color;              // this entry's hue (grey if disabled)
+			bool isEnabled = true;
 		};
 
 		struct Placement
@@ -117,19 +117,19 @@ namespace UI
 			float depth = 0.f;   // +1 front, -1 back
 		};
 
-		[[nodiscard]] Placement PlacementOf(std::size_t index) const;
-		void Render(sf::RenderTarget& target, bool frontHalf) const;
+		[[nodiscard]] Placement GetPlacement(std::size_t index) const;
+		void Render(sf::RenderTarget& target, bool isFrontHalf) const;
 		void DrawEntry(sf::RenderTarget& target, std::size_t index, const Placement& placement) const;
 		void DrawFrontGlow(sf::RenderTarget& target, NeonGlow& glow) const;
-		[[nodiscard]] float ArrivalFlash(std::size_t index) const;
-		[[nodiscard]] float BreathScale() const;   // front-entry idle pulse, else 1
-		[[nodiscard]] float SlotStep() const;      // angle between adjacent entries
-		[[nodiscard]] float IntroPathAngle(std::size_t index) const;
-		[[nodiscard]] std::size_t FrontItem() const;
+		[[nodiscard]] float GetArrivalFlash(std::size_t index) const;
+		[[nodiscard]] float GetBreathScale() const;   // front-entry idle pulse, else 1
+		[[nodiscard]] float GetSlotStep() const;      // angle between adjacent entries
+		[[nodiscard]] float GetIntroPathAngle(std::size_t index) const;
+		[[nodiscard]] std::size_t GetFrontItem() const;
 
-		[[nodiscard]] sf::Vector2f FrontSlotPosition() const;
-		[[nodiscard]] sf::FloatRect FrontItemBounds() const;
-		[[nodiscard]] sf::FloatRect ArrowBounds(int side) const;   // side: -1 left, +1 right
+		[[nodiscard]] sf::Vector2f GetFrontSlotPosition() const;
+		[[nodiscard]] sf::FloatRect GetFrontItemBounds() const;
+		[[nodiscard]] sf::FloatRect GetArrowBounds(int side) const;   // side: -1 left, +1 right
 		void DrawArrow(sf::RenderTarget& target, int side) const;
 
 		const sf::Font& font;
@@ -147,14 +147,19 @@ namespace UI
 		float rotateTo = 0.f;
 		float rotateTimer = 1.f;     // >= 1 means settled
 
-		bool started = false;
-		bool exiting = false;        // playing the transition-out
+		bool hasStarted = false;
+		bool isExiting = false;        // playing the transition-out
 		float introTimer = 0.f;      // 0..1 across the fly-in
 
-		float activatePulseTime = 1000.f;   // seconds since PulseActivate(); large = no pulse
+		// Seconds since the matching event (PulseActivate(), an entry locking
+		// to the front, an arrow being pressed); kept large until that event
+		// happens, which every site reads as "hasn't happened recently".
+		static constexpr float NoRecentEventSentinel = 1000.f;
+
+		float activatePulseTime = NoRecentEventSentinel;
 		PixelDust dust;              // the disintegrating entries during the exit
 
-		float arrivalFlashTime = 1000.f;   // seconds since an entry last locked to the front
+		float arrivalFlashTime = NoRecentEventSentinel;
 		float breathTime = 0.f;            // drives the front entry's idle breath
 
 		std::function<void(std::size_t)> onSwoosh;
@@ -162,8 +167,7 @@ namespace UI
 
 		int hoveredArrow = 0;        // -1 left, +1 right, 0 none
 
-		// Seconds since each arrow (0 = left, 1 = right) was last pressed; large
-		// means "not pressed", which reads as no feedback.
-		float arrowPressTime[2] = { 1000.f, 1000.f };
+		// Seconds since each arrow (0 = left, 1 = right) was last pressed.
+		float arrowPressTime[2] = { NoRecentEventSentinel, NoRecentEventSentinel };
 	};
 }

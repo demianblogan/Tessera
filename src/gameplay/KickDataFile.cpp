@@ -2,7 +2,6 @@
 
 #include <array>
 #include <fstream>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -16,7 +15,7 @@ namespace
 {
 	using Json = nlohmann::json;
 
-	constexpr std::array<std::string_view, 8> SlotNames = {
+	constexpr std::array<std::string_view, KickData::SlotCount> SlotNames = {
 		"0->R", "0->L", "R->2", "R->0", "2->L", "2->R", "L->0", "L->2"
 	};
 
@@ -43,22 +42,15 @@ namespace
 		return tests;
 	}
 
-	void ReadTable(const Json& tables, std::string_view name, KickData::Table table, const std::filesystem::path& path)
+	void ReadTable(const Json& tables, std::string_view name, KickData::Table table)
 	{
 		const auto object = tables.find(name);
-		if (object == tables.end())
+		if (object == tables.end() || !object->is_object())
 		{
 			return;
 		}
 
-		if (!object->is_object())
-		{
-			std::cerr << "WARNING: kick table \"" << name << "\" in \"" << path.string()
-				<< "\" is not an object -- keeping its built-in values.\n";
-			return;
-		}
-
-		for (int slot = 0; slot < 8; ++slot)
+		for (int slot = 0; slot < KickData::SlotCount; ++slot)
 		{
 			const auto transition = object->find(SlotNames[slot]);
 			if (transition == object->end())
@@ -67,10 +59,8 @@ namespace
 			}
 
 			const std::optional<KickData::Tests> tests = ReadTests(*transition);
-			if (!tests)
+			if (!tests.has_value())
 			{
-				std::cerr << "WARNING: kick \"" << name << "\" / \"" << SlotNames[slot] << "\" in \""
-					<< path.string() << "\" needs 5 [x, y] pairs -- keeping its built-in value.\n";
 				continue;
 			}
 
@@ -79,13 +69,15 @@ namespace
 	}
 }
 
+// A missing/invalid file, a missing "tables" object, or any one table/slot
+// being malformed just leaves that slot (or all of them) at its built-in SRS
+// kick offsets -- srs_kicks.json is an optional authoring override, not a
+// requirement.
 void KickDataFile::Load(const std::filesystem::path& path)
 {
 	std::ifstream file(path);
 	if (!file.is_open())
 	{
-		std::cerr << "WARNING: kick data file not found at \"" << path.string()
-			<< "\" -- using the built-in SRS kicks.\n";
 		return;
 	}
 
@@ -94,21 +86,17 @@ void KickDataFile::Load(const std::filesystem::path& path)
 	{
 		data = Json::parse(file);
 	}
-	catch (const Json::exception& exception)
+	catch (const Json::exception&)
 	{
-		std::cerr << "WARNING: kick data file \"" << path.string()
-			<< "\" is invalid (" << exception.what() << ") -- using the built-in SRS kicks.\n";
 		return;
 	}
 
 	const auto tables = data.find("tables");
 	if (tables == data.end() || !tables->is_object())
 	{
-		std::cerr << "WARNING: kick data file \"" << path.string()
-			<< "\" has no \"tables\" object -- using the built-in SRS kicks.\n";
 		return;
 	}
 
-	ReadTable(*tables, "JLSTZ", KickData::Table::JLSTZ, path);
-	ReadTable(*tables, "I", KickData::Table::I, path);
+	ReadTable(*tables, "JLSTZ", KickData::Table::JLSTZ);
+	ReadTable(*tables, "I", KickData::Table::I);
 }

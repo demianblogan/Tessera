@@ -32,12 +32,12 @@ public:
 	// `language` is already active.
 	void SetLanguage(Language language);
 
-	[[nodiscard]] Language GetLanguage() const { return language; }
+	[[nodiscard]] Language GetLanguage() const;
 
 	// Bumped every time the active language actually changes. Screens that
 	// cache localized text compare this against the value they last saw to
 	// know they need to refresh.
-	[[nodiscard]] unsigned int Revision() const { return revision; }
+	[[nodiscard]] unsigned int GetRevision() const;
 
 	[[nodiscard]] sf::String GetText(std::string_view key) const;
 
@@ -54,7 +54,14 @@ private:
 	// key -> value, decoded from the catalog's UTF-8.
 	std::unordered_map<std::string, sf::String> catalog;
 
-	std::filesystem::path directory;
-	Language language = Language::English;
+	// The directory `Load()` was last called with -- kept so SetLanguage() can
+	// reload from it without the caller having to pass it again.
+	std::filesystem::path catalogDirectory;
+
+	Language currentLanguage = Language::English;
+
+	// See Revision() above: incremented on every actual language change, never
+	// reset. Screens don't care about its absolute value, only whether it
+	// still matches what they last saw.
 	unsigned int revision = 0;
 };

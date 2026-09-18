@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
 // NOMINMAX: stops Windows.h from defining its own min/max macros, which
 // would otherwise shadow std::min/std::max (used below) and silently break
@@ -113,29 +114,9 @@ namespace Haptics
 		isVibrationEnabled = newIsVibrationEnabled;
 	}
 
-	bool GamepadHaptics::IsVibrationEnabled() const noexcept
-	{
-		return isVibrationEnabled;
-	}
-
 	void GamepadHaptics::SetLightbarEnabled(bool newIsLightbarEnabled) noexcept
 	{
 		isLightbarEnabled = newIsLightbarEnabled;
-	}
-
-	bool GamepadHaptics::IsLightbarEnabled() const noexcept
-	{
-		return isLightbarEnabled;
-	}
-
-	void GamepadHaptics::SetAdaptiveTriggersEnabled(bool newIsAdaptiveTriggersEnabled) noexcept
-	{
-		isAdaptiveTriggersEnabled = newIsAdaptiveTriggersEnabled;
-	}
-
-	bool GamepadHaptics::IsAdaptiveTriggersEnabled() const noexcept
-	{
-		return isAdaptiveTriggersEnabled;
 	}
 
 	void GamepadHaptics::PulseVibration(float lowFrequencyMotor, float highFrequencyMotor, float durationSeconds)
@@ -173,9 +154,9 @@ namespace Haptics
 		rightTriggerRecoilRemaining = RightTriggerRecoilDuration;
 	}
 
-	void GamepadHaptics::SetRightTriggerSustainedResistance(bool active) noexcept
+	void GamepadHaptics::SetRightTriggerSustainedResistance(bool isActive) noexcept
 	{
-		isRightTriggerSustainedResistanceActive = active;
+		isRightTriggerSustainedResistanceActive = isActive;
 	}
 
 	void GamepadHaptics::Update(float deltaTime)
@@ -194,17 +175,17 @@ namespace Haptics
 		if (rightTriggerRecoilRemaining > 0.f)
 			rightTriggerRecoilRemaining = std::max(0.f, rightTriggerRecoilRemaining - deltaTime);
 
-		const float FallOff = (pulseDuration > 0.f && pulseRemaining > 0.f) ? pulseRemaining / pulseDuration : 0.f;
+		const float fallOff = (pulseDuration > 0.f && pulseRemaining > 0.f) ? pulseRemaining / pulseDuration : 0.f;
 
-		if (FallOff <= 0.f)
+		if (fallOff <= 0.f)
 		{
 			pulseDuration = 0.f;
 			pulseLowMotor = 0.f;
 			pulseHighMotor = 0.f;
 		}
 
-		const float lowMotor = isVibrationEnabled ? pulseLowMotor * FallOff : 0.f;
-		const float highMotor = isVibrationEnabled ? pulseHighMotor * FallOff : 0.f;
+		const float lowMotor = isVibrationEnabled ? pulseLowMotor * fallOff : 0.f;
+		const float highMotor = isVibrationEnabled ? pulseHighMotor * fallOff : 0.f;
 
 		// --- Lightbar ---
 
@@ -241,12 +222,17 @@ namespace Haptics
 			else
 			{
 				// N clean on-off flashes spread across the duration.
-				constexpr float Pi = 3.14159265f;
+				constexpr float Pi = std::numbers::pi_v<float>;
 				const float progress = 1.f - lightbarFallOff;
 				brightness = std::abs(std::sin(progress * Pi * static_cast<float>(lightbarPulseBlinks)));
 			}
 
-			currentLightbar = { Scale(lightbarPulseColor.r, brightness), Scale(lightbarPulseColor.g, brightness), Scale(lightbarPulseColor.b, brightness) };
+			currentLightbar =
+			{
+				Scale(lightbarPulseColor.r, brightness),
+				Scale(lightbarPulseColor.g, brightness),
+				Scale(lightbarPulseColor.b, brightness)
+			};
 		}
 		else
 		{
@@ -321,9 +307,7 @@ namespace Haptics
 			DS5W::DS5OutputState outputState{};
 			outputState.leftRumble = ToByte(lowFrequencyMotor);
 			outputState.rightRumble = ToByte(highFrequencyMotor);
-
 			outputState.lightbar = { currentLightbar.r, currentLightbar.g, currentLightbar.b };
-
 			outputState.rightTriggerEffect = BuildRightTriggerEffect();
 
 			if (DS5W_FAILED(DS5W::setDeviceOutputState(&dualSenseContext, &outputState)))

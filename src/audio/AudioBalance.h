@@ -19,8 +19,8 @@ class AudioBalance
 public:
 	explicit AudioBalance(const std::filesystem::path& path);
 
-	[[nodiscard]] float ForSound(Assets::SoundID id) const noexcept;
-	[[nodiscard]] float ForMusic(Assets::MusicID id) const noexcept;
+	[[nodiscard]] float GetSoundBalance(Assets::SoundID id) const noexcept;
+	[[nodiscard]] float GetMusicBalance(Assets::MusicID id) const noexcept;
 
 private:
 	std::unordered_map<Assets::SoundID, float> soundVolumes;

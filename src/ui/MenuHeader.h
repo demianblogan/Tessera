@@ -5,7 +5,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include "MenuLabel.h"
-#include "../rendering/NeonGlow.h"
+#include "../primitives/NeonGlow.h"
 
 namespace sf
 {
@@ -26,8 +26,8 @@ namespace UI
 	public:
 		MenuHeader(const sf::Font& font, sf::Shader& dilateShader, sf::Shader& blurShader);
 
-		void RiseFrom(sf::Vector2f fromCentre, float fromHeight, const sf::String& label, sf::Color colour);
-		void SinkTo(sf::Vector2f toCentre, float toHeight);
+		void RiseFrom(sf::Vector2f fromCenter, float fromHeight, const sf::String& label, sf::Color color);
+		void SinkTo(sf::Vector2f toCenter, float toHeight);
 
 		// Re-labels the header in place (a language switch) without touching its
 		// current rise/sink pose.
@@ -43,12 +43,12 @@ namespace UI
 		enum class Mode { Hidden, Rising, Shown, Sinking };
 
 		struct Pose { sf::Vector2f position; float scale = 1.f; float alpha = 1.f; };
-		[[nodiscard]] Pose CurrentPose() const;
+		[[nodiscard]] Pose GetCurrentPose() const;
 
 		MenuLabel label;
 		mutable NeonGlow glow;
 
-		sf::Color colour{ sf::Color::White };
+		sf::Color color{ sf::Color::White };
 
 		Mode mode = Mode::Hidden;
 		float timer = 0.f;

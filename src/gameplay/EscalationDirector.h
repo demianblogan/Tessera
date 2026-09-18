@@ -24,15 +24,21 @@
 class EscalationDirector
 {
 public:
-	enum class Tier { Base, SpeedSurge, Garbage, Chaos };
+	enum class Tier
+	{
+		Base,
+		SpeedSurge,
+		Garbage,
+		Chaos
+	};
 
 	struct Events
 	{
-		bool tierChanged = false;
+		bool hasTierChanged = false;
 		Tier tier = Tier::Base;
 
-		bool surgeStarted = false;
-		bool surgeEnded = false;
+		bool hasSurgeStarted = false;
+		bool hasSurgeEnded = false;
 	};
 
 	static constexpr float SpeedSurgeTierStart = 30.f;
@@ -77,8 +83,8 @@ public:
 
 	[[nodiscard]] Events ConsumeEvents();
 
-	[[nodiscard]] Tier CurrentTier() const { return tier; }
-	[[nodiscard]] float FallSpeedMultiplier() const { return surgeActive ? SurgeFallMultiplier : 1.f; }
+	[[nodiscard]] Tier CurrentTier() const;
+	[[nodiscard]] float FallSpeedMultiplier() const;
 
 private:
 	void UpdateTier();
@@ -89,13 +95,13 @@ private:
 	Tier tier = Tier::Base;
 
 	float surgeCooldown = FirstSurgeDelay;
-	bool surgeActive = false;
+	bool isSurgeActive = false;
 	float surgeTimer = 0.f;
 
 	// When Chaos was entered, so ShouldSpawnGoldenPiece() can time-gate the
 	// tier's first effect instead of leaving it to the player's spawn rate.
 	float chaosTierEnteredAt = -1.f;
-	bool firstGoldenGranted = false;
+	bool hasGrantedFirstGolden = false;
 
 	// Counts down to the next garbage row once Garbage is reached; re-rolled
 	// (GarbageMinInterval..GarbageMaxInterval) after every row, including the
