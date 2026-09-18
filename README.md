@@ -21,6 +21,10 @@
   <a href="https://www.youtube.com/watch?v=gs816D4Nyzo">Full playthrough</a>
 </p>
 
+<p align="center">
+  <img src="docs/media/cover.jpg" alt="Tessera" width="900">
+</p>
+
 ---
 
 ## What it is
