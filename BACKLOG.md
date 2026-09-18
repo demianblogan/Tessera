@@ -529,7 +529,9 @@ The final version. After it the game is done — there is no v2.0.
 - **A shortcut to the game** — resolved as just the exe's own icon
   (`assets/other/icon.ico` via `Tessera.rc`), not a desktop/Start Menu
   shortcut or installer.
-- **Project-wide refactor and polish** — tighten the feel, clean the code, pull
+- **Project-wide refactor and polish** — ✅ done. A folder-by-folder style pass
+  over the whole `src/` tree (naming, magic numbers, header layout, dead-code
+  removal), plus the items below. Tighten the feel, clean the code, pull
   back any improvements from ULA's shared helpers (`NineSliceFrame`,
   `TextLayout`, `NeonGlow`, `GamepadHaptics`), a final dead-code sweep.
   ✅ The blurred-backdrop render path was removed earlier
@@ -548,7 +550,10 @@ The final version. After it the game is done — there is no v2.0.
   `Application.cpp` into `Assets::Paths::Data` alongside every other asset
   path; a couple of comments that had gone stale (the HUD's hold-piece
   outline, the Hold sound) reworded to match what the code actually does.
-- **Release** — README as a finished piece, screenshots / GIFs, itch.io page,
+- **Release** — README as a finished piece (rebuilt to the same standard as
+  ULA's: badges, feature/controls tables, `docs/ARCHITECTURE.md` /
+  `docs/CONTROLS.md` / `docs/GAMEPLAY.md` / `docs/PATTERNS.md`) — ✅ done.
+  Still open: screenshots / GIFs for `docs/media/`, an itch.io page,
   `Tessera-v1.7.0-win64.zip`, GitHub Release as the last one.
 
 ### Visual overhaul (spans v1.6.0–v1.7.0)
